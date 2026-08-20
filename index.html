@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Realms — Our World 5 Review Crawler</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ========================= MAIN MENU ========================= -->
+  <section id="screen-menu" class="screen active">
+    <div class="menu-wrap">
+      <h1 class="game-title">WORD REALMS</h1>
+      <div class="subtitle">A review crawler for Our World 5</div>
+
+      <div id="realm-select" class="realm-grid"></div>
+
+      <div class="menu-buttons">
+        <button id="btn-teacher" class="pixel-btn small">Teacher Menu</button>
+        <button id="btn-howto" class="pixel-btn small">How To Play</button>
+        <button id="btn-sound" class="pixel-btn small">Sound: On</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= TEACHER PIN ========================= -->
+  <section id="screen-teacher" class="screen">
+    <div class="panel-card">
+      <h2>Teacher Menu</h2>
+      <div id="teacher-pin-view">
+        <p>Enter PIN to manage realm access.</p>
+        <input id="pin-input" type="password" maxlength="6" inputmode="numeric" placeholder="PIN">
+        <button id="pin-submit" class="pixel-btn">Unlock</button>
+        <p class="hint">Default PIN is 1234 — change it in js/config.js</p>
+        <div id="pin-error" class="error-text"></div>
+      </div>
+      <div id="teacher-controls" style="display:none;">
+        <p>Toggle which realms students can access. All progress/hearts reset when a realm restarts.</p>
+        <div id="teacher-realm-list" class="teacher-realm-list"></div>
+        <div class="teacher-row">
+          <label><input type="checkbox" id="auto-unlock-toggle"> Auto-unlock next realm when this class clears one (local session only in Phase 1)</label>
+        </div>
+        <button id="btn-reset-run" class="pixel-btn danger">Reset Current Run</button>
+        <button id="btn-back-menu" class="pixel-btn">Back to Menu</button>
+      </div>
+      <button id="btn-teacher-close" class="pixel-btn">Close</button>
+    </div>
+  </section>
+
+  <!-- ========================= HOW TO PLAY ========================= -->
+  <section id="screen-howto" class="screen">
+    <div class="panel-card">
+      <h2>How To Play</h2>
+      <ul class="howto-list">
+        <li>The teacher picks one student at a time. That student makes ONE choice: which path to take on the map, or which answer to pick in a challenge.</li>
+        <li>Every Fight and Elite node is a review question from the unit. Answer right to win the encounter; answer wrong and the party loses a heart.</li>
+        <li>Event nodes are a story choice — no combat, sometimes a small reward either way.</li>
+        <li>Rest nodes heal a heart. Treasure nodes ask a bonus question for a relic or hint token.</li>
+        <li>Some paths dodge fights entirely (Safe Path) but skip the reward too.</li>
+        <li>Reach the Realm Boss to finish. The boss always tests everything in the unit, so nothing gets skipped for good.</li>
+        <li>Run out of hearts and the run resets with a new map — but the party keeps a relic or banked Ember (meta-currency) to help next time.</li>
+      </ul>
+      <button id="btn-howto-close" class="pixel-btn">Close</button>
+    </div>
+  </section>
+
+  <!-- ========================= MAP SCREEN ========================= -->
+  <section id="screen-map" class="screen">
+    <div class="hud-top">
+      <div class="hud-block hearts" id="hud-hearts"></div>
+      <div class="hud-block realm-name" id="hud-realm-name"></div>
+      <div class="hud-block currency">
+        <span class="badge"><span class="icon-shard"></span><span id="hud-shards">0</span></span>
+        <span class="badge ember"><span class="icon-ember"></span><span id="hud-ember">0</span></span>
+      </div>
+    </div>
+    <div class="map-wrap">
+      <div id="map-canvas" class="map-canvas"></div>
+    </div>
+    <div class="turn-banner" id="turn-banner">Pick a student — choose the next path</div>
+    <div class="map-footer">
+      <button id="btn-map-teacher" class="pixel-btn tiny ghost">Teacher</button>
+      <button id="btn-map-menu" class="pixel-btn tiny ghost">Menu</button>
+    </div>
+  </section>
+
+  <!-- ========================= ENCOUNTER SCREEN ========================= -->
+  <section id="screen-encounter" class="screen">
+    <div class="hud-top">
+      <div class="hud-block hearts" id="enc-hearts"></div>
+      <div class="hud-block realm-name" id="enc-realm-name"></div>
+      <div class="hud-block currency">
+        <span class="badge"><span class="icon-shard"></span><span id="enc-shards">0</span></span>
+        <span class="badge ember"><span class="icon-ember"></span><span id="enc-ember">0</span></span>
+      </div>
+    </div>
+
+    <div class="corridor" id="corridor">
+      <div class="ceiling"></div>
+      <div class="floor"></div>
+      <div class="wallseg w1"></div>
+      <div class="wallseg w2"></div>
+      <div class="wallseg w3"></div>
+      <div class="wallseg w4"></div>
+      <div class="torch left"></div>
+      <div class="torch right"></div>
+      <div class="torch left2"></div>
+      <div class="torch right2"></div>
+      <img id="monster-sprite" class="monster-sprite" src="" alt="">
+      <div class="vignette"></div>
+    </div>
+
+    <div class="panel" id="enc-panel">
+      <div class="who" id="enc-who">—</div>
+      <div class="q" id="enc-question">—</div>
+      <div class="choices" id="enc-choices"></div>
+      <div class="enc-feedback" id="enc-feedback"></div>
+    </div>
+  </section>
+
+  <!-- ========================= BOSS SCREEN ========================= -->
+  <section id="screen-boss" class="screen">
+    <div class="hud-top">
+      <div class="hud-block hearts" id="boss-hearts"></div>
+      <div class="hud-block realm-name" id="boss-realm-name"></div>
+      <div class="hud-block currency">
+        <span class="badge"><span class="icon-shard"></span><span id="boss-shards">0</span></span>
+      </div>
+    </div>
+    <div class="corridor boss-corridor" id="boss-corridor">
+      <div class="ceiling"></div>
+      <div class="floor"></div>
+      <div class="wallseg w1"></div>
+      <div class="wallseg w2"></div>
+      <div class="wallseg w3"></div>
+      <div class="wallseg w4"></div>
+      <img id="boss-sprite" class="monster-sprite boss-sprite" src="" alt="">
+      <div class="boss-wave-tracker" id="boss-wave-tracker"></div>
+      <div class="vignette"></div>
+    </div>
+    <div class="panel" id="boss-panel">
+      <div class="who" id="boss-who">—</div>
+      <div class="q" id="boss-question">—</div>
+      <div class="choices" id="boss-choices"></div>
+      <div class="enc-feedback" id="boss-feedback"></div>
+    </div>
+  </section>
+
+  <!-- ========================= RESULT SCREEN (win/lose realm) ========================= -->
+  <section id="screen-result" class="screen">
+    <div class="panel-card result-card">
+      <h2 id="result-title">Realm Cleared!</h2>
+      <div id="result-body"></div>
+      <button id="btn-result-continue" class="pixel-btn">Continue</button>
+    </div>
+  </section>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/content.js"></script>
+<script src="js/mapgen.js"></script>
+<script src="js/state.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
