@@ -1,121 +1,156 @@
 # Word Realms — Our World 5 Review Crawler
 
-A browser-based, first-person, decision-driven dungeon crawler for reviewing
-Our World 5 content in class. This is the **Phase 1 build**: TV-only, no
-accounts, no backend — just open it in a browser. Realm 1 (Unit 1, "The
-Stormlands" / Extreme Weather) is fully playable end-to-end. Realms 2-9 show
-on the map as locked/"coming soon" placeholders using the correct theme and
-monster names from the syllabus, ready to be filled in the same way once
-you're happy with Realm 1.
+A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
+class. **Version 2 — classroom edition.** Realm 1 (Unit 1, Extreme Weather) is
+fully playable; Realms 2–9 appear as locked placeholders using the correct
+themes from the school syllabus.
 
-## How to run it right now (no setup)
+Runs entirely in the browser. No installs, no accounts, no internet needed
+once the page has loaded.
 
-1. Open a terminal in this folder.
-2. Run a tiny local server (needed so the browser will load the image/JSON
-   files correctly — double-clicking `index.html` directly can misbehave in
-   some browsers):
-   ```
-   python3 -m http.server 8000
-   ```
-3. Open `http://localhost:8000` in Chrome (or any modern browser).
+---
 
-On the actual classroom computer, you can do the same thing — or, once you're
-ready, put this on GitHub Pages and just open the link instead (see below).
+## Updating your GitHub Pages site
 
-## Deploying to GitHub Pages (so it's one stable link)
+1. Open your `word-realms` repository on github.com.
+2. Click **Add file → Upload files**.
+3. Select everything *inside* this folder (`index.html`, `css`, `js`, `assets`,
+   `data`, `tools`, `README.md`) and drag it in — not the outer folder itself.
+4. Scroll down, click **Commit changes**.
+5. Wait about a minute, then reload your `https://…github.io/word-realms/` link.
 
-1. Create a new repository on your GitHub account (public or private both
-   work; Pages is free either way on a personal account for public repos —
-   private repos need GitHub Pages support on your plan).
-2. Upload everything in this folder to that repository (drag-and-drop on
-   github.com works fine, or `git push` if you're comfortable with git).
-3. In the repo, go to **Settings → Pages**, set the source to the `main`
-   branch (root), and save.
-4. GitHub gives you a URL like `https://yourname.github.io/your-repo/` —
-   that's the link to bookmark on the classroom computer.
+If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
-Send me the repo name once it's created and I can walk through anything that
-doesn't work first try.
+---
 
-## How the game works
+## What's new in v2
 
-- **Main menu**: pick a realm (only unlocked, finished realms are clickable).
-- **Map screen**: a branching path of nodes from Start to the Realm Boss —
-  Fight and Elite nodes are review questions, Event nodes are a story choice,
-  Rest heals a heart, Treasure is a bonus question for a relic/shards, Safe
-  Path skips the node with no risk and no reward. The layout is regenerated
-  every run, so there's no "perfect route" to memorize.
-- **Turn structure**: designed for one shared TV/projector session — call on
-  a student, they make one choice (which path, or which answer), then you
-  call the next student.
-- **Hearts**: the whole class shares one pool. Wrong answers cost a heart.
-  Hit zero and it's a true reset — new map, hearts refilled — but the run
-  banks something first: either the class keeps one relic they'd collected,
-  or their shards convert into **Ember**, a currency that persists across
-  resets forever (shown top-right, gold coin icon).
-- **The Boss**: always asks about everything from the unit that *wasn't*
-  already covered earlier in that run, so nothing gets skipped for good —
-  and if the class took a lot of Safe Paths, the boss fight is longer as a
-  natural consequence, not an arbitrary difficulty spike.
-- **Teacher Menu** (bottom-right "Teacher" button, default PIN **1234**,
-  change it in `js/config.js`): unlock/lock which realms students can enter,
-  toggle auto-unlock, or reset the current run.
-- **Progress auto-saves** to that browser's local storage, so if a realm
-  doesn't finish in one class period, reopening the page picks up exactly
-  where the class left off — as long as it's the same computer/browser each
-  time (see the note below).
+**Class roster and automatic student picking.** Enter your class name and
+students once (Class Roster on the main menu). The game then picks a student at
+random for every turn and shows their name in large text — no more nominating
+manually. A **Reroll** button skips anyone who's absent and removes them from
+the rotation for that session.
 
-## Important limitation to know about (Phase 1)
+**Monsters have health.** Regular monsters take **2** correct answers to defeat;
+Elites take **5** and drop a relic. One Fight room now spans several students'
+turns.
 
-Progress is saved in that specific browser on that specific computer, not in
-the cloud. That's fine as long as each class always plays on the same
-classroom computer/TV. If you need progress to follow students across
-different devices (e.g. homework at home), that's what Phase 2 (GitHub Pages
-+ a small free Supabase database) is for — a separate conversation once
-Phase 1 has been played with an actual class.
+**Team Up.** A student can call in a partner, but the monster recovers **1 HP**
+while they confer — once per monster, so it can't be abused. Both students get
+credit for the kill.
 
-## Content coverage
+**Monsters fight back.** A wrong answer triggers a lunge animation, an impact
+sound, a screen shake and a lost heart.
 
-Realm 1 covers 100% of Unit 1's material from the syllabus: all 15
-Vocabulary 1 words, all 5 Vocabulary 2 words, both phonics sounds, both
-grammar points (be going to / zero conditional), and the 4 reading-passage
-vocabulary words. See `js/content.js` for the full question bank — every
-question was written fresh for this game, not copied from the textbook.
+**Bigger, denser map.** Around 20 layers and 60–75 rooms per realm with multiple
+branching routes, drawn as bricked dungeon chambers. The map scrolls and
+auto-follows the party. A lantern totem walks between rooms leaving footprints.
 
-## What's stubbed vs. built
+**Bigger text throughout**, sized to be read from the back of a classroom.
 
-| Realm | Unit | Status |
+**Leaderboards** (Classes and Warriors tabs), stored on this computer.
+
+**Storm atmosphere** — the corridor is lit by a drifting storm gradient with
+lightning that flashes across the whole scene.
+
+**Sound** — all original, synthesized in the browser (no copyrighted audio).
+
+**Fixes:** hearts render correctly (they were malformed), plus an explicit
+**Play This Realm Again** button on the results screen and a **Factory Reset**
+in the Teacher Menu.
+
+---
+
+## How a lesson runs
+
+1. Open the link on the classroom computer, connect the TV.
+2. Set the Class Roster once (it's remembered afterwards).
+3. Open Realm 1. The game names a student — they choose which room to enter.
+4. In a room, the named student answers. Correct = the monster takes a hit.
+   Wrong = the monster attacks and the party loses a heart.
+5. After each question the game names the next student automatically.
+6. Reach the Boss to finish the realm.
+
+**Pacing:** a full run averages ~34 questions across ~21 rooms. At a realistic
+classroom pace that's roughly **45–65 minutes**, so it fits a double period.
+If a realm doesn't finish, just close the page — reopening on the same computer
+resumes exactly where you left off.
+
+---
+
+## The Boss and curriculum coverage
+
+The boss asks about every vocabulary word, phonics sound and grammar point the
+class **hasn't already faced** in that run. Take lots of Safe Paths and the boss
+gets correspondingly longer — skipping rooms delays content, it doesn't skip it.
+(The boss is capped at 20 questions so the finale can't run absurdly long, and
+has a minimum of 6 so it's never trivial.)
+
+Realm 1 covers all 32 curriculum items from Unit 1: 15 Vocabulary 1 words,
+5 Vocabulary 2 words, both phonics sounds (/θ/ and /ð/), both grammar points
+(*be going to*, zero conditional) and the 4 reading words from *Tornado Trouble*.
+There are ~75 questions in the bank — 2–3 different ways of asking about each
+item — so rooms rarely repeat themselves.
+
+---
+
+## Teacher Menu
+
+Default PIN **1234** (change it in `js/config.js`).
+
+- Tick realms to open them for the class.
+- Auto-unlock the next realm when this class clears one.
+- **Reset Current Run** — clears the active realm only.
+- **Factory Reset** — wipes everything: roster, warrior stats, leaderboards,
+  Ember and unlocks.
+
+---
+
+## Known limitations
+
+**Progress is saved in this browser on this computer.** Each classroom's
+computer keeps its own roster, stats and leaderboard — they don't sync between
+rooms. Cross-class leaderboards need the shared-database step we've parked for
+later.
+
+**Realms 2–9 are not built yet.** They're visible but locked.
+
+---
+
+## Tuning the game
+
+Everything balance-related is in `js/config.js`:
+
+| Setting | Default | What it does |
 |---|---|---|
-| 1 — The Stormlands | Extreme Weather | **Fully playable** |
-| 2 — The Wildlands | Animals & Camouflage | Locked placeholder |
-| 3 — The Concert Caverns | Music | Locked placeholder |
-| 4 — The Void Station | Outer Space | Locked placeholder |
-| 5 — The Memory Archive | Culture & Traditions | Locked placeholder |
-| 6 — The Overgrowth | Plants | Locked placeholder |
-| 7 — The Ember Depths | Volcanoes | Locked placeholder |
-| 8 — The Landfill Ruins | Recycling & Environment | Locked placeholder |
-| 9 — The Wanderlands | Vacation & Travel | Locked placeholder |
+| `START_HEARTS` | 6 | Party health at the start of a run |
+| `MONSTER_HP` | 2 | Correct answers to defeat a regular monster |
+| `ELITE_HP` | 5 | Correct answers to defeat an Elite |
+| `TEAMUP_HP_COST` | 1 | HP the monster regains when a partner is called |
+| `LAYERS_PER_REALM` | 20 | Map length — raise for longer lessons |
+| `MAX_ELITES_PER_MAP` | 4 | How many long fights appear per map |
+| `BOSS_MAX_QUESTIONS` | 20 | Cap on the boss gauntlet |
+| `TEACHER_PIN` | "1234" | Teacher Menu PIN |
 
-Once you've played Realm 1 with a class and we've adjusted anything that
-needs adjusting, the same process (write questions in `js/content.js`,
-generate monster/tile art with the scripts in `tools/`) repeats for Realms
-2-9.
+---
 
 ## Project structure
 
 ```
-index.html          Screens/markup for menu, map, encounter, boss, etc.
-css/style.css        All styling, including the pixel-art corridor layout
-js/config.js         Teacher PIN, starting hearts, map size — tweak here
-js/audio.js          Procedural chiptune sound effects (Web Audio API)
-js/content.js        Realm/monster/question data (Realm 1 fully written)
-js/mapgen.js         Procedural branching node-map generator
-js/state.js          Save/load, hearts/shards/Ember/relics, run lifecycle
-js/ui.js             Rendering (menu, map, HUD)
-js/main.js           Game flow / event wiring
-assets/sprites/      Original pixel-art monster sprites (PNG)
-assets/tiles/        Original pixel-art dungeon tileset (PNG)
-tools/gen_sprites.py Regenerates monster art (Python + Pillow)
-tools/gen_tiles.py   Regenerates dungeon tileset art (Python + Pillow)
-data/units.json      Raw extracted syllabus data for all 9 units (reference)
+index.html            All screens
+css/style.css         Styling, corridor layout, animations
+js/config.js          Balance settings (edit here)
+js/audio.js           Procedural chiptune sound engine
+js/content.js         Realm data + the Realm 1 question bank
+js/mapgen.js          Procedural branching map generator
+js/state.js           Save/load, roster, stats, run lifecycle
+js/ui.js              Rendering (map, HUD, effects)
+js/main.js            Game flow, combat, animation sequencing
+assets/sprites/       Original monster/NPC pixel art
+assets/nodes/         Room icons, lantern totem, footprints
+assets/tiles/         Dungeon wall/floor/torch tiles
+tools/gen_*.py        Scripts that regenerate the art (Python + Pillow)
+data/units.json       Extracted syllabus data for all 9 units (reference)
 ```
+
+All artwork and audio is original and generated by the scripts in `tools/`.
