@@ -108,10 +108,11 @@ textarea { resize: vertical; line-height: 1.5; }
 /* -------------------------------- HUD ----------------------------------- */
 .hud-top {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 22px; background: linear-gradient(#000000cc, transparent);
-  position: relative; z-index: 6; gap: 12px;
+  padding: 7px 20px; background: linear-gradient(#000000dd, #00000055 70%, transparent);
+  position: relative; z-index: 6; gap: 14px;
 }
-.hud-block.realm-name { font-weight: 800; letter-spacing: 1px; color: var(--gold); font-size: 1.15rem; }
+.hud-mid { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; }
+.hud-mid .realm-name { font-weight: 800; letter-spacing: 1px; color: var(--gold); font-size: .95rem; }
 .hud-block.currency { display: flex; gap: 10px; align-items: center; }
 .badge {
   display: inline-flex; align-items: center; gap: 8px; font-size: 1.05rem;
@@ -335,10 +336,14 @@ textarea { resize: vertical; line-height: 1.5; }
 /* A painted backdrop replaces the procedural brickwork entirely. The art is
    authored at exactly the corridor's proportions (640x234 true pixels), so it
    is stretched to fill rather than cropped - nothing is ever cut off. */
+/* The art is 16:9 and the corridor is a wide strip, so COVER fills the width
+   edge to edge and crops from the bottom - which is the dark, empty foreground
+   the question panel sits in front of anyway. Anchoring to the top keeps the
+   battlements, the breach and the lightning, which is the whole picture. */
 .corridor.has-backdrop {
   background-repeat: no-repeat;
-  background-position: center bottom;
-  background-size: 100% 100%;
+  background-position: center top;
+  background-size: cover;
   image-rendering: pixelated;
 }
 .corridor.has-backdrop .ceiling,
@@ -473,21 +478,25 @@ textarea { resize: vertical; line-height: 1.5; }
 /* ---------------------------- question panel ---------------------------- */
 .panel {
   background: linear-gradient(var(--panel-light), var(--panel));
-  border-top: 4px solid var(--accent); padding: 16px 28px 20px; z-index: 7;
+  border-top: 4px solid var(--accent); padding: 10px 26px 12px; z-index: 7;
+  flex: 0 0 auto;
 }
 .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.panel .who { color: var(--gold); font-weight: 800; font-size: 1.35rem; margin-bottom: 4px; }
+.panel .who { color: var(--gold); font-weight: 800; font-size: 1.45rem; margin-bottom: 2px; }
 .turn-chip {
   display: flex; align-items: center; gap: 10px;
   background: rgba(12,7,20,.6); border: 2px solid var(--accent);
   border-radius: 10px; padding: 6px 12px;
 }
-.turn-chip .student-name { font-size: 1.25rem; }
+.turn-chip .student-name { font-size: 1.45rem; }
+/* Read from the back of a classroom: the question and the answers are the two
+   things every child has to be able to see, so they get the type budget. */
 .panel .q {
-  font-size: 1.65rem; line-height: 1.4; margin: 10px 0 16px; font-weight: 600;
+  font-size: clamp(1.7rem, 2.05vw, 2.3rem); line-height: 1.26;
+  margin: 6px 0 10px; font-weight: 700;
 }
 .q-type {
-  display: inline-block; font-size: .7rem; font-weight: 900; letter-spacing: 1px;
+  display: inline-block; font-size: .82rem; font-weight: 900; letter-spacing: 1px;
   text-transform: uppercase; padding: 3px 9px; border-radius: 5px;
   background: var(--accent); color: #fff; vertical-align: middle; margin-right: 10px;
 }
@@ -496,7 +505,8 @@ textarea { resize: vertical; line-height: 1.5; }
   flex: 1; min-width: 190px; text-align: center;
   background: linear-gradient(#4c3980,#2f2159);
   border: 3px solid var(--accent-light); border-radius: 10px;
-  padding: 18px 12px; font-weight: 800; font-size: 1.4rem; cursor: pointer;
+  padding: 14px 12px; font-weight: 800; cursor: pointer;
+  font-size: clamp(1.5rem, 1.85vw, 2.05rem); line-height: 1.15;
   transition: transform .06s ease, filter .1s ease;
 }
 .choice:hover:not(.locked) { filter: brightness(1.2); transform: translateY(-2px); }
@@ -510,8 +520,8 @@ textarea { resize: vertical; line-height: 1.5; }
   border-color: var(--bad); box-shadow: 0 0 18px rgba(255,84,112,.65);
   background: linear-gradient(#803949,#591626);
 }
-.panel-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-.enc-feedback { min-height: 1.4em; font-weight: 800; font-size: 1.15rem; }
+.panel-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 8px; flex-wrap: wrap; }
+.enc-feedback { min-height: 1.3em; font-weight: 800; font-size: 1.35rem; }
 .enc-feedback.good { color: var(--good); }
 .enc-feedback.bad  { color: var(--bad); }
 
@@ -1024,10 +1034,15 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
    Banked on every correct answer and spent on a move. The meter sits directly
    above the answers because that is where the class is already looking.
    =========================================================================== */
+/* Momentum lives ON the battlefield, top-left, over the dark upper wall. In
+   the question panel its 2x2 grid was eating 110px of sprite height; up here
+   it costs nothing and sits in space that was empty anyway. */
 .mo-row {
-  display: flex; align-items: stretch; gap: 16px; flex-wrap: wrap;
-  margin: 0 0 12px; padding: 10px 14px; border-radius: 10px;
-  background: rgba(12,7,22,.5); border: 2px solid #3b2d63;
+  position: absolute; top: 12px; left: 14px; z-index: 8;
+  display: flex; align-items: stretch; gap: 12px; flex-wrap: nowrap;
+  padding: 9px 13px; border-radius: 12px;
+  background: rgba(10,6,20,.82); border: 2px solid #4a3a7d;
+  box-shadow: 0 6px 22px rgba(0,0,0,.6);
 }
 .mo-meter { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
 .mo-label {
@@ -1120,3 +1135,52 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
   text-shadow: 0 2px 4px #000; font-variant-numeric: tabular-nums;
 }
 .heart-stack b span { font-size: .95rem; opacity: .65; color: var(--text); }
+
+/* ===========================================================================
+   RELIC BAR — every relic and both gear slots, visible at all times
+   =========================================================================== */
+.relic-strip { display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+  justify-content: center; max-width: 46vw; }
+.relic-none { font-size: .78rem; opacity: .45; letter-spacing: 1px;
+  text-transform: uppercase; font-weight: 700; }
+.relic-chip {
+  position: relative; width: 40px; height: 40px; border-radius: 8px;
+  display: grid; place-items: center;
+  background: rgba(14,8,26,.85); border: 2px solid var(--accent-light);
+}
+.relic-chip img { width: 30px; height: 30px; image-rendering: pixelated; }
+.relic-chip.gear      { border-color: #8fb8ff; }
+.relic-chip.r-uncommon{ border-color: #63b8e6; }
+.relic-chip.r-rare    { border-color: var(--gold); box-shadow: 0 0 10px rgba(255,215,106,.45); }
+.relic-chip.r-epic    { border-color: #c77dff; box-shadow: 0 0 12px rgba(199,125,255,.6); }
+.relic-tip {
+  position: absolute; top: 46px; left: 50%; transform: translateX(-50%);
+  display: none; z-index: 40; width: max-content; max-width: 300px;
+  padding: 8px 12px; border-radius: 8px; text-align: left;
+  background: rgba(10,6,20,.97); border: 2px solid var(--accent-light);
+  font-size: .85rem; line-height: 1.35; box-shadow: 0 8px 26px rgba(0,0,0,.7);
+}
+.relic-tip b { display: block; color: var(--gold); font-size: .95rem; margin-bottom: 2px; }
+.relic-chip:hover .relic-tip { display: block; }
+
+/* ===========================================================================
+   MOMENTUM — 2x2 grid, sized to be read from the back of the room
+   =========================================================================== */
+
+.mo-label { font-size: .82rem; }
+.mo-meter { flex-direction: column; align-items: flex-start; gap: 6px; }
+.mo-moves {
+  display: grid; grid-template-columns: repeat(2, minmax(196px, 1fr));
+  gap: 7px 9px; flex: 0 0 auto;
+}
+.mo-move {
+  grid-template-rows: auto auto; align-items: center;
+  padding: 6px 14px 6px 8px; column-gap: 11px; row-gap: 0;
+}
+.mo-move .mv-cost { grid-row: 1 / span 2; width: 32px; height: 32px; font-size: 1.1rem; }
+.mo-move .mv-name { font-size: 1.1rem; letter-spacing: .3px; line-height: 1.1; }
+.mo-move .mv-short {
+  font-size: .92rem; font-weight: 700; opacity: .82; line-height: 1.1;
+}
+.mo-move.primed .mv-short { opacity: 1; color: var(--gold); letter-spacing: 1px; }
+.mo-move .mv-blurb { display: none; }
