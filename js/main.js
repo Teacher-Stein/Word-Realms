@@ -396,6 +396,7 @@ function commitEls(side) {
 }
 
 function clearCommitUI(side) {
+  if (_pendingCommit && _pendingCommit.side === side) _pendingCommit = null;
   const e = commitEls(side);
   if (e.gate) e.gate.style.display = "none";
   if (e.say) e.say.style.display = "none";
@@ -588,7 +589,11 @@ function askFightQuestion() {
 // attack instead of damaging the monster.
 function resolveCombatAnswer(ctx, correct, q, defending) {
   const run = STATE.run;
-  const m = ctx.monster;
+  const m = ctx && ctx.monster;
+  // The fight can end between a question being asked and its answer landing -
+  // a Commit adjudicated a beat after the monster fell, say. Without this the
+  // whole screen throws on a null monster.
+  if (!run || !m) return;
   const student = run.currentStudent;
   const isBoss = !!m.isBoss;
   const P = isBoss
@@ -937,6 +942,7 @@ function monsterDefeated(ctx) {
   }
 
   run.encounter = null;
+  _pendingCommit = null;      // nothing left to commit to
   decayMomentum();      // tempo, not a bank - it can't be hoarded for the boss
   saveState();
   afterPopups(() => backToMap(true));

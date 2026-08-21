@@ -13,19 +13,19 @@
 // ---------------------------------------------------------------------------
 
 const MOMENTUM_MOVES = [
-  { id: "insight", name: "Insight",      cost: () => CONFIG.MO_INSIGHT,
+  { short: "Cut a wrong answer", id: "insight", name: "Insight",      cost: () => CONFIG.MO_INSIGHT,
     blurb: "Remove a wrong answer from the next question",
     icon: "assets/items/echo_shard.png" },
 
-  { id: "rouse",   name: "Rouse",        cost: () => CONFIG.MO_ROUSE,
+  { short: "Double shards", id: "rouse",   name: "Rouse",        cost: () => CONFIG.MO_ROUSE,
     blurb: "Your next correct answer pays double shards",
     icon: "assets/items/coin_purse.png" },
 
-  { id: "guard",   name: "Guard",        cost: () => CONFIG.MO_GUARD,
+  { short: "Stop 2 damage", id: "guard",   name: "Guard",        cost: () => CONFIG.MO_GUARD,
     blurb: `Stop ${CONFIG.MO_GUARD_BLOCK} damage from the next attack`,
     icon: "assets/items/aegis_charm.png" },
 
-  { id: "rally",   name: "Rally",        cost: () => CONFIG.MO_RALLY,
+  { short: "Heal 1 heart", id: "rally",   name: "Rally",        cost: () => CONFIG.MO_RALLY,
     blurb: "Restore one heart",
     icon: "assets/items/potion_heal.png" },
 ];

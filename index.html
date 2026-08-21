@@ -210,7 +210,10 @@
           <div class="hearts" id="hud-hearts"></div>
         </div>
       </div>
-      <div class="hud-block realm-name" id="hud-realm-name"></div>
+      <div class="hud-block hud-mid">
+        <div class="realm-name" id="hud-realm-name"></div>
+        <div class="relic-strip" id="hud-relic-strip"></div>
+      </div>
       <div class="hud-block currency">
         <span class="badge"><span class="icon-shard"></span><span id="hud-shards">0</span></span>
         <span class="badge ember"><span class="icon-ember"></span><span id="hud-ember">0</span></span>
@@ -252,7 +255,10 @@
           <div class="hearts" id="enc-hearts"></div>
         </div>
       </div>
-      <div class="hud-block realm-name" id="enc-realm-name"></div>
+      <div class="hud-block hud-mid">
+        <div class="realm-name" id="enc-realm-name"></div>
+        <div class="relic-strip" id="enc-relic-strip"></div>
+      </div>
       <div class="hud-block currency">
         <span class="badge"><span class="icon-shard"></span><span id="enc-shards">0</span></span>
         <span class="badge ember"><span class="icon-ember"></span><span id="enc-ember">0</span></span>
@@ -291,6 +297,13 @@
       <img id="room-scenery" class="room-scenery" alt="">
       <div class="slash-fx" id="slash-fx"></div>
       <div class="vignette"></div>
+            <div class="mo-row" id="enc-mo-row">
+        <div class="mo-meter">
+          <span class="mo-label">Momentum</span>
+          <span class="mo-pips" id="enc-mo-pips"></span>
+        </div>
+        <div class="mo-moves" id="enc-mo-moves"></div>
+      </div>
       <div class="hit-flash" id="hit-flash"></div>
     </div>
 
@@ -304,13 +317,6 @@
         </div>
       </div>
       <div class="q" id="enc-question">—</div>
-      <div class="mo-row" id="enc-mo-row">
-        <div class="mo-meter">
-          <span class="mo-label">Momentum</span>
-          <span class="mo-pips" id="enc-mo-pips"></span>
-        </div>
-        <div class="mo-moves" id="enc-mo-moves"></div>
-      </div>
       <div class="commit-gate" id="enc-commit-gate" style="display:none;">
         <div class="cg-text">This one is worth <b>double</b>. Take it with the options hidden?</div>
         <div class="cg-buttons">
@@ -347,7 +353,10 @@
           <div class="hearts" id="boss-hearts"></div>
         </div>
       </div>
-      <div class="hud-block realm-name" id="boss-realm-name"></div>
+      <div class="hud-block hud-mid">
+        <div class="realm-name" id="boss-realm-name"></div>
+        <div class="relic-strip" id="boss-relic-strip"></div>
+      </div>
       <div class="hud-block currency">
         <span class="badge"><span class="icon-shard"></span><span id="boss-shards">0</span></span>
       </div>
@@ -377,6 +386,13 @@
       </div>
       <div class="slash-fx" id="boss-slash-fx"></div>
       <div class="vignette"></div>
+            <div class="mo-row" id="boss-mo-row">
+        <div class="mo-meter">
+          <span class="mo-label">Momentum</span>
+          <span class="mo-pips" id="boss-mo-pips"></span>
+        </div>
+        <div class="mo-moves" id="boss-mo-moves"></div>
+      </div>
       <div class="hit-flash" id="boss-hit-flash"></div>
     </div>
 
@@ -390,13 +406,6 @@
         </div>
       </div>
       <div class="q" id="boss-question">—</div>
-      <div class="mo-row" id="boss-mo-row">
-        <div class="mo-meter">
-          <span class="mo-label">Momentum</span>
-          <span class="mo-pips" id="boss-mo-pips"></span>
-        </div>
-        <div class="mo-moves" id="boss-mo-moves"></div>
-      </div>
       <div class="commit-gate" id="boss-commit-gate" style="display:none;">
         <div class="cg-text">This one is worth <b>double</b>. Take it with the options hidden?</div>
         <div class="cg-buttons">

@@ -330,6 +330,11 @@ function questionsForCover(cover, preferElite = false) {
 // `attacks` are the moves a monster can use; the game shows the chosen move
 // as an INTENT above its head before it lands, so danger is always telegraphed.
 //   kind: hit | heavy | flurry | drain | charge | guard | regen
+//
+// v5.1: cadence went back to 3. Fights are 4.6 questions now rather than 2.3,
+// so a monster on a 3-turn clock still acts about 1.5 times per fight - and
+// slowing it is what let wrong answers become the main threat instead of the
+// timer. Their damage numbers are untouched, because the telegraph must not lie.
 // `special` is a debuff it can apply. Specials NEVER hide the correct answer -
 // they change stakes or progress instead, so a student is never punished for
 // knowing the word.
@@ -341,62 +346,62 @@ const REALM1_MONSTERS = [
   { id:"wyrm",    name:"Thunderclap Wyrm",  sprite:"assets/sprites/wyrm.png",
     voice:"growl", pitch:104, size:0.72,
     taunt:"A Thunderclap Wyrm rolls out of the clouds!",
-    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:1,shards:6}], special:null, cadence:2 },
+    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:1,shards:6}], special:null, cadence:3 },
 
   { id:"wisp",    name:"Blizzard Wisp",     sprite:"assets/sprites/wisp.png",
     voice:"glass", pitch:246, size:0.28,
     taunt:"A Blizzard Wisp drifts into your path!",
-    attacks:[{kind:"hit",dmg:1},{kind:"flurry",dmg:1,hits:2}], special:"chill", cadence:2 },
+    attacks:[{kind:"hit",dmg:1},{kind:"flurry",dmg:1,hits:2}], special:"chill", cadence:3 },
 
   { id:"djinn",   name:"Sandstorm Djinn",   sprite:"assets/sprites/djinn.png",
     voice:"whoosh", pitch:165, size:0.55,
     taunt:"A Sandstorm Djinn whirls up from the dust!",
-    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:1,shards:8}], special:"expose", cadence:2 },
+    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:1,shards:8}], special:"expose", cadence:3 },
 
   { id:"funnel",  name:"Funnel Sprite",     sprite:"assets/sprites/funnel.png",
     voice:"shriek", pitch:330, size:0.34,
     taunt:"A Funnel Sprite spins in, cackling!",
-    attacks:[{kind:"hit",dmg:1},{kind:"flurry",dmg:1,hits:2}], special:null, cadence:2 },
+    attacks:[{kind:"hit",dmg:1},{kind:"flurry",dmg:1,hits:2}], special:null, cadence:3 },
 
   { id:"brute",   name:"Hailstone Brute",   sprite:"assets/sprites/brute.png",
     voice:"crunch", pitch:116, size:0.70,
     taunt:"A Hailstone Brute blocks the corridor!",
-    attacks:[{kind:"heavy",dmg:2},{kind:"guard"}], special:null, cadence:2 },
+    attacks:[{kind:"heavy",dmg:2},{kind:"guard"}], special:null, cadence:3 },
 
   { id:"fang",    name:"Frost Fang",        sprite:"assets/sprites/fang.png",
     voice:"glass", pitch:196, size:0.40,
     taunt:"A Frost Fang bares its teeth!",
-    attacks:[{kind:"hit",dmg:1},{kind:"heavy",dmg:2}], special:"freeze", cadence:2 },
+    attacks:[{kind:"hit",dmg:1},{kind:"heavy",dmg:2}], special:"freeze", cadence:3 },
 
   { id:"serpent", name:"Flood Serpent",     sprite:"assets/sprites/serpent.png",
     voice:"gurgle", pitch:147, size:0.58,
     taunt:"A Flood Serpent surges out of the water!",
-    attacks:[{kind:"hit",dmg:1},{kind:"regen"}], special:null, cadence:2 },
+    attacks:[{kind:"hit",dmg:1},{kind:"regen"}], special:null, cadence:3 },
 
   { id:"husk",    name:"Drought Husk",      sprite:"assets/sprites/husk.png",
     voice:"rasp", pitch:131, size:0.48,
     taunt:"A Drought Husk drags itself upright!",
-    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:0,shards:10}], special:"expose", cadence:2 },
+    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:0,shards:10}], special:"expose", cadence:3 },
 
   { id:"shimmer", name:"Heatwave Shimmer",  sprite:"assets/sprites/shimmer.png",
     voice:"wail", pitch:262, size:0.36,
     taunt:"A Heatwave Shimmer burns the air ahead!",
-    attacks:[{kind:"hit",dmg:1},{kind:"charge",dmg:3,turns:2}], special:null, cadence:2 },
+    attacks:[{kind:"hit",dmg:1},{kind:"charge",dmg:3,turns:2}], special:null, cadence:3 },
 
   { id:"crow",    name:"Tempest Crow",      sprite:"assets/sprites/crow.png",
     voice:"shriek", pitch:392, size:0.30,
     taunt:"A Tempest Crow shrieks down from the rafters!",
-    attacks:[{kind:"flurry",dmg:1,hits:2},{kind:"hit",dmg:1}], special:null, cadence:2 },
+    attacks:[{kind:"flurry",dmg:1,hits:2},{kind:"hit",dmg:1}], special:null, cadence:3 },
 
   { id:"herald",  name:"Ice Storm Herald",  sprite:"assets/sprites/herald.png",
     voice:"bell", pitch:175, size:0.62,
     taunt:"An Ice Storm Herald raises its frozen blade!",
-    attacks:[{kind:"heavy",dmg:2},{kind:"guard"}], special:"chill", cadence:2 },
+    attacks:[{kind:"heavy",dmg:2},{kind:"guard"}], special:"chill", cadence:3 },
 
   { id:"siren",   name:"Siren of the Gale", sprite:"assets/sprites/siren.png",
     voice:"wail", pitch:294, size:0.44,
     taunt:"The Siren of the Gale begins to shriek!",
-    attacks:[{kind:"hit",dmg:1},{kind:"charge",dmg:3,turns:2}], special:"freeze", cadence:2 },
+    attacks:[{kind:"hit",dmg:1},{kind:"charge",dmg:3,turns:2}], special:"freeze", cadence:3 },
 ];
 
 const REALM1_ELITES = [
@@ -404,25 +409,25 @@ const REALM1_ELITES = [
     voice:"growl", pitch:92, size:0.86,
     taunt:"The Tempest Warden bars the way. This will be a long fight!",
     attacks:[{kind:"heavy",dmg:2},{kind:"guard"},{kind:"charge",dmg:3,turns:2}],
-    special:"expose", cadence:2 },
+    special:"expose", cadence:3 },
 
   { id:"colossus",   name:"Thunder Colossus", sprite:"assets/sprites/colossus.png",
     voice:"crunch", pitch:87, size:0.92,
     taunt:"A Thunder Colossus stomps forward. Stand ready!",
     attacks:[{kind:"heavy",dmg:2},{kind:"flurry",dmg:1,hits:3}],
-    special:null, cadence:2 },
+    special:null, cadence:3 },
 
   { id:"eyewalker",  name:"The Eye-Walker",   sprite:"assets/sprites/eyewalker.png",
     voice:"whoosh", pitch:139, size:0.80,
     taunt:"The Eye-Walker drifts from the calm. It is far too quiet.",
     attacks:[{kind:"drain",dmg:1,shards:14},{kind:"regen"},{kind:"heavy",dmg:2}],
-    special:"freeze", cadence:2 },
+    special:"freeze", cadence:3 },
 
   { id:"permafrost", name:"Permafrost Titan", sprite:"assets/sprites/permafrost.png",
     voice:"crunch", pitch:78, size:0.94,
     taunt:"The Permafrost Titan cracks the floor with every step!",
     attacks:[{kind:"heavy",dmg:2},{kind:"charge",dmg:4,turns:2},{kind:"guard"}],
-    special:"chill", cadence:2 },
+    special:"chill", cadence:3 },
 ];
 
 // Tinted variants multiply the roster without needing more art. A variant
@@ -447,7 +452,7 @@ const REALMS = {
             taunt:"THE HURRICANE TITAN RISES!",
             attacks:[{kind:"heavy",dmg:2},{kind:"flurry",dmg:1,hits:3},
                      {kind:"charge",dmg:4,turns:2},{kind:"drain",dmg:1,shards:12}],
-            special:"expose", cadence:2 },
+            special:"expose", cadence:3 },
     npc: { name:"The Storm Chaser", sprite:"assets/sprites/chaser.png" },
     questions: REALM1_QUESTIONS,
     eliteQuestions: REALM1_ELITE_QUESTIONS,

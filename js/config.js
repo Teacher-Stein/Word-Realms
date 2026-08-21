@@ -7,11 +7,14 @@ const CONFIG = {
   // --- party ---
   // v5.0: hearts are now the party's MAIN resource and shields are a thin
   // buffer, inverting v4.3 where shields quietly absorbed 84% of everything.
-  // Monsters now act 1.8 times per fight instead of 0.72, so the party needs
-  // roughly two and a half times the reserve it had in v4.3 to absorb the same
-  // run. Their attacks keep their honest numbers - the telegraph must not lie.
-  START_HEARTS: 13,
-  MAX_HEARTS: 18,
+  // v5.1: 13 hearts made a wrong answer cost 10% of the pool, so getting one
+  // wrong felt like nothing. Instrumenting the damage showed why: only 31% of
+  // it came from wrong answers, the rest from the monster's clock. The fix is
+  // a smaller pool AND a slower clock, so the threat comes from not knowing
+  // rather than from waiting. Wrong answers are now 47% of all damage and one
+  // costs about a fifth of the party.
+  START_HEARTS: 9,
+  MAX_HEARTS: 14,
 
   // --- combat ---
   // v5.0: a 2-HP monster died before its first turn arrived, so it never got
@@ -49,17 +52,19 @@ const CONFIG = {
   SHOP_LAST_DEPTH: 0.92,
 
   // --- difficulty tiers: damage taken on a wrong answer ---
-  TIER_DAMAGE: { 1: 1, 2: 1, 3: 2, 4: 2 },   // tier 4 = the Elite bank
+  // Hard questions now bite properly. Vocabulary still costs one heart; a
+  // grammar or Elite question costs three of nine.
+  TIER_DAMAGE: { 1: 1, 2: 1, 3: 3, 4: 3 },   // tier 4 = the Elite bank
 
   // --- survivability (tuned with tools/../sim: at 100% accuracy the party
   //     almost always survives; at 80% roughly 4 runs in 10 end in a wipe) ---
   // v4.3: shields NO LONGER refill in every room. They persist, and are only
   // topped up at a Rest room or Safe Path, by a potion, or by shopping. That
   // is what makes armour worth carrying. Lower this for a harder game.
-  REST_SHIELDS: 10,          // campfire "Repair"
-  REST_HEAL: 6,              // campfire "Mend"
+  REST_SHIELDS: 7,           // campfire "Repair"
+  REST_HEAL: 5,              // campfire "Mend"
   SHARPEN_HEARTS: 1,         // campfire "Sharpen" - permanent max hearts this run
-  BOSS_CADENCE: 3,           // boss acts every N student turns (v4.1: was 4)
+  BOSS_CADENCE: 4,           // boss acts every N student turns
 
   // --- monster behaviour ---
   VARIANT_CHANCE: 0.30,      // chance a regular monster is a tinted variant

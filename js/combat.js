@@ -186,6 +186,7 @@ function tickMonsterClock(m) {
 // ---------------------------------------------------------------------------
 function playerDamageAgainst(m) {
   const run = STATE.run;
+  if (!run || !m) return 0;
   if (run.debuff === "chill") return 0;
   if (m.guarding) return 0;
   if (m.isElite && !m.isBoss && hasRelic("giant_slayer")) return 2;

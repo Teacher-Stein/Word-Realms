@@ -442,9 +442,39 @@ function renderTopHud(prefix) {
   const rl = document.getElementById(`${prefix}-relics`);
   if (rl) rl.textContent = run.relics.length
     ? run.relics.map(r => r.name).join(" · ") : "No relics yet";
+  renderRelicStrip(prefix);
   // the HUD is redrawn after every state change, so this is the one place
   // that reliably keeps the hero's status chips honest
   refreshStatus();
+}
+
+// ---------------------------------------------------------------------------
+// The relic bar.
+//
+// Relics were only listed as text on the map screen, so a party fighting with
+// a Lucky Charm - which the Wordsmith hands out at the start of every run -
+// had no way of knowing it was there. They now sit as icons across the top of
+// every in-run screen, the way Slay the Spire does it.
+// ---------------------------------------------------------------------------
+function renderRelicStrip(prefix) {
+  const el = document.getElementById(`${prefix}-relic-strip`);
+  const run = STATE.run;
+  if (!el || !run) return;
+  const gear = [run.weapon, run.armour].filter(Boolean).map(gearById).filter(Boolean);
+  const items = gear.concat(run.relics.map(r => relicById(r.id) || r));
+  el.innerHTML = "";
+  if (!items.length) {
+    el.innerHTML = '<span class="relic-none">No relics yet</span>';
+    return;
+  }
+  items.forEach(item => {
+    const d = document.createElement("div");
+    d.className = "relic-chip" + (item.rarity ? " r-" + item.rarity : "") +
+                  (item.slot ? " gear" : "");
+    d.innerHTML = `<img src="${item.icon}" alt=""><span class="relic-tip">
+      <b>${escapeHtml(item.name)}</b>${escapeHtml(item.effect || "")}</span>`;
+    el.appendChild(d);
+  });
 }
 
 function renderStudentChips() {
@@ -835,7 +865,7 @@ function renderPotionBadge(prefix) {
 
 // Every sprite in the game is displayed at the same pixel scale, so the whole
 // cast shares one pixel size. Sizes come from the PNG's natural width.
-const SPRITE_SCALE = 3;      // the scale a classroom TV gets
+const SPRITE_SCALE = 4;      // v5.1: the panel shrank, so the cast grew
 const TALLEST_SPRITE = 152;  // the boss, in true pixels - the worst case
 let STAGE_SCALE = SPRITE_SCALE;
 
@@ -847,7 +877,7 @@ function updateStageScale(corridorId) {
   const c = document.getElementById(corridorId);
   const h = c ? c.clientHeight : 0;
   if (!h) { STAGE_SCALE = SPRITE_SCALE; return STAGE_SCALE; }
-  const usable = h * 0.94 - 110;                // info block + floor margin
+  const usable = h * 0.96 - 104;                // info block + floor margin
   let s = Math.floor((usable / TALLEST_SPRITE) * 2) / 2;   // half-step scales
   STAGE_SCALE = Math.max(1, Math.min(SPRITE_SCALE, s));
   return STAGE_SCALE;
@@ -1141,7 +1171,7 @@ function renderMomentum(prefix) {
     btn.title = mv.blurb;
     btn.innerHTML = `<span class="mv-cost">${cost}</span>
                      <span class="mv-name">${mv.name}</span>
-                     <span class="mv-blurb">${primed ? "Ready" : mv.blurb}</span>`;
+                     <span class="mv-short">${primed ? "READY" : mv.short}</span>`;
     btn.addEventListener("click", () => window.useMomentum(mv.id, prefix));
     moves.appendChild(btn);
   });
