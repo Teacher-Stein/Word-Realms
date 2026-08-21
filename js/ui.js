@@ -453,12 +453,56 @@ function animateSprite(spriteId, cls, ms = 600) {
   setTimeout(() => s.classList.remove(cls), ms);
 }
 
+// ---------------------------------------------------------------------------
+// Painted backdrops.
+//
+// Each realm has three of them and the party works through them as it goes
+// deeper, so a 20-layer map doesn't look the same at the boss as it did at the
+// entrance. When a backdrop is in place the procedural brick walls, ceiling,
+// floor and torches are hidden - the painting supplies all of that - but the
+// animated storm layer stays on top of it.
+// ---------------------------------------------------------------------------
+const BACKDROPS = {
+  1: ["assets/backdrops/realm1_band1.png",
+      "assets/backdrops/realm1_band2.png",
+      "assets/backdrops/realm1_band3.png"],
+};
+
+// How far through the map the party is, 0 at the entrance and 1 at the boss.
+function runDepth() {
+  const run = STATE.run;
+  if (!run || !run.map) return 0;
+  const node = nodeById(run.map, run.currentNodeId);
+  const last = run.map.layerNodeIds.length - 1;
+  if (!node || last <= 0) return 0;
+  return node.layer / last;
+}
+
+function backdropForDepth(realmId, depth) {
+  const set = BACKDROPS[realmId];
+  if (!set) return null;
+  const band = depth >= 0.70 ? 2 : depth >= 0.35 ? 1 : 0;
+  return set[band];
+}
+
+function applyBackdrop(corridor) {
+  if (!corridor || !STATE.run) return;
+  const src = backdropForDepth(STATE.run.realmId, runDepth());
+  if (!src) { corridor.classList.remove("has-backdrop"); return; }
+  corridor.classList.add("has-backdrop");
+  if (corridor.dataset.backdrop !== src) {
+    corridor.dataset.backdrop = src;
+    corridor.style.backgroundImage = `url('${src}')`;
+  }
+}
+
 function applySky(skyElId, skyName) {
   const el = document.getElementById(skyElId);
   if (!el) return;
   // tint the whole corridor with the realm's gradient
   const corridor = el.parentElement;
   if (corridor) corridor.dataset.realmsky = skyName;
+  applyBackdrop(corridor);
   if (el.childElementCount) return;
   if (skyName === "storm") {
     // two full-scene lightning washes, offset so flashes feel irregular
@@ -806,12 +850,16 @@ function clearFoeStage(prefix = "monster") {
 }
 
 // Furniture for the rooms that have no monster in them.
+// Warm timber props for the upper realm, cold steel ones once the party is
+// deep enough to be walking through flooded halls.
 const SCENERY = {
-  rest:     { src: "assets/scenery/bed.png",      cls: "" },
+  rest:     { src: "assets/scenery/bed.png",      deep: "assets/scenery/bed_cool.png",    cls: "" },
   safe:     { src: "assets/scenery/campfire.png", cls: "fire" },
   campfire: { src: "assets/scenery/campfire.png", cls: "fire" },
-  treasure: { src: "assets/scenery/chest.png",    cls: "" },
+  treasure: { src: "assets/scenery/chest.png",    deep: "assets/scenery/chest_cool.png",  cls: "" },
   shop:     { src: "assets/scenery/stall.png",    cls: "" },
+  // Event rooms deliberately have no prop: the Storm Chaser stands where the
+  // scenery would go, and the crates were drawing straight over her.
 };
 
 function showScenery(kind) {
@@ -821,7 +869,7 @@ function showScenery(kind) {
   if (!s) { clearScenery(); return; }
   updateStageScale("corridor");
   el.className = "room-scenery " + s.cls;
-  el.setAttribute("src", s.src);
+  el.setAttribute("src", (s.deep && runDepth() >= 0.70) ? s.deep : s.src);
   const applyWidth = () => {
     if (el.naturalWidth) el.style.width = (el.naturalWidth * STAGE_SCALE) + "px";
   };

@@ -303,6 +303,22 @@ textarea { resize: vertical; line-height: 1.5; }
   97%  { opacity: 0; }
 }
 
+/* A painted backdrop replaces the procedural brickwork entirely. The art is
+   authored at exactly the corridor's proportions (640x234 true pixels), so it
+   is stretched to fill rather than cropped - nothing is ever cut off. */
+.corridor.has-backdrop {
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+}
+.corridor.has-backdrop .ceiling,
+.corridor.has-backdrop .floor,
+.corridor.has-backdrop .wallseg,
+.corridor.has-backdrop .torch { display: none; }
+.corridor.has-backdrop::before,
+.corridor.has-backdrop::after { display: none; }
+
 .corridor .ceiling, .corridor .floor, .corridor .wallseg {
   position: absolute; background-repeat: repeat; image-rendering: pixelated;
 }
@@ -671,13 +687,14 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
   position: absolute; bottom: 19%; z-index: 3;
   display: flex; flex-direction: column; align-items: center; gap: 8px;
 }
-.hero-side { left: 23%; transform: translateX(-50%); }
-/* The foe stands a little further back than the hero so its info block -
-   nameplate, HP and intent - has room to sit UNDERNEATH it without running
-   off the bottom of the corridor. */
-.foe-side  { left: 70%; transform: translateX(-50%); bottom: 6%; }
-.foe-side.tall { bottom: 6%; }
-.foe-side.huge { bottom: 5%; }
+/* Both fighters stand on the painted backdrop's floor line, about 15% up from
+   the bottom of the corridor. The foe sits lower in the box because its info
+   block - nameplate, HP and intent - hangs below it into the dark foreground
+   strip, which is empty by design in all three backdrops. */
+.hero-side { left: 23%; transform: translateX(-50%); bottom: 15%; }
+.foe-side  { left: 70%; transform: translateX(-50%); bottom: 2%; }
+.foe-side.tall { bottom: 2%; }
+.foe-side.huge { bottom: 2%; }
 
 /* nameplate + HP + intent, in flow directly below the sprite. Keeping the
    block in flow (rather than absolutely positioned) means the sprite is
@@ -754,7 +771,7 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
    Non-combat rooms used to be an empty corridor with the last monster's
    nameplate still hanging in the air. Each now gets its own furniture. */
 .room-scenery {
-  position: absolute; left: 68%; bottom: 17%; z-index: 3;
+  position: absolute; left: 62%; bottom: 15%; z-index: 3;
   transform: translateX(-50%); image-rendering: pixelated;
   filter: drop-shadow(0 12px 22px rgba(0,0,0,.65));
   animation: sceneryArrive .5s ease;

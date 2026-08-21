@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 4.1 — classroom edition.** Realm 1 (Unit 1, Extreme Weather) is
+class. **Version 4.2 — classroom edition.** Realm 1 (Unit 1, Extreme Weather) is
 fully playable; Realms 2–9 appear as locked placeholders using the correct
 themes from the school syllabus.
 
@@ -22,6 +22,26 @@ once the page has loaded.
 If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
+
+## What's new in v4.2 (painted art)
+
+**Painted backdrops, three per realm.** The party works through The Outer
+Ruins, then The Flooded Halls, then The Eye of the Storm as it goes deeper, so
+a 20-layer map no longer looks the same at the boss as it did at the entrance.
+The procedural brick walls and torches are retired wherever a backdrop exists;
+the animated storm and lightning still play over the top of it.
+
+**Hand-drawn room furniture.** Bed, campfire, treasure chest, supply crates and
+the Storm Pedlar's stall, each with a warm timber version for the upper realm
+and a cold steel one for the flooded depths.
+
+**Everything shares one palette.** New art is quantised into the same 57
+colours the monster and hero cast already use, so the furniture, the backdrops
+and the monsters read as one game rather than three.
+
+**Both fighters now stand on the painted floor,** lower down the screen, with
+the monster's nameplate, health and intent hanging into the dark foreground
+strip below them.
 
 ## What's new in v4.1 (playtest fixes)
 
@@ -280,11 +300,13 @@ js/ui.js              Rendering (map, HUD, popups, tiles, shop)
 js/main.js            Game flow, combat, animation sequencing
 assets/sprites/       Original monster/NPC pixel art
 assets/nodes/         Room icons (incl. shop), lantern totem, footprints
-assets/scenery/       Bed, campfire, chest and market stall for the rooms
+assets/scenery/       Bed, campfire, chest, crates and market stall
+assets/backdrops/     Painted scenes, three per realm, by map depth
 assets/items/         Relic, potion, gear and enchantment icons
 assets/heroes/        Hero sprites
 assets/tiles/         Dungeon wall/floor/torch tiles
-tools/gen_*.py        Scripts that regenerate the art (Python + Pillow)
+tools/gen_*.py        Scripts that regenerate the procedural art
+spritework/           Pipeline that cleans and palette-matches generated art
 data/units.json       Extracted syllabus data for all 9 units (reference)
 ```
 
