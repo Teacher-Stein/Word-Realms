@@ -42,6 +42,7 @@ function makeMonster(base, isElite, isBoss = false) {
 
   let cadence = base.cadence || 3;
   if (variant) cadence = Math.max(1, cadence + variant.cadenceBonus);
+  if (hasRelic("oracle_eye")) cadence += 1;     // more warning, same number of questions
 
   return {
     base,
@@ -187,7 +188,7 @@ function playerDamageAgainst(m) {
   const run = STATE.run;
   if (run.debuff === "chill") return 0;
   if (m.guarding) return 0;
-  if ((m.isElite || m.isBoss) && hasRelic("giant_slayer")) return 2;
+  if (m.isElite && !m.isBoss && hasRelic("giant_slayer")) return 2;
   return 1;
 }
 
@@ -231,6 +232,20 @@ function wrongAnswerDamage(q) {
   let dmg = CONFIG.TIER_DAMAGE[tier] || 1;
   if (run.debuff === "expose") dmg += 1;
   return dmg;
+}
+
+// The voice a monster answers in. Variants shift the pitch so a Frenzied
+// Wyrm doesn't sound identical to an Ancient one.
+function monsterVoice(m) {
+  if (!m || !m.base) return null;
+  const mult = m.variant
+    ? (m.variant.id === "frenzied" ? 1.22 : m.variant.id === "ancient" ? 0.82 : 1.12)
+    : 1;
+  return {
+    voice: m.base.voice,
+    pitch: (m.base.pitch || 220) * mult,
+    size: m.isElite ? Math.min(1, (m.base.size || 0.5) + 0.1) : m.base.size,
+  };
 }
 
 function clearDebuff() {

@@ -199,6 +199,99 @@ const SFX = (() => {
       tone(1046, 0.10, 0.24, "square", 0.28);
       tone(1318, 0.20, 0.24, "triangle", 0.16);
     },
+
+    // Rolling thunder, fired with the big lightning strike. The crack comes
+    // first and the rumble runs on underneath it for the best part of a second.
+    thunder() {
+      noise(0,    0.09, 0.34, "highpass", 2600, 1400, 0.7);  // the crack
+      noise(0.03, 0.95, 0.42, "lowpass",  520,  70,  0.4);   // the roll
+      noise(0.30, 0.80, 0.24, "lowpass",  300,  55,  0.4);
+      thump(0.02, 0.85, 74, 26, 0.55);
+      thump(0.34, 0.70, 58, 22, 0.32);
+    },
+
+    // ----------------------------------------------------------------------
+    // MONSTER CRIES
+    //
+    // Every monster announces itself, the way they do in Pokémon. Rather than
+    // 17 hand-written sounds, each monster names a VOICE and a PITCH: the
+    // voice decides the character, the pitch makes it that particular
+    // creature. Dying replays the same cry lower and slower.
+    // ----------------------------------------------------------------------
+    monsterCry(base, dying = false) {
+      if (!enabled || !base) return;
+      const voice = base.voice || "growl";
+      const p = (base.pitch || 220) * (dying ? 0.62 : 1);
+      const size = base.size == null ? 0.5 : base.size;   // 0 small, 1 huge
+      const len = (dying ? 1.35 : 1) * (0.72 + size * 0.55);
+      const g = 0.20 + size * 0.16;
+
+      switch (voice) {
+        case "growl":                                    // wyrms, brutes
+          tone(p,        0,     0.30 * len, "sawtooth", g,        p * 0.55);
+          tone(p * 0.72, 0.13,  0.36 * len, "square",   g * 0.7,  p * 0.42);
+          noise(0, 0.34 * len, 0.20, "lowpass", 700, 130);
+          thump(0.01, 0.34 * len, p * 0.7, p * 0.32, 0.42 + size * 0.3);
+          break;
+
+        case "shriek":                                   // crows, sirens
+          tone(p * 1.5,  0,     0.11 * len, "square",   g * 0.9,  p * 2.2);
+          tone(p * 2.2,  0.09,  0.20 * len, "sawtooth", g * 0.75, p * 1.1);
+          noise(0.02, 0.16 * len, 0.16, "bandpass", p * 3, p * 1.4, 4);
+          break;
+
+        case "glass":                                    // wisps, frost
+          tone(p * 2,    0,     0.16 * len, "sine",     g * 0.8);
+          tone(p * 3,    0.07,  0.22 * len, "sine",     g * 0.5);
+          tone(p * 4.5,  0.14,  0.26 * len, "triangle", g * 0.28);
+          noise(0.03, 0.22 * len, 0.10, "highpass", 4200, 2600, 2);
+          break;
+
+        case "whoosh":                                   // djinn, gales
+          noise(0,    0.30 * len, 0.34, "bandpass", 420, 2400, 0.9);
+          noise(0.14, 0.28 * len, 0.24, "bandpass", 1900, 500, 1.2);
+          tone(p * 0.8, 0.05, 0.24 * len, "sawtooth", g * 0.45, p * 1.3);
+          break;
+
+        case "crunch":                                   // hailstone, titans
+          noise(0,    0.13 * len, 0.40, "lowpass", 1500, 260, 0.8);
+          noise(0.10, 0.20 * len, 0.28, "lowpass", 900, 150);
+          tone(p * 0.6, 0.02, 0.26 * len, "square", g * 0.8, p * 0.3);
+          thump(0.0, 0.34 * len, p * 0.55, p * 0.22, 0.5 + size * 0.3);
+          break;
+
+        case "gurgle":                                   // flood serpent
+          tone(p,       0,     0.20 * len, "sine",     g * 0.7,  p * 1.6);
+          tone(p * 1.4, 0.11,  0.20 * len, "sine",     g * 0.6,  p * 0.7);
+          noise(0.02, 0.28 * len, 0.18, "lowpass", 900, 300, 3);
+          break;
+
+        case "rasp":                                     // drought husk
+          noise(0,    0.24 * len, 0.30, "bandpass", 1500, 700, 1.6);
+          tone(p * 0.9, 0.04, 0.24 * len, "sawtooth", g * 0.5, p * 0.6);
+          noise(0.18, 0.20 * len, 0.18, "bandpass", 900, 420, 2);
+          break;
+
+        case "bell":                                     // ice storm herald
+          tone(p * 2,   0,     0.42 * len, "sine",     g * 0.7);
+          tone(p * 3,   0.01,  0.34 * len, "sine",     g * 0.34);
+          tone(p * 0.5, 0.05,  0.44 * len, "triangle", g * 0.5);
+          break;
+
+        case "wail":                                     // siren of the gale
+          tone(p,       0,     0.40 * len, "sawtooth", g * 0.7, p * 1.9);
+          tone(p * 1.5, 0.16,  0.40 * len, "sawtooth", g * 0.5, p * 0.8);
+          noise(0.05, 0.34 * len, 0.12, "bandpass", p * 4, p * 2, 3);
+          break;
+
+        case "roar":                                     // bosses
+        default:
+          tone(p * 0.55, 0,    0.90 * len, "sawtooth", g + 0.1, p * 0.3);
+          tone(p * 0.85, 0.06, 0.80 * len, "square",   g * 0.6, p * 0.42);
+          noise(0, 0.95 * len, 0.30, "lowpass", 720, 110);
+          thump(0.0, 0.9 * len, p * 0.5, p * 0.2, 0.75);
+      }
+    },
   };
 })();
 

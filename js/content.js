@@ -182,11 +182,142 @@ const REALM1_QUESTIONS = [
     answer:"sound", choices:["sound","sounded","will sound"] },
 ];
 
+
+// ---------------------------------------------------------------------------
+// TIER 4 - THE ELITE BANK
+//
+// Everything above tests whether a student can recognise the language. These
+// test whether they can USE it: correct a mistake, reason in two steps, turn
+// one form into another, or work out which word a situation calls for.
+//
+// Only Elites and the Boss draw from this bank, so a normal Fight room stays
+// within reach of the whole class while an Elite is a genuine step up. A wrong
+// answer here costs 2 hearts and a right one pays the most shards in the game.
+// ---------------------------------------------------------------------------
+const REALM1_ELITE_QUESTIONS = [
+  // ---------------- correct the mistake ----------------
+  { cover:"g2-form", tier:4, type:"fix it", clue:"One part is wrong: 'If it will rain tomorrow, we stay inside.'",
+    answer:"'will rain' should be 'rains'", choices:["'will rain' should be 'rains'","'stay' should be 'will stay'","'If' should be 'When'"] },
+
+  { cover:"g1-negative", tier:4, type:"fix it", clue:"One part is wrong: 'They aren't go to check the shelter.'",
+    answer:"'go' should be 'going'", choices:["'go' should be 'going'","'aren't' should be 'don't'","'check' should be 'checking'"] },
+
+  { cover:"g2-verb", tier:4, type:"fix it", clue:"One part is wrong: 'If the temperature drop below zero, water freezes.'",
+    answer:"'drop' should be 'drops'", choices:["'drop' should be 'drops'","'freezes' should be 'freeze'","'If' should be 'Because'"] },
+
+  { cover:"g1-question", tier:4, type:"fix it", clue:"One part is wrong: 'Is they going to warn the town?'",
+    answer:"'Is' should be 'Are'", choices:["'Is' should be 'Are'","'going' should be 'go'","'warn' should be 'warning'"] },
+
+  { cover:"g1-statement", tier:4, type:"fix it", clue:"One word is missing: 'We ___ going to pack supplies tonight.'",
+    answer:"are", choices:["are","will","do"] },
+
+  // ---------------- two-step reasoning ----------------
+  { cover:"ice storm", tier:4, type:"reason", clue:"It rains all evening, then the temperature falls below zero overnight. What will cover the roads by morning?",
+    answer:"a layer of ice", choices:["a layer of ice","deep sand","thick smoke"] },
+
+  { cover:"flood", tier:4, type:"reason", clue:"Four days of heavy rain, and then the river bursts its banks into the town. What is the town facing?",
+    answer:"a flood", choices:["a flood","a drought","a heat wave"] },
+
+  { cover:"drought", tier:4, type:"reason", clue:"No rain has fallen for three months and the crops have died in the fields. What is the farmer facing?",
+    answer:"a drought", choices:["a drought","a blizzard","a flood"] },
+
+  { cover:"range", tier:4, type:"reason", clue:"The coldest hour today was 12 degrees and the warmest was 30. What was the temperature range?",
+    answer:"18 degrees", choices:["18 degrees","30 degrees","42 degrees"] },
+
+  { cover:"drop", tier:4, type:"reason", clue:"At six o'clock it was 4 degrees. By midnight it was minus two. What did the temperature do?",
+    answer:"it dropped", choices:["it dropped","it rose","it stayed the same"] },
+
+  { cover:"rise", tier:4, type:"reason", clue:"At dawn it was 22 degrees. By noon it was 38. What did the temperature do?",
+    answer:"it rose", choices:["it rose","it dropped","it froze"] },
+
+  { cover:"speed", tier:4, type:"reason", clue:"An instrument measures how fast the air is moving past it. What is it measuring?",
+    answer:"wind speed", choices:["wind speed","the temperature range","the rainfall"] },
+
+  { cover:"shelter", tier:4, type:"reason", clue:"The sirens sound and a funnel cloud is coming. Where should the family go FIRST?",
+    answer:"to the storm shelter", choices:["to the storm shelter","up onto the roof","out to the car"] },
+
+  // ---------------- odd one out ----------------
+  { cover:"heat wave", tier:4, type:"apply", clue:"Which of these would NOT happen during a heat wave?",
+    answer:"the roads freeze over", choices:["the roads freeze over","people stay indoors","the city opens cool rooms"] },
+
+  { cover:"blizzard", tier:4, type:"apply", clue:"Which of these would you NOT need in a blizzard?",
+    answer:"a sun hat", choices:["a sun hat","a warm coat","a flashlight"] },
+
+  { cover:"supplies", tier:4, type:"apply", clue:"Which of these is NOT emergency supplies?",
+    answer:"a birthday cake", choices:["a birthday cake","bottled water","spare batteries"] },
+
+  { cover:"emergency", tier:4, type:"apply", clue:"Which of these is NOT an emergency?",
+    answer:"choosing what to wear", choices:["choosing what to wear","a fire in the kitchen","a flood in the street"] },
+
+  { cover:"instruments", tier:4, type:"apply", clue:"Which one does NOT measure the weather?",
+    answer:"a compass", choices:["a compass","a thermometer","a wind gauge"] },
+
+  // ---------------- transformation ----------------
+  { cover:"g1-statement", tier:4, type:"apply", clue:"Say this as a plan for the future: 'We check the shelter.'",
+    answer:"We are going to check the shelter.", choices:["We are going to check the shelter.","We checked the shelter.","We are checking the shelter now."] },
+
+  { cover:"g1-question", tier:4, type:"apply", clue:"Turn this into a question: 'They are going to warn the town.'",
+    answer:"Are they going to warn the town?", choices:["Are they going to warn the town?","Do they going to warn the town?","They are going to warn the town?"] },
+
+  { cover:"g1-negative", tier:4, type:"apply", clue:"Make this negative: 'It is going to snow tonight.'",
+    answer:"It isn't going to snow tonight.", choices:["It isn't going to snow tonight.","It doesn't going to snow tonight.","It is going to not snow tonight."] },
+
+  { cover:"g2-meaning", tier:4, type:"apply", clue:"Which sentence means the same as 'Ice melts whenever you heat it'?",
+    answer:"If you heat ice, it melts.", choices:["If you heat ice, it melts.","If you heated ice, it melted.","If you will heat ice, it will melt."] },
+
+  // ---------------- inference from a scene ----------------
+  { cover:"tornado", tier:4, type:"reason", clue:"The sky turned green, the wind fell silent, and a dark spinning column dropped from the cloud toward the fields. What did they see?",
+    answer:"a tornado", choices:["a tornado","a heat wave","an ice storm"] },
+
+  { cover:"hurricane", tier:4, type:"reason", clue:"The wind screamed for hours, then everything went calm and the sun came out — twenty minutes later the wind returned from the opposite direction. What passed over them?",
+    answer:"the eye of a hurricane", choices:["the eye of a hurricane","a sandstorm","a drought"] },
+
+  { cover:"sandstorm", tier:4, type:"reason", clue:"Ali could not see the end of his street, grit stung his eyes, and he shut every window in the house. What was happening outside?",
+    answer:"a sandstorm", choices:["a sandstorm","a flood","a blizzard"] },
+
+  { cover:"twisted", tier:4, type:"reason", clue:"After the storm, the metal gate was found bent round into a spiral. Which word describes the gate?",
+    answer:"twisted", choices:["twisted","warned","dropped"] },
+
+  { cover:"funnel", tier:4, type:"reason", clue:"A cloud reached down toward the ground, wide at the top and narrow at the bottom. What shape was it?",
+    answer:"a funnel", choices:["a funnel","a range","a shelter"] },
+
+  { cover:"flashlight", tier:4, type:"reason", clue:"The power is out, the phone battery is dead, and the stairs are pitch dark. Which item from the kit helps most?",
+    answer:"a flashlight", choices:["a flashlight","a thermometer","a map"] },
+
+  { cover:"thunder", tier:4, type:"reason", clue:"You see the flash first and hear the noise several seconds later. Why does the sound arrive after the light?",
+    answer:"sound travels more slowly than light", choices:["sound travels more slowly than light","the thunder happens afterwards","the lightning is much closer"] },
+
+  // ---------------- word work ----------------
+  { cover:"warn", tier:4, type:"apply", clue:"'Warn' is the verb. What do you call the message that does the warning?",
+    answer:"a warning", choices:["a warning","a warner","a warned"] },
+
+  { cover:"plan", tier:4, type:"apply", clue:"In the sentence 'We plan to leave early', the word 'plan' is being used as a...",
+    answer:"verb", choices:["verb","noun","adjective"] },
+
+  { cover:"phonics-theta", tier:4, type:"phonics", clue:"Which pair BOTH use the breathy /θ/ sound?",
+    answer:"thunder and thirsty", choices:["thunder and thirsty","these and those","weather and mother"] },
+
+  { cover:"phonics-eth", tier:4, type:"phonics", clue:"Which pair BOTH use the buzzy /ð/ sound?",
+    answer:"weather and those", choices:["weather and those","thanks and think","birthday and thermometer"] },
+
+  { cover:"lightning", tier:4, type:"reason", clue:"Why is standing under the tallest tree in an open field dangerous in a storm?",
+    answer:"lightning strikes the tallest thing nearby", choices:["lightning strikes the tallest thing nearby","the tree blocks the warning sirens","trees make thunder louder"] },
+
+  { cover:"tropical storm", tier:4, type:"reason", clue:"A storm forms over warm ocean water, grows as it crosses the sea, and weakens once it reaches land. Which storm is it?",
+    answer:"a tropical storm", choices:["a tropical storm","a sandstorm","a heat wave"] },
+];
+
 // distinct curriculum items this realm must cover before it can be cleared
 const REALM1_COVER_KEYS = [...new Set(REALM1_QUESTIONS.map(q => q.cover))];
 
-function questionsForCover(cover) {
-  return REALM1_QUESTIONS.filter(q => q.cover === cover);
+// Both banks answer to a cover key. The boss prefers the harder version when
+// one exists, so the finale tests understanding rather than recall - without
+// changing which curriculum items it sweeps.
+function questionsForCover(cover, preferElite = false) {
+  const basic = REALM1_QUESTIONS.filter(q => q.cover === cover);
+  const elite = REALM1_ELITE_QUESTIONS.filter(q => q.cover === cover);
+  if (preferElite && elite.length) return elite;
+  return basic;
 }
 
 // ---------------------------------------------------------------------------
@@ -208,71 +339,87 @@ function questionsForCover(cover) {
 // ---------------------------------------------------------------------------
 const REALM1_MONSTERS = [
   { id:"wyrm",    name:"Thunderclap Wyrm",  sprite:"assets/sprites/wyrm.png",
+    voice:"growl", pitch:104, size:0.72,
     taunt:"A Thunderclap Wyrm rolls out of the clouds!",
     attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:1,shards:6}], special:null, cadence:2 },
 
   { id:"wisp",    name:"Blizzard Wisp",     sprite:"assets/sprites/wisp.png",
+    voice:"glass", pitch:246, size:0.28,
     taunt:"A Blizzard Wisp drifts into your path!",
     attacks:[{kind:"hit",dmg:1},{kind:"flurry",dmg:1,hits:2}], special:"chill", cadence:2 },
 
   { id:"djinn",   name:"Sandstorm Djinn",   sprite:"assets/sprites/djinn.png",
+    voice:"whoosh", pitch:165, size:0.55,
     taunt:"A Sandstorm Djinn whirls up from the dust!",
     attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:1,shards:8}], special:"expose", cadence:2 },
 
   { id:"funnel",  name:"Funnel Sprite",     sprite:"assets/sprites/funnel.png",
+    voice:"shriek", pitch:330, size:0.34,
     taunt:"A Funnel Sprite spins in, cackling!",
     attacks:[{kind:"hit",dmg:1},{kind:"flurry",dmg:1,hits:2}], special:null, cadence:2 },
 
   { id:"brute",   name:"Hailstone Brute",   sprite:"assets/sprites/brute.png",
+    voice:"crunch", pitch:116, size:0.70,
     taunt:"A Hailstone Brute blocks the corridor!",
     attacks:[{kind:"heavy",dmg:2},{kind:"guard"}], special:null, cadence:2 },
 
   { id:"fang",    name:"Frost Fang",        sprite:"assets/sprites/fang.png",
+    voice:"glass", pitch:196, size:0.40,
     taunt:"A Frost Fang bares its teeth!",
     attacks:[{kind:"hit",dmg:1},{kind:"heavy",dmg:2}], special:"freeze", cadence:2 },
 
   { id:"serpent", name:"Flood Serpent",     sprite:"assets/sprites/serpent.png",
+    voice:"gurgle", pitch:147, size:0.58,
     taunt:"A Flood Serpent surges out of the water!",
     attacks:[{kind:"hit",dmg:1},{kind:"regen"}], special:null, cadence:2 },
 
   { id:"husk",    name:"Drought Husk",      sprite:"assets/sprites/husk.png",
+    voice:"rasp", pitch:131, size:0.48,
     taunt:"A Drought Husk drags itself upright!",
     attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:0,shards:10}], special:"expose", cadence:2 },
 
   { id:"shimmer", name:"Heatwave Shimmer",  sprite:"assets/sprites/shimmer.png",
+    voice:"wail", pitch:262, size:0.36,
     taunt:"A Heatwave Shimmer burns the air ahead!",
     attacks:[{kind:"hit",dmg:1},{kind:"charge",dmg:3,turns:2}], special:null, cadence:2 },
 
   { id:"crow",    name:"Tempest Crow",      sprite:"assets/sprites/crow.png",
+    voice:"shriek", pitch:392, size:0.30,
     taunt:"A Tempest Crow shrieks down from the rafters!",
     attacks:[{kind:"flurry",dmg:1,hits:2},{kind:"hit",dmg:1}], special:null, cadence:2 },
 
   { id:"herald",  name:"Ice Storm Herald",  sprite:"assets/sprites/herald.png",
+    voice:"bell", pitch:175, size:0.62,
     taunt:"An Ice Storm Herald raises its frozen blade!",
     attacks:[{kind:"heavy",dmg:2},{kind:"guard"}], special:"chill", cadence:2 },
 
   { id:"siren",   name:"Siren of the Gale", sprite:"assets/sprites/siren.png",
+    voice:"wail", pitch:294, size:0.44,
     taunt:"The Siren of the Gale begins to shriek!",
     attacks:[{kind:"hit",dmg:1},{kind:"charge",dmg:3,turns:2}], special:"freeze", cadence:2 },
 ];
 
 const REALM1_ELITES = [
   { id:"warden",     name:"Tempest Warden",   sprite:"assets/sprites/warden.png",
+    voice:"growl", pitch:92, size:0.86,
     taunt:"The Tempest Warden bars the way. This will be a long fight!",
     attacks:[{kind:"heavy",dmg:2},{kind:"guard"},{kind:"charge",dmg:3,turns:2}],
     special:"expose", cadence:2 },
 
   { id:"colossus",   name:"Thunder Colossus", sprite:"assets/sprites/colossus.png",
+    voice:"crunch", pitch:87, size:0.92,
     taunt:"A Thunder Colossus stomps forward. Stand ready!",
     attacks:[{kind:"heavy",dmg:2},{kind:"flurry",dmg:1,hits:3}],
     special:null, cadence:2 },
 
   { id:"eyewalker",  name:"The Eye-Walker",   sprite:"assets/sprites/eyewalker.png",
+    voice:"whoosh", pitch:139, size:0.80,
     taunt:"The Eye-Walker drifts from the calm. It is far too quiet.",
     attacks:[{kind:"drain",dmg:1,shards:14},{kind:"regen"},{kind:"heavy",dmg:2}],
     special:"freeze", cadence:2 },
 
   { id:"permafrost", name:"Permafrost Titan", sprite:"assets/sprites/permafrost.png",
+    voice:"crunch", pitch:78, size:0.94,
     taunt:"The Permafrost Titan cracks the floor with every step!",
     attacks:[{kind:"heavy",dmg:2},{kind:"charge",dmg:4,turns:2},{kind:"guard"}],
     special:"chill", cadence:2 },
@@ -296,12 +443,14 @@ const REALMS = {
     monsters: REALM1_MONSTERS,
     elites: REALM1_ELITES,
     boss: { id:"titan", name:"The Hurricane Titan", sprite:"assets/sprites/titan.png",
+    voice:"roar", pitch:73, size:1.00,
             taunt:"THE HURRICANE TITAN RISES!",
             attacks:[{kind:"heavy",dmg:2},{kind:"flurry",dmg:1,hits:3},
                      {kind:"charge",dmg:4,turns:2},{kind:"drain",dmg:1,shards:12}],
             special:"expose", cadence:2 },
     npc: { name:"The Storm Chaser", sprite:"assets/sprites/chaser.png" },
     questions: REALM1_QUESTIONS,
+    eliteQuestions: REALM1_ELITE_QUESTIONS,
     coverKeys: REALM1_COVER_KEYS,
     ready: true,
   },

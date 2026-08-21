@@ -432,3 +432,70 @@ for f in (keen_edge, riposte_ring, giant_slayer, stone_heart, aegis_charm,
           frost_etch, greed_etch, ward_etch, thorn_etch):
     f()
 print("Build A item art complete.")
+
+# ------------------------------------------------------- EPIC RELICS (v4.3)
+def storm_crown():
+    img, d = _base((199, 125, 255, 80))
+    P = ramp((214, 178, 80))          # gold
+    V = ramp((170, 120, 240))         # epic violet gem
+    # crown band
+    d.rectangle([10, 30, 38, 40], fill=P["base"], outline=P["outline"])
+    d.rectangle([10, 30, 38, 33], fill=P["hi"])
+    d.rectangle([10, 38, 38, 40], fill=P["deep"])
+    # five points
+    for x0, x1, tip in ((10, 17, 16), (17, 24, 10), (24, 31, 14), (31, 38, 20)):
+        d.polygon([(x0, 31), (x1, 31), ((x0 + x1) // 2, tip)],
+                  fill=P["base"], outline=P["outline"])
+    # gems along the band
+    for gx in (16, 24, 32):
+        d.ellipse([gx - 3, 33, gx + 3, 38], fill=V["base"], outline=P["outline"])
+        d.ellipse([gx - 2, 34, gx, 36], fill=V["hi"])
+    # a struck spark above the centre point
+    d.line([(24, 8), (22, 4)], fill=(255, 255, 255, 220), width=2)
+    d.line([(24, 8), (27, 5)], fill=(255, 246, 198, 200), width=1)
+    save(img, "storm_crown.png")
+
+def oracle_eye():
+    img, d = _base((199, 125, 255, 80))
+    P = ramp((150, 120, 200))
+    I = ramp((120, 200, 240))         # iris
+    # almond eye
+    d.polygon([(4, 24), (24, 11), (44, 24), (24, 37)],
+              fill=(232, 226, 246, 255), outline=P["outline"])
+    d.polygon([(8, 24), (24, 14), (40, 24), (24, 34)], fill=(255, 255, 255, 255))
+    # iris and pupil
+    d.ellipse([16, 16, 32, 32], fill=I["base"], outline=P["outline"])
+    d.ellipse([18, 18, 26, 26], fill=I["light"])
+    d.ellipse([20, 20, 28, 28], fill=(20, 14, 32, 255))
+    d.ellipse([21, 21, 24, 24], fill=(255, 255, 255, 230))
+    # lashes / rays, so it reads as arcane rather than anatomical
+    for dx, dy in ((-16, -10), (0, -14), (16, -10), (-16, 10), (0, 14), (16, 10)):
+        d.line([(24 + dx * 0.62, 24 + dy * 0.62), (24 + dx, 24 + dy)],
+               fill=P["hi"], width=2)
+    save(img, "oracle_eye.png")
+
+for f in (storm_crown, oracle_eye):
+    f()
+print("v4.3 epic icons complete.")
+
+def potion_patch():
+    img, d = _base((150, 200, 240, 55))
+    P = ramp((150, 120, 90))
+    M = ramp((150, 160, 186))
+    # a canvas roll of repair kit, tied with cord
+    d.rectangle([10, 14, 38, 40], fill=P["base"], outline=P["outline"])
+    d.rectangle([10, 14, 38, 19], fill=P["hi"])
+    d.rectangle([10, 36, 38, 40], fill=P["deep"])
+    # tool slots
+    for x in (15, 22, 29):
+        d.rectangle([x, 20, x + 4, 35], fill=P["shade"], outline=P["outline"])
+    # a steel plate and a needle poking out
+    d.polygon([(30, 8), (40, 12), (38, 22), (28, 18)],
+              fill=M["base"], outline=M["outline"])
+    d.polygon([(31, 10), (37, 13), (36, 17)], fill=M["hi"])
+    d.line([(12, 12), (24, 6)], fill=M["hi"], width=2)
+    d.ellipse([10, 10, 15, 15], fill=M["light"], outline=M["outline"])
+    save(img, "potion_patch.png")
+
+potion_patch()
+print("patch kit icon complete.")

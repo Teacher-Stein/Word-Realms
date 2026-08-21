@@ -19,6 +19,7 @@
       <div id="realm-select" class="realm-grid"></div>
       <div class="menu-buttons">
         <button id="btn-roster"  class="pixel-btn small">Class Roster</button>
+        <button id="btn-forge"   class="pixel-btn small">Ember Forge</button>
         <button id="btn-scores"  class="pixel-btn small">Leaderboards</button>
         <button id="btn-teacher" class="pixel-btn small">Teacher Menu</button>
         <button id="btn-howto"   class="pixel-btn small">How To Play</button>
@@ -48,6 +49,22 @@
       <div class="row-buttons">
         <button id="roster-save"  class="pixel-btn">Save Roster</button>
         <button id="roster-close" class="pixel-btn ghost">Back</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== EMBER FORGE ===================== -->
+  <section id="screen-forge" class="screen">
+    <div class="panel-card wide">
+      <h2>The Ember Forge</h2>
+      <p class="shop-intro">Ember is what the storm leaves behind — banked at the
+         end of every run, won or lost. Spend it here and the upgrade is
+         <b>permanent for this class</b>.
+         <span class="shop-purse">Ember: <b id="forge-ember">0</b></span></p>
+      <div class="tile-grid" id="forge-grid"></div>
+      <div class="shop-feedback" id="forge-feedback"></div>
+      <div class="row-buttons">
+        <button id="forge-close" class="pixel-btn">Back</button>
       </div>
     </div>
   </section>
@@ -85,8 +102,17 @@
           <input type="checkbox" id="auto-unlock-toggle">
           Auto-unlock the next realm when this class clears one
         </label>
+        <label class="teacher-row">
+          <input type="checkbox" id="perks-toggle">
+          Ember Forge perks active for this class
+        </label>
+
+        <h3 class="inv-head">Class list <span class="inv-note">— remove a student who has left</span></h3>
+        <div id="teacher-students" class="teacher-student-list"></div>
+
         <div class="danger-zone">
           <button id="btn-reset-run"  class="pixel-btn danger">Reset Current Run</button>
+          <button id="btn-new-term"   class="pixel-btn danger">New Term (keep the class list)</button>
           <button id="btn-factory"    class="pixel-btn danger">Factory Reset (wipe everything)</button>
         </div>
         <div id="confirm-box" class="confirm-box" style="display:none;">
@@ -123,14 +149,34 @@
         <li><b>Brace</b> to defend: you still answer a question, but a correct answer
             blocks the incoming attack instead of damaging the monster, and clears
             any debuff.</li>
-        <li><b>Shields</b> (blue) refresh every room and soak damage before your
-            hearts do. Armour and relics give you more.</li>
+        <li><b>Momentum</b> builds with every correct answer. Spend it on
+            <b>Insight</b> (remove a wrong option), <b>Rouse</b> (double shards
+            on your next hit), <b>Guard</b> (stop 2 damage from the next attack)
+            or <b>Rally</b> (heal a heart). You can't afford everything — that's
+            the point. It halves when you leave a room, so it can't be hoarded.</li>
+        <li>At a <b>Campfire</b> there is time for <b>one</b> thing only: Mend
+            hearts, Repair shields, or Sharpen for a permanent extra heart.</li>
+        <li><b>Shields</b> (blue) soak damage before your hearts do and do NOT
+            come back on their own. Only a Campfire Repair, a Patch Kit or
+            better armour restores them.</li>
+        <li>On the hardest questions you may <b>Commit</b>: answer with the
+            options hidden, out loud, for double shards and bonus Momentum.
+            Nothing in the game ever makes a fight shorter — the questions are
+            the point.</li>
+        <li><b>Elite rooms ask harder questions</b> — they test whether you can
+            use the language, not just recognise it. Wrong costs 2 hearts;
+            right pays the most shards in the game. The Boss asks them too.</li>
+        <li>You can open the pack <b>during a fight</b>. The student still
+            answers their question, but the party doesn't attack that turn.</li>
+        <li>Watch the countdown on the monster's intent — it says how many turns
+            until the blow lands, and turns red on the last one.</li>
         <li><b>Team Up</b> brings in a partner, but the monster recovers HP while
             you confer.</li>
         <li>Three correct answers in a row blocks the next attack; five gives
             shards and a potion.</li>
-        <li><b>Shops</b> appear deeper in the map, once you have shards to spend.
-            <b>Safe Path</b> is where you can drink a potion.</li>
+        <li><b>Shops</b> appear deeper in the map, once you have shards to spend.</li>
+        <li>Between runs, spend banked <b>Ember</b> in the <b>Ember Forge</b> on
+            permanent upgrades for your class. A lost run still buys something.</li>
         <li>The <b>Boss</b> tests everything the class hasn't faced yet.</li>
         <li>Lose all hearts a second time and the run ends - but the party banks
             Ember or keeps a relic for next time.</li>
@@ -258,6 +304,28 @@
         </div>
       </div>
       <div class="q" id="enc-question">—</div>
+      <div class="mo-row" id="enc-mo-row">
+        <div class="mo-meter">
+          <span class="mo-label">Momentum</span>
+          <span class="mo-pips" id="enc-mo-pips"></span>
+        </div>
+        <div class="mo-moves" id="enc-mo-moves"></div>
+      </div>
+      <div class="commit-gate" id="enc-commit-gate" style="display:none;">
+        <div class="cg-text">This one is worth <b>double</b>. Take it with the options hidden?</div>
+        <div class="cg-buttons">
+          <button class="pixel-btn cg-go" data-side="enc">Commit — no options</button>
+          <button class="pixel-btn ghost cg-safe" data-side="enc">Show me the options</button>
+        </div>
+      </div>
+      <div class="commit-say" id="enc-commit-say" style="display:none;">
+        <div class="cs-title">Say the answer out loud.</div>
+        <div class="cs-sub">The class decides. No options, double reward.</div>
+        <div class="cs-buttons">
+          <button class="pixel-btn cs-yes" data-side="enc">They got it</button>
+          <button class="pixel-btn danger cs-no" data-side="enc">Not quite</button>
+        </div>
+      </div>
       <div class="choices" id="enc-choices"></div>
       <div class="panel-foot">
         <div class="enc-feedback" id="enc-feedback"></div>
@@ -322,9 +390,32 @@
         </div>
       </div>
       <div class="q" id="boss-question">—</div>
+      <div class="mo-row" id="boss-mo-row">
+        <div class="mo-meter">
+          <span class="mo-label">Momentum</span>
+          <span class="mo-pips" id="boss-mo-pips"></span>
+        </div>
+        <div class="mo-moves" id="boss-mo-moves"></div>
+      </div>
+      <div class="commit-gate" id="boss-commit-gate" style="display:none;">
+        <div class="cg-text">This one is worth <b>double</b>. Take it with the options hidden?</div>
+        <div class="cg-buttons">
+          <button class="pixel-btn cg-go" data-side="boss">Commit — no options</button>
+          <button class="pixel-btn ghost cg-safe" data-side="boss">Show me the options</button>
+        </div>
+      </div>
+      <div class="commit-say" id="boss-commit-say" style="display:none;">
+        <div class="cs-title">Say the answer out loud.</div>
+        <div class="cs-sub">The class decides. No options, double reward.</div>
+        <div class="cs-buttons">
+          <button class="pixel-btn cs-yes" data-side="boss">They got it</button>
+          <button class="pixel-btn danger cs-no" data-side="boss">Not quite</button>
+        </div>
+      </div>
       <div class="choices" id="boss-choices"></div>
       <div class="panel-foot">
         <div class="enc-feedback" id="boss-feedback"></div>
+        <button id="btn-use-item-boss" class="pixel-btn tiny" style="display:none;">Use an Item</button>
         <button id="btn-brace-boss" class="pixel-btn tiny brace">Brace</button>
         <button id="btn-teamup-boss" class="pixel-btn tiny teamup">Team Up (+1 boss HP)</button>
       </div>
@@ -398,6 +489,8 @@
 <script src="js/audio.js"></script>
 <script src="js/items.js"></script>
 <script src="js/heroes.js"></script>
+<script src="js/forge.js"></script>
+<script src="js/momentum.js"></script>
 <script src="js/content.js"></script>
 <script src="js/mapgen.js"></script>
 <script src="js/combat.js"></script>

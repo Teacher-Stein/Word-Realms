@@ -16,6 +16,7 @@ function bootstrap() {
   SFX.setVolume(STATE.volume);
   MUSIC.setEnabled(STATE.musicOn);
   MUSIC.setVolume(STATE.volume);
+  armStorm();
 
   if (STATE.run && REALMS[STATE.run.realmId] && REALMS[STATE.run.realmId].ready) {
     // resume mid-realm (e.g. next class period on the same computer)
@@ -87,6 +88,33 @@ $("roster-save").addEventListener("click", () => {
 });
 $("roster-close").addEventListener("click", () => { SFX.click(); showScreen("screen-menu"); renderMenu(); });
 
+// ---- ember forge ----
+$("btn-forge").addEventListener("click", () => {
+  SFX.click(); SFX.unlock(); renderForge(); showScreen("screen-forge");
+});
+$("forge-close").addEventListener("click", () => {
+  SFX.click(); showScreen("screen-menu"); renderMenu();
+});
+window.forgeBuy = function (id) {
+  const res = buyPerk(id);
+  const fb = $("forge-feedback");
+  if (!res.ok) {
+    SFX.wrong();
+    fb.textContent = res.reason === "poor"
+      ? "Not enough Ember for that yet — finish another run."
+      : "The class already has that one.";
+    fb.className = "shop-feedback bad";
+    return;
+  }
+  SFX.relic();
+  showPopup({
+    banner: "FORGED", tone: "good", icon: res.perk.icon,
+    title: res.perk.name, effect: res.perk.effect, desc: res.perk.desc,
+    extra: `Permanent for this class · ${STATE.ember} Ember left`,
+  });
+  renderForge();
+};
+
 // ---- leaderboards ----
 $("btn-scores").addEventListener("click", () => {
   SFX.click(); renderLeaderboards(); showScreen("screen-scores");
@@ -156,6 +184,23 @@ $("btn-reset-run").addEventListener("click", () => {
     showScreen("screen-menu"); renderMenu();
   });
 });
+$("perks-toggle").addEventListener("change", e => {
+  STATE.perksEnabled = e.target.checked; saveState();
+});
+$("btn-new-term").addEventListener("click", () => {
+  SFX.click();
+  askConfirm("Start a new term? The class list is kept. Warrior stats, leaderboards, Ember, Forge upgrades and realm unlocks are all cleared.", () => {
+    newTermReset();
+    showScreen("screen-menu"); renderMenu();
+  });
+});
+window.teacherRemoveStudent = function (name) {
+  SFX.click();
+  askConfirm(`Remove ${name} from the class? Their warrior stats are deleted too.`, () => {
+    removeStudent(name);
+    renderTeacherStudents();
+  });
+};
 $("btn-factory").addEventListener("click", () => {
   SFX.click();
   askConfirm("Factory reset wipes EVERYTHING: roster, warrior stats, leaderboards, Ember and unlocks. This cannot be undone.", () => {
@@ -207,6 +252,10 @@ $("hero-confirm").addEventListener("click", () => {
   // starting kit
   CONFIG.START_POTIONS.forEach(addPotion);
   const granted = hero.grant ? hero.grant(run) : "";
+  const perkNotes = applyRunPerks(run);
+  // The party sets out equipped. Without this they walked into the first
+  // fight on zero shields, because shields now only fill at rest points.
+  refillShields();
   saveState();
 
   nextStudent();
@@ -222,7 +271,8 @@ $("hero-confirm").addEventListener("click", () => {
     title: hero.name,
     effect: hero.perk,
     desc: hero.blurb,
-    extra: granted || "",
+    extra: [granted, perkNotes.length ? "From the Forge: " + perkNotes.join(", ") : ""]
+             .filter(Boolean).join("  ·  "),
   });
 });
 $("hero-cancel").addEventListener("click", () => {
@@ -241,7 +291,7 @@ function afterPopups(fn) {
 function backToMap(advanceTurn = true) {
   if (!STATE.run) return;
   MUSIC.play("explore");
-  if (advanceTurn) nextStudent();
+  if (advanceTurn) { nextStudent(); showTurnCallout(STATE.run.currentStudent); }
   renderTopHud("hud");
   showScreen("screen-map");
   renderMap();
@@ -255,6 +305,7 @@ function backToMap(advanceTurn = true) {
     SFX.click();
     rerollStudent();
     renderStudentChips();
+    showTurnCallout(STATE.run && STATE.run.currentStudent);
   });
 });
 $("btn-recenter").addEventListener("click", () => { SFX.click(); centreOnCurrent(true); });
@@ -311,8 +362,96 @@ window.travelToNode = function (nodeId) {
   });
 };
 
+// ===================== MOMENTUM =====================
+window.useMomentum = function (id, prefix) {
+  const res = spendMomentum(id);
+  const fb = $(prefix === "boss" ? "boss-feedback" : "enc-feedback");
+  if (!res.ok) {
+    SFX.wrong();
+    fb.textContent = res.reason === "already"
+      ? `${res.move.name} is already ready.` : "Not enough Momentum for that.";
+    fb.className = "enc-feedback bad";
+    return;
+  }
+  SFX.unlockChime();
+  fb.textContent = `${res.move.name} — ${res.note}`;
+  fb.className = "enc-feedback good";
+  renderMomentum(prefix);
+  renderTopHud(prefix);
+};
+
+// ===================== COMMIT =====================
+// A hard question may be taken with NO options on screen for double reward.
+// Nothing can mark a spoken answer, so the room adjudicates - which is the
+// point: it turns a silent multiple-choice tap into the whole class listening
+// to one person commit to an answer out loud.
+let _pendingCommit = null;
+
+function commitEls(side) {
+  return {
+    gate:    $(`${side}-commit-gate`),
+    say:     $(`${side}-commit-say`),
+    choices: $(`${side}-choices`),
+  };
+}
+
+function clearCommitUI(side) {
+  const e = commitEls(side);
+  if (e.gate) e.gate.style.display = "none";
+  if (e.say) e.say.style.display = "none";
+  if (e.choices) e.choices.classList.remove("hidden");
+}
+
+function offerCommit(side, q, onSafe, onCommit) {
+  const e = commitEls(side);
+  _pendingCommit = { side, q, onSafe, onCommit };
+  e.choices.classList.add("hidden");
+  e.say.style.display = "none";
+  e.gate.style.display = "";
+}
+
+document.addEventListener("click", ev => {
+  const btn = ev.target.closest(".cg-go, .cg-safe, .cs-yes, .cs-no");
+  if (!btn || !_pendingCommit) return;
+  const side = btn.dataset.side;
+  if (side !== _pendingCommit.side) return;
+  const e = commitEls(side);
+  const P = _pendingCommit;
+
+  if (btn.classList.contains("cg-safe")) {
+    SFX.click();
+    _pendingCommit = null;
+    clearCommitUI(side);
+    P.onSafe();
+    return;
+  }
+  if (btn.classList.contains("cg-go")) {
+    SFX.bossRoar();
+    e.gate.style.display = "none";
+    e.say.style.display = "";
+    showStreakBanner("COMMITTED — NO OPTIONS");
+    return;
+  }
+  // adjudicated
+  const correct = btn.classList.contains("cs-yes");
+  const fb = $(side === "boss" ? "boss-feedback" : "enc-feedback");
+  fb.textContent = correct
+    ? `Committed and landed it — the answer was "${P.q.answer}". Double reward!`
+    : `Not this time — the answer was "${P.q.answer}".`;
+  fb.className = "enc-feedback " + (correct ? "good" : "bad");
+  _pendingCommit = null;
+  clearCommitUI(side);
+  P.onCommit(correct);
+});
+
 // ===================== SHARED QUESTION RENDERER =====================
 function renderQuestion(q, ids, onAnswer) {
+  // Every question in the game funnels through here, so this is the one place
+  // that can guarantee the answers are actually visible. A Commit hides them,
+  // and a Last Stand or a Treasure chest that fired straight afterwards used
+  // to inherit the hidden state and leave the class staring at nothing.
+  const side = String(ids.question).startsWith("boss") ? "boss" : "enc";
+  clearCommitUI(side);
   $(ids.question).innerHTML =
     `<span class="q-type">${q.type}</span>${escapeHtml(q.clue)}`;
   const choicesEl = $(ids.choices);
@@ -381,7 +520,7 @@ function startFight(isElite) {
   clearScenery();
   updateStageScale("corridor");
   showCombatButtons(true);
-  $("btn-use-item").style.display = "none";
+  STATE.run.potionUsedThisTurn = false;
   const run = STATE.run;
 
   const base = isElite ? pick(realm.elites) : pick(realm.monsters);
@@ -389,7 +528,6 @@ function startFight(isElite) {
   chooseIntent(m);
   run.encounter = m;
   clearDebuff();
-  const shieldGain = refreshRoomShields();
   saveState();
 
   applySky("corridor-sky", realm.sky);
@@ -407,8 +545,9 @@ function startFight(isElite) {
   MUSIC.play(isElite ? "elite" : "fight");
   animateSprite("monster-sprite", "arriving", 560);
   SFX.doorOpen();
-  if (isElite) setTimeout(() => SFX.bossRoar(), 220);
-  if (shieldGain) SFX.unlockChime();
+  // every monster announces itself with its own voice
+  setTimeout(() => SFX.monsterCry(monsterVoice(m)), isElite ? 260 : 200);
+  if (isElite) setTimeout(() => { SFX.bossRoar(); lightningStrike(false); }, 480);
 
   updateCombatButtons("enc");
   askFightQuestion();
@@ -418,7 +557,7 @@ function askFightQuestion() {
   const realm = currentRealm();
   const run = STATE.run;
   const m = run.encounter;
-  const q = drawQuestion(realm);
+  const q = drawQuestion(realm, !!m.isElite);
   m.currentQ = q;
   saveState();
 
@@ -427,9 +566,20 @@ function askFightQuestion() {
     $("enc-who").textContent =
       `${m.name} has frozen your attack — you must defend!`;
   }
-  renderQuestion(q, {
-    question: "enc-question", choices: "enc-choices", feedback: "enc-feedback",
-  }, correct => resolveFightAnswer(correct, q, frozen || run.bracing));
+  const ids = { question: "enc-question", choices: "enc-choices", feedback: "enc-feedback" };
+  const defending = frozen || run.bracing;
+  const ask = () => renderQuestion(q, ids,
+    correct => resolveFightAnswer(correct, q, defending));
+
+  clearCommitUI("enc");
+  renderQuestion(q, ids, correct => resolveFightAnswer(correct, q, defending));
+  if (commitAvailable(q, defending)) {
+    offerCommit("enc", q, ask, correct => {
+      STATE.run.committed = true;
+      resolveFightAnswer(correct, q, defending);
+    });
+  }
+  renderMomentum("enc");
   updateCombatButtons("enc");
 }
 
@@ -478,7 +628,27 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
       return;
     }
 
+    if (run.potionUsedThisTurn) {
+      // the student answered, so the review still happened - but the hand
+      // that would have swung the blade was busy with a cork
+      run.potionUsedThisTurn = false;
+      saveState();
+      SFX.heal();
+      animateSprite(P.hero, "bracing", 620);
+      $(P.feedback).textContent = "You drank a potion — no attack this turn.";
+      $(P.feedback).className = "enc-feedback";
+      renderIntent(P.intent, m);
+      renderTopHud(P.hud);
+      afterStreak(streak, () => nextCombatTurn(ctx));
+      return;
+    }
+
+    const committed = !!run.committed;
+    run.committed = false;
     const dmg = playerDamageAgainst(m);
+    // Committing pays in shards and Momentum - never in damage. Extra damage
+    // would mean a shorter fight, and a shorter fight is fewer questions.
+    const moGained = gainMomentum(1 + (committed ? CONFIG.COMMIT_MOMENTUM : 0));
     SFX.playerHit();
     animateSprite(P.hero, "attacking", 560);
     setTimeout(() => playSlash(P.slash), 180);
@@ -494,19 +664,25 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
     } else {
       m.hp = Math.max(0, m.hp - dmg);
       const { amount, crit } = hitShards(q, m);
-      const gained = addShards(amount);
+      let payout = amount * momentumShardMultiplier();      // a primed Rouse
+      if (committed) payout *= CONFIG.COMMIT_SHARD_MULT;
+      const gained = addShards(payout);
       if (rollStun()) {
         m.stunned = true;
         $(P.feedback).textContent = `A stunning blow! ${m.name} loses its next turn.`;
       } else {
-        $(P.feedback).textContent = crit ? `Critical hit! +${gained} shards`
-                                         : `A clean hit! +${gained} shards`;
+        $(P.feedback).textContent =
+          committed ? `Committed and landed it! +${gained} shards and +${CONFIG.COMMIT_MOMENTUM} Momentum`
+        : crit      ? `Critical hit! +${gained} shards`
+                    : `A clean hit! +${gained} shards`;
       }
       $(P.feedback).className = "enc-feedback good";
     }
     renderMonsterHp(P.hpEl, m.hp, m.maxHp);
     renderIntent(P.intent, m);
     renderTopHud(P.hud);
+    renderMomentum(P.hud);
+    if (moGained) flashMomentum(P.hud);
     saveState();
 
     if (m.hp <= 0) { setTimeout(() => monsterDefeated(ctx), 620); return; }
@@ -518,6 +694,7 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
     bumpStat(student, "wrong");
     resetStreak();
     run.bracing = false;
+    run.committed = false;
     const dmg = wrongAnswerDamage(q);
     saveState();
     setTimeout(() => {
@@ -536,7 +713,23 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
 
 // Apply one incoming hit with all the animation/audio that goes with it.
 function applyHit(rawDmg, m, P) {
-  const dmg = incomingDamage(rawDmg, m);
+  // A primed Guard takes the top off the blow before shields or hearts.
+  let incoming = rawDmg;
+  let guarded = 0;
+  if (incoming > 0) {
+    guarded = Math.min(incoming, momentumGuardAmount());
+    incoming -= guarded;
+  }
+  if (guarded && incoming <= 0) {
+    SFX.heal();
+    animateSprite(P.hero, "bracing", 620);
+    $(P.feedback).textContent = "GUARDED — the blow is turned aside!";
+    $(P.feedback).className = "enc-feedback good";
+    renderTopHud(P.hud);
+    renderMomentum(P.hud);
+    return { blocked: true, blockedBy: "Guard", absorbed: 0, dealt: 0, dead: false };
+  }
+  const dmg = incomingDamage(incoming, m);
   const res = damage(dmg);
   playHitFlash(P.flash, P.corridor);
   animateSprite(P.hero, "flinching", 520);
@@ -551,7 +744,9 @@ function applyHit(rawDmg, m, P) {
   } else {
     SFX.heartLost();
     bumpStat(STATE.run.currentStudent, "damage", Math.max(1, res.dealt));
-    $(P.feedback).textContent = res.absorbed
+    $(P.feedback).textContent = guarded
+      ? `Guard held ${guarded} — ${res.dealt} still got through!`
+      : res.absorbed
       ? `Shields broke — ${res.dealt} damage through!`
       : `${m.name} strikes for ${res.dealt}!`;
     $(P.feedback).className = "enc-feedback bad";
@@ -676,10 +871,12 @@ function advanceStudentAndAsk(ctx) {
   if (!run || !ctx.monster) return;
   nextStudent();
   renderStudentChips();
+  showTurnCallout(run.currentStudent);
   const m = ctx.monster;
   m.teamUpUsed = false;
   m.helpers = [];
   run.bracing = false;
+  run.potionUsedThisTurn = false;
   saveState();
   ctx.ask();
 }
@@ -689,6 +886,7 @@ function monsterDefeated(ctx) {
   const m = ctx.monster;
   const student = run.currentStudent;
   SFX.monsterDown();
+  setTimeout(() => SFX.monsterCry(monsterVoice(m), true), 160);
   animateSprite(m.isBoss ? "boss-sprite" : "monster-sprite", "dying", 820);
 
   const gain = m.isBoss ? 0 : (m.isElite ? CONFIG.SHARDS_ELITE : CONFIG.SHARDS_FIGHT);
@@ -739,17 +937,34 @@ function monsterDefeated(ctx) {
   }
 
   run.encounter = null;
+  decayMomentum();      // tempo, not a bank - it can't be hoarded for the boss
   saveState();
   afterPopups(() => backToMap(true));
 }
 
-// offer a piece of gear: equip it, or leave it
+// Offer a piece of gear as a genuine choice: take it, or keep what you have.
+// Nothing is ever equipped over the class's head - if they are carrying
+// something, the card shows both so they can compare before deciding.
 function offerGear(gear) {
+  const run = STATE.run;
+  const current = run[gear.slot] ? gearById(run[gear.slot]) : null;
+  const slotName = gear.slot === "weapon" ? "weapon" : "armour";
+
   showPopup({
     banner: gear.slot === "weapon" ? "WEAPON FOUND" : "ARMOUR FOUND",
     tone: "", icon: gear.icon, title: gear.name,
     effect: gear.effect, desc: gear.desc,
-    button: "Equip it",
+    extra: current
+      ? `You are carrying the ${current.name} — ${current.effect}`
+      : `Your ${slotName} slot is empty.`,
+    button: current ? `Take the ${gear.name}` : `Equip the ${gear.name}`,
+    cancel: current ? `Keep the ${current.name}` : "Leave it behind",
+    onCancel: () => {
+      showPopup({ banner: "LEFT BEHIND", tone: "neutral", icon: gear.icon,
+                  title: `${gear.name} left where it lay`,
+                  effect: current ? `You keep the ${current.name}` : "",
+                  desc: "Nothing is lost - the party moves on." });
+    },
     onClose: () => {
       const replaced = equipGear(gear);
       SFX.relic();
@@ -786,7 +1001,8 @@ function tryLastStand(ctx, onSurvive) {
   let viaRelic = false;
   if (!run.usedLastStand) {
     run.usedLastStand = true;
-  } else if (hasRelic("last_breath") && !run.usedLastBreath) {
+  } else if ((hasRelic("last_breath") || hasPerk("second_breath")) &&
+             !run.usedLastBreath) {
     run.usedLastBreath = true;
     viaRelic = true;
   } else {
@@ -863,8 +1079,9 @@ function tryLastStand(ctx, onSurvive) {
 function doTeamUp(btnId, hpElId, feedbackId) {
   const run = STATE.run;
   const ctx = btnId === "btn-teamup" ? run.encounter : run.boss;
-  const maxTeam = hasRelic("team_banner") ? 2 : 1;
-  if (!ctx || (ctx.teamUpCount || 0) >= maxTeam) return;
+  const perRun = CONFIG.TEAMUPS_PER_RUN + (hasRelic("team_banner") ? 2 : 0);
+  if (!ctx || (run.teamUpsUsed || 0) >= perRun) return;
+  run.teamUpsUsed = (run.teamUpsUsed || 0) + 1;
 
   const partner = nextStudent(run.currentStudent);
   ctx.teamUpUsed = true;
@@ -922,6 +1139,9 @@ function showCombatButtons(show) {
     const b = $(id);
     if (b) b.style.display = show ? "" : "none";
   });
+  const mo = $("enc-mo-row");
+  if (mo) mo.style.display = show ? "" : "none";
+  if (!show) clearCommitUI("enc");
 }
 
 // enable/disable the combat action buttons for the current turn
@@ -931,6 +1151,19 @@ function updateCombatButtons(prefix) {
   const m = isBoss ? run.boss : run.encounter;
   const braceBtn  = $(isBoss ? "btn-brace-boss"  : "btn-brace");
   const teamBtn   = $(isBoss ? "btn-teamup-boss" : "btn-teamup");
+
+  // The pack can be opened mid-fight. It costs the turn's ATTACK, not the
+  // turn's question - the student still answers, so no review is lost.
+  const itemBtn = $(isBoss ? "btn-use-item-boss" : "btn-use-item");
+  if (itemBtn && m) {
+    const n = run.potions.length;
+    itemBtn.style.display = "";
+    itemBtn.disabled = n === 0 || !!run.potionUsedThisTurn;
+    itemBtn.textContent = run.potionUsedThisTurn ? "Item used this turn"
+                        : n ? `Use an Item (${n})` : "No items to use";
+    itemBtn.onclick = () => openInventory({ usable: true, from: isBoss ? "boss" : "fight" });
+  }
+
   if (!m) { braceBtn.disabled = true; teamBtn.disabled = true; return; }
 
   const frozen = isFrozen();
@@ -938,14 +1171,14 @@ function updateCombatButtons(prefix) {
   braceBtn.textContent = frozen ? "FROZEN — must Brace"
                        : run.bracing ? "Bracing…" : "Brace (defend)";
 
-  const maxTeam = hasRelic("team_banner") ? 2 : 1;
-  const canTeam = STATE.roster && STATE.roster.students.length > 1 &&
-                  (m.teamUpCount || 0) < maxTeam;
+  // Team Up used to be unlimited and its only cost was one more question -
+  // which is a thing we want - so it was free, and free is not a decision.
+  // Three per RUN makes it something to save.
+  const perRun = CONFIG.TEAMUPS_PER_RUN + (hasRelic("team_banner") ? 2 : 0);
+  const left = Math.max(0, perRun - (run.teamUpsUsed || 0));
+  const canTeam = STATE.roster && STATE.roster.students.length > 1 && left > 0;
   teamBtn.disabled = !canTeam;
-  const cost = hasRelic("iron_bell") ? 0 : CONFIG.TEAMUP_HP_COST;
-  teamBtn.textContent = canTeam
-    ? (cost ? `Team Up (+${cost} HP)` : "Team Up (free)")
-    : "Team Up used";
+  teamBtn.textContent = canTeam ? `Team Up (${left} left)` : "No Team Ups left";
 }
 
 // ===================== EVENT =====================
@@ -1027,62 +1260,97 @@ function enterEvent() {
   animateSprite("monster-sprite", "arriving", 560);
 }
 
-// ===================== REST =====================
+// ===================== CAMPFIRE (was Rest) =====================
+// The old Rest room healed hearts AND refilled shields, free, every time -
+// which meant the damage a fight had done never actually cost anything. Now
+// there is time for exactly one thing, and choosing is the point.
 function enterRest() {
   clearCorridorFx("corridor", "hit-flash", "slash-fx");
   clearFoeStage();
-  showScenery("rest");
+  showScenery("safe");            // the campfire itself
   showCombatButtons(false);
   const realm = currentRealm();
-  const before = STATE.run.hearts;
-  const amount = CONFIG.REST_HEAL + (hasRelic("warm_cloak") ? 1 : 0);
-  heal(amount);
-  const healed = STATE.run.hearts - before;
-  SFX.heal();
+  const run = STATE.run;
   applySky("corridor-sky", realm.sky);
   paintHero("hero-sprite", "hero-shields");
-  $("enc-who").textContent = "A sheltered chamber, out of the wind.";
+  SFX.doorOpen();
+
+  $("enc-who").textContent = "A campfire. There is time for one thing only.";
   $("enc-question").textContent =
-    "The party sets down their packs. Bandages, hot food, and a bed out of the storm.";
+    "Mend the wounded, repair the armour, or sharpen up for what is coming?";
   $("enc-feedback").textContent = "";
   $("btn-teamup").disabled = true;
 
-  // A Rest room used to bounce straight back to the map behind its own reward
-  // card, so nobody ever saw the room. It now waits for the class to move on,
-  // and the pack can be opened here the same as on a Safe Path.
+  // the pack is still open here
   const useBtn = $("btn-use-item");
-  const havePotions = STATE.run.potions.length > 0;
+  const havePotions = run.potions.length > 0;
   useBtn.style.display = "";
   useBtn.disabled = !havePotions;
   useBtn.textContent = havePotions
-    ? `Use an Item (${STATE.run.potions.length})` : "No items to use";
+    ? `Use an Item (${run.potions.length})` : "No items to use";
   useBtn.onclick = () => openInventory({ usable: true, from: "safe" });
 
+  const mendAmount = CONFIG.REST_HEAL + (hasRelic("warm_cloak") ? 1 : 0);
   const choices = $("enc-choices");
   choices.innerHTML = "";
-  const cont = document.createElement("div");
-  cont.className = "choice";
-  cont.textContent = "Move on";
-  cont.addEventListener("click", () => {
-    SFX.move();
-    useBtn.style.display = "none";
-    backToMap(true);
+
+  const option = (label, sub, fn) => {
+    const div = document.createElement("div");
+    div.className = "choice campfire";
+    div.innerHTML = `<b>${label}</b><span>${sub}</span>`;
+    div.addEventListener("click", () => {
+      choices.querySelectorAll(".choice").forEach(c => c.classList.add("locked"));
+      useBtn.style.display = "none";
+      fn();
+    });
+    choices.appendChild(div);
+  };
+
+  option("Mend", `Restore ${mendAmount} hearts — now ${run.hearts}/${run.maxHearts}`, () => {
+    const before = run.hearts;
+    heal(mendAmount);
+    SFX.heal();
+    renderTopHud("enc");
+    showPopup({
+      banner: "MEND", tone: "good", title: "The party patches itself up",
+      effect: `+${run.hearts - before} heart${run.hearts - before === 1 ? "" : "s"}`,
+      desc: "Bandages, hot food, and a few minutes out of the wind.",
+      extra: `Hearts: ${run.hearts}/${run.maxHearts} · Shields still ${run.shields}`,
+    });
+    afterPopups(() => backToMap(true));
   });
-  choices.appendChild(cont);
+
+  option("Repair", `Shields back to full — now ${run.shields}`, () => {
+    const gain = refillShields();
+    SFX.unlockChime();
+    renderTopHud("enc");
+    showPopup({
+      banner: "REPAIR", tone: "good", title: "Armour hammered back into shape",
+      effect: gain ? `+${gain} shields` : "Armour was already sound",
+      desc: "Wire, hide, and a great deal of swearing.",
+      extra: `Shields: ${run.shields} · Hearts still ${run.hearts}/${run.maxHearts}`,
+    });
+    afterPopups(() => backToMap(true));
+  });
+
+  option("Sharpen", `+${CONFIG.SHARPEN_HEARTS} maximum heart for the rest of the run`, () => {
+    run.maxHearts += CONFIG.SHARPEN_HEARTS;
+    run.hearts += CONFIG.SHARPEN_HEARTS;
+    saveState();
+    SFX.relic();
+    renderTopHud("enc");
+    showPopup({
+      banner: "SHARPEN", tone: "good", title: "The party steels itself",
+      effect: `+${CONFIG.SHARPEN_HEARTS} maximum heart, permanently this run`,
+      desc: "Nothing is healed and nothing is mended — but there is more of you now.",
+      extra: `Hearts: ${run.hearts}/${run.maxHearts}`,
+    });
+    afterPopups(() => backToMap(true));
+  });
 
   renderTopHud("enc");
   renderStudentChips();
   showScreen("screen-encounter");
-  showPopup({
-    banner: "REST", tone: "good", title: "A sheltered chamber",
-    effect: healed > 0
-      ? `+${healed} heart${healed > 1 ? "s" : ""}`
-      : "Already at full health",
-    desc: hasRelic("warm_cloak")
-      ? "Your Warm Cloak makes the rest twice as restorative."
-      : "The wind can't reach you here.",
-    extra: `Hearts: ${STATE.run.hearts}/${STATE.run.maxHearts}`,
-  });
 }
 
 // ===================== SAFE PATH =====================
@@ -1094,9 +1362,10 @@ function enterSafe() {
   const realm = currentRealm();
   applySky("corridor-sky", realm.sky);
   paintHero("hero-sprite", "hero-shields");
-  $("enc-who").textContent = "Safe Path — a fire burns in a quiet stretch of corridor";
+  $("enc-who").textContent = "Safe Path — a quiet stretch of corridor";
   $("enc-question").textContent =
-    "No danger here, and no reward. A good moment to use something from your pack.";
+    "No danger here, and no reward. A good moment to open the pack. " +
+    "Armour is only repaired at a campfire.";
   $("enc-choices").innerHTML = "";
   $("enc-feedback").textContent = "";
   $("btn-teamup").disabled = true;
@@ -1195,18 +1464,26 @@ function usePotion(id) {
   } else if (id === "potion_shield") {
     run.shieldActive = true;
     SFX.unlockChime();
+  } else if (id === "potion_patch") {
+    const before = run.shields || 0;
+    addShieldTop(6);
+    effectText = `Shields ${before} → ${run.shields}`;
+    SFX.unlockChime();
   } else if (id === "potion_clarity") {
     run.clarityActive = true;
     SFX.unlockChime();
+  }
+  if (_inventoryReturn === "fight" || _inventoryReturn === "boss") {
+    run.potionUsedThisTurn = true;
   }
   saveState();
 
   showPopup({
     banner: "POTION USED", tone: "good", icon: p.icon,
     title: p.name, effect: effectText, desc: p.desc,
-    extra: id === "potion_heal"
-      ? `Hearts: ${run.hearts}/${run.maxHearts}`
-      : "Active on the next question.",
+    extra: id === "potion_heal" ? `Hearts: ${run.hearts}/${run.maxHearts}`
+         : id === "potion_patch" ? `Shields: ${run.shields}`
+         : "Active on the next question.",
   });
   renderInventory({ usable: true, onUse: usePotion });
   ["hud", "enc", "boss"].forEach(renderTopHudSafe);
@@ -1218,6 +1495,14 @@ function renderTopHudSafe(prefix) {
 
 $("inv-close").addEventListener("click", () => {
   SFX.click();
+  if (_inventoryReturn === "fight" || _inventoryReturn === "boss") {
+    const boss = _inventoryReturn === "boss";
+    showScreen(boss ? "screen-boss" : "screen-encounter");
+    renderTopHud(boss ? "boss" : "enc");
+    updateCombatButtons(boss ? "boss" : "enc");
+    _inventoryReturn = null;
+    return;
+  }
   if (_inventoryReturn === "safe") {
     const useBtn = $("btn-use-item");
     const n = STATE.run.potions.length;
@@ -1322,7 +1607,6 @@ function startBoss() {
   chooseIntent(m);
   run.boss = m;
   clearDebuff();
-  refreshRoomShields();
   saveState();
 
   applySky("boss-sky", realm.sky);
@@ -1338,6 +1622,8 @@ function startBoss() {
   MUSIC.play("boss");
   animateSprite("boss-sprite", "arriving", 560);
   SFX.bossRoar();
+  setTimeout(() => SFX.monsterCry(monsterVoice(m)), 340);
+  setTimeout(() => lightningStrike(true), 200);
   updateCombatButtons("boss");
   setTimeout(askBossQuestion, 700);
 }
@@ -1347,7 +1633,8 @@ function askBossQuestion() {
   const m = run.boss;
   if (!m) return;
   const cover = m.queue[m.index % m.queue.length];
-  const options = questionsForCover(cover);
+  // the boss asks the hard version of a curriculum item wherever one exists
+  const options = questionsForCover(cover, true);
   const q = options.length ? pick(options) : drawQuestion(realm);
   m.currentQ = q;
   m.index++;
@@ -1358,10 +1645,26 @@ function askBossQuestion() {
     ? `${m.name} freezes you in place — defend!`
     : `${m.name} — ${m.hp} hit${m.hp === 1 ? "" : "s"} remaining`;
 
-  renderQuestion(q, {
-    question: "boss-question", choices: "boss-choices", feedback: "boss-feedback",
-  }, correct => resolveCombatAnswer(bossCtx(), correct, q, frozen || run.bracing));
+  const ids = { question: "boss-question", choices: "boss-choices", feedback: "boss-feedback" };
+  const defending = frozen || run.bracing;
+  const ask = () => renderQuestion(q, ids,
+    correct => resolveCombatAnswer(bossCtx(), correct, q, defending));
+
+  clearCommitUI("boss");
+  renderQuestion(q, ids, correct => resolveCombatAnswer(bossCtx(), correct, q, defending));
+  if (commitAvailable(q, defending)) {
+    offerCommit("boss", q, ask, correct => {
+      STATE.run.committed = true;
+      resolveCombatAnswer(bossCtx(), correct, q, defending);
+    });
+  }
+  renderMomentum("boss");
   updateCombatButtons("boss");
+}
+
+function commitAvailable(q, defending) {
+  return CONFIG.COMMIT_ENABLED && !defending && !isFrozen() &&
+         (q.tier || 1) >= CONFIG.COMMIT_MIN_TIER;
 }
 
 function bossCtx() {

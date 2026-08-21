@@ -15,6 +15,7 @@ function defaultState() {
     roster: null,          // { className, students:[name,...] }
     studentStats: {},      // name -> { correct, wrong, monsters, damage, relics, teamups }
     leaderboard: [],       // completed run records
+    perksEnabled: true,    // teacher can switch the Forge off for a class
     run: null,
   };
 }
@@ -48,6 +49,10 @@ function migrateRun(st) {
   if (typeof r.usedLastStand  !== "boolean") r.usedLastStand  = false;
   if (typeof r.usedLastBreath !== "boolean") r.usedLastBreath = false;
   if (typeof r.usedEcho       !== "boolean") r.usedEcho       = false;
+  if (typeof r.momentum       !== "number")  r.momentum       = 0;
+  if (typeof r.moRouse        !== "boolean") r.moRouse        = false;
+  if (typeof r.moGuard        !== "boolean") r.moGuard        = false;
+  if (typeof r.teamUpsUsed    !== "number")  r.teamUpsUsed    = 0;
   if (!r.stats) r.stats = { correct: 0, wrong: 0, monsters: 0, teamups: 0 };
   // Older maps contain no shop rooms - harmless, they just won't appear
   // until the next run.
@@ -63,6 +68,32 @@ function saveState() {
 
 function factoryReset() {
   STATE = defaultState();
+  saveState();
+}
+
+// Start of a new term with the same class: keep who is in the room, throw
+// away everything they earned. Between this and Factory Reset there is now a
+// reset for every situation a teacher actually has.
+function newTermReset() {
+  const roster = STATE.roster;
+  STATE = defaultState();
+  STATE.roster = roster;
+  if (roster) roster.students.forEach(ensureStudentStats);
+  saveState();
+}
+
+// A leaver or a transfer. Previously the only way to remove one name was to
+// wipe the whole save.
+function removeStudent(name) {
+  if (!STATE.roster) return;
+  STATE.roster.students = STATE.roster.students.filter(n => n !== name);
+  delete STATE.studentStats[name];
+  const run = STATE.run;
+  if (run) {
+    run.turnQueue = (run.turnQueue || []).filter(n => n !== name);
+    run.absent = (run.absent || []).filter(n => n !== name);
+    if (run.currentStudent === name) nextStudent();
+  }
   saveState();
 }
 
@@ -139,7 +170,7 @@ function startNewRun(realmId, heroId) {
   const realm = REALMS[realmId];
   const map = generateMap(realm);
   let hearts = CONFIG.START_HEARTS;
-  if (STATE.permanentPerks.includes("second_wind")) hearts += 1;
+  if (typeof hasPerk === "function" && hasPerk("second_wind")) hearts += 1;
 
   STATE.run = {
     realmId,
@@ -158,6 +189,11 @@ function startNewRun(realmId, heroId) {
     shields: 0,           // absorbed before hearts
     streak: 0,            // consecutive correct answers
     bestStreak: 0,
+    momentum: 0,          // banked on correct answers, spent on moves
+    moRouse: false,       // a Rouse is primed
+    moGuard: false,       // a Guard is primed
+    teamUpsUsed: 0,       // Team Up is limited per RUN now, not per monster
+    campfiresUsed: 0,
     shardMultiplier: 1,
     shieldActive: false,  // Storm Shield blocks the next hit
     clarityActive: false, // Potion of Clarity trims the next question
@@ -193,19 +229,29 @@ function markCovered(cover) {
 
 // Pick a question, preferring curriculum items not yet covered this run and
 // avoiding exact repeats.
-function drawQuestion(realm) {
+//
+// `elite` mixes in the tier-4 bank: harder questions that ask students to USE
+// the language rather than recognise it. Only Elite rooms and the Boss ever
+// pass it, so an ordinary Fight stays within reach of the whole class.
+function drawQuestion(realm, elite = false) {
   const run = STATE.run;
-  const all = realm.questions;
+  const eliteBank = realm.eliteQuestions || [];
+  const all = (elite && eliteBank.length && Math.random() < 0.65)
+    ? eliteBank
+    : realm.questions;
+  const tag = i => (all === realm.questions ? i : "e" + i);
   let pool = all
     .map((q, i) => ({ q, i }))
-    .filter(x => !run.usedQuestionIdx.includes(x.i));
+    .filter(x => !run.usedQuestionIdx.includes(tag(x.i)));
   if (pool.length === 0) {
-    run.usedQuestionIdx = [];
+    run.usedQuestionIdx = run.usedQuestionIdx.filter(
+      x => (all === realm.questions) !== (typeof x === "number"));
     pool = all.map((q, i) => ({ q, i }));
   }
   const fresh = pool.filter(x => !run.coveredKeys.includes(x.q.cover));
   const chosen = pick(fresh.length ? fresh : pool);
-  run.usedQuestionIdx.push(chosen.i);
+  // the used-index list is per-bank, so tag elite draws to keep them apart
+  run.usedQuestionIdx.push(all === realm.questions ? chosen.i : "e" + chosen.i);
   saveState();
   return chosen.q;
 }
@@ -251,24 +297,37 @@ function addShields(n) {
   saveState();
 }
 
-// Shields regenerate on entering a room, if the party's kit provides them.
-function refreshRoomShields() {
+// Shields are topped up at a REST POINT only - a Rest room or a Safe Path -
+// never on walking into an ordinary room. Free full armour every room was why
+// armour felt weightless; now it is a resource the class has to manage.
+function refillShields() {
   const run = STATE.run;
   if (!run) return 0;
-  let gain = CONFIG.BASE_ROOM_SHIELDS || 0;
+  let gain = CONFIG.REST_SHIELDS || 0;
   const armour = run.armour ? gearById(run.armour) : null;
   if (armour) {
-    if (armour.id === "windwarden")   gain += 2;
-    if (armour.id === "aegis_mantle") gain += 3;
+    if (armour.id === "windwarden")   gain += 3;
+    if (armour.id === "aegis_mantle") gain += 5;
   }
-  if (run.enchants && run.enchants.armour === "ward_etch") gain += 1;
-  if (hasRelic("aegis_charm")) gain += 1;
-  // Shields REFRESH rather than stack - otherwise they pile up room after
-  // room and the party becomes untouchable. Anything already held is kept.
+  if (run.enchants && run.enchants.armour === "ward_etch") gain += 2;
+  if (hasRelic("aegis_charm")) gain += 2;
+  if (hasRelic("storm_crown")) gain += 3;
+  if (hasPerk("warded")) gain += 2;
+  // top up to the full figure rather than stacking on what's left, so a
+  // rest is always worth the same and never snowballs
   const before = run.shields || 0;
   run.shields = Math.max(before, gain);
   saveState();
   return Math.max(0, run.shields - before);
+}
+
+// Potions and shop patch kits add shields on top of whatever is left.
+function addShieldTop(n) {
+  const run = STATE.run;
+  if (!run) return 0;
+  run.shields = Math.min(99, (run.shields || 0) + n);
+  saveState();
+  return n;
 }
 
 function equipGear(gear) {
@@ -329,6 +388,10 @@ function hasRelic(id) {
 
 function addRelic(relic) {
   STATE.run.relics.push(relic);
+  if (relic.id === "storm_crown") {
+    STATE.run.maxHearts += 1;
+    STATE.run.hearts = Math.min(STATE.run.maxHearts, STATE.run.hearts + 1);
+  }
   if (relic.id === "second_wind") {
     STATE.run.maxHearts += 1;
     STATE.run.hearts = Math.min(STATE.run.maxHearts, STATE.run.hearts + 1);

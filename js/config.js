@@ -5,19 +5,27 @@ const CONFIG = {
   TEACHER_PIN: "1234",
 
   // --- party ---
-  START_HEARTS: 4,        // lowered in v3 - potions/relics cover the gap
-  MAX_HEARTS: 8,
+  // v5.0: hearts are now the party's MAIN resource and shields are a thin
+  // buffer, inverting v4.3 where shields quietly absorbed 84% of everything.
+  // Monsters now act 1.8 times per fight instead of 0.72, so the party needs
+  // roughly two and a half times the reserve it had in v4.3 to absorb the same
+  // run. Their attacks keep their honest numbers - the telegraph must not lie.
+  START_HEARTS: 13,
+  MAX_HEARTS: 18,
 
   // --- combat ---
-  MONSTER_HP: 2,          // regular Fight node
-  ELITE_HP: 5,            // Elite node
+  // v5.0: a 2-HP monster died before its first turn arrived, so it never got
+  // to use the intent it had just telegraphed. At 4 it acts 1.7 times per
+  // fight and the countdown finally means something.
+  MONSTER_HP: 4,          // regular Fight node
+  ELITE_HP: 7,            // Elite node
   BOSS_MIN_QUESTIONS: 6,  // boss is never trivially short
   BOSS_MAX_QUESTIONS: 20, // ...nor absurdly long if the class dodged rooms
   TEAMUP_HP_COST: 1,      // asking a partner for help adds this much monster HP
   TEAMUP_ONCE_PER_MONSTER: true,
 
   // --- map shape (bigger + denser than v1) ---
-  LAYERS_PER_REALM: 20,       // not counting Start and Boss
+  LAYERS_PER_REALM: 15,       // shorter map, deeper fights - same lesson length
   NODES_PER_LAYER_MIN: 3,
   NODES_PER_LAYER_MAX: 4,
   EXTRA_LINK_CHANCE: 0.55,    // chance a node gets a 2nd forward link
@@ -41,13 +49,16 @@ const CONFIG = {
   SHOP_LAST_DEPTH: 0.92,
 
   // --- difficulty tiers: damage taken on a wrong answer ---
-  TIER_DAMAGE: { 1: 1, 2: 1, 3: 2 },
+  TIER_DAMAGE: { 1: 1, 2: 1, 3: 2, 4: 2 },   // tier 4 = the Elite bank
 
   // --- survivability (tuned with tools/../sim: at 100% accuracy the party
   //     almost always survives; at 80% roughly 4 runs in 10 end in a wipe) ---
-  BASE_ROOM_SHIELDS: 6,      // refreshed (not stacked) on entering a room
-                             // <- lower this to 5 for a harder game
-  REST_HEAL: 3,              // hearts restored by a Rest room
+  // v4.3: shields NO LONGER refill in every room. They persist, and are only
+  // topped up at a Rest room or Safe Path, by a potion, or by shopping. That
+  // is what makes armour worth carrying. Lower this for a harder game.
+  REST_SHIELDS: 10,          // campfire "Repair"
+  REST_HEAL: 6,              // campfire "Mend"
+  SHARPEN_HEARTS: 1,         // campfire "Sharpen" - permanent max hearts this run
   BOSS_CADENCE: 3,           // boss acts every N student turns (v4.1: was 4)
 
   // --- monster behaviour ---
@@ -60,6 +71,33 @@ const CONFIG = {
                              // per run - the counterweight to v4.1's faster
                              // monsters, and a genuinely tense classroom beat
   CHECKPOINT_HEARTS: 2,      // hearts restored when falling back to a campfire
+
+  // --- momentum ---
+  // Banked on every correct answer, spent instead of banked. This is the
+  // decision that a correct answer now produces, instead of just a number
+  // going down.
+  // NOTHING here shortens a fight. An earlier draft had a Heavy Strike that
+  // dealt extra damage, and it quietly cut a run from 36 questions to 25 -
+  // the exact rule this game exists to protect. Every move is defensive,
+  // economic or informational instead.
+  MOMENTUM_CAP: 6,
+  MO_INSIGHT: 1,             // remove a wrong answer from the next question
+  MO_ROUSE: 2,               // next correct answer pays double shards
+  MO_GUARD: 3,               // stop up to MO_GUARD_BLOCK damage
+  MO_GUARD_BLOCK: 2,
+  MO_RALLY: 3,               // restore a heart
+
+  // --- commit ---
+  // Offered on hard questions only: answer with NO options on screen for
+  // double reward. Recall rather than recognition.
+  COMMIT_ENABLED: true,
+  COMMIT_MIN_TIER: 3,
+  COMMIT_SHARD_MULT: 2,      // double shards...
+  COMMIT_MOMENTUM: 2,        // ...and Momentum, but NEVER extra damage: a
+                             // shorter fight is fewer questions.
+
+  // --- team up ---
+  TEAMUPS_PER_RUN: 3,        // was unlimited, which made it a non-decision
 
   // --- streaks ---
   STREAK_GUARD: 3,          // correct answers in a row -> next attack blocked

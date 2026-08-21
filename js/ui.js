@@ -15,7 +15,7 @@ const NODE_ART = {
 };
 const NODE_LABEL = {
   start: "Entrance", fight: "Fight", elite: "Elite", event: "Event",
-  rest: "Rest", treasure: "Treasure", safe: "Safe Path", shop: "Shop", boss: "BOSS",
+  rest: "Campfire", treasure: "Treasure", safe: "Safe Path", shop: "Shop", boss: "BOSS",
 };
 
 // map layout constants
@@ -78,6 +78,17 @@ function renderHearts(elId, hearts, maxHearts, losingIndex = -1) {
   const el = document.getElementById(elId);
   if (!el) return;
   el.innerHTML = "";
+  // Past ten, a row of individual hearts stops being readable from the back of
+  // a classroom and starts being a bar chart. Collapse to a count.
+  if (maxHearts > 10) {
+    const wrap = document.createElement("span");
+    wrap.className = "heart-stack";
+    wrap.innerHTML =
+      '<span class="heart-icon"><i class="sq"></i><i class="c1"></i><i class="c2"></i></span>' +
+      `<b>${hearts}<span>/${maxHearts}</span></b>`;
+    el.appendChild(wrap);
+    return;
+  }
   for (let i = 0; i < maxHearts; i++) {
     const h = document.createElement("span");
     h.className = "heart-icon" + (i < hearts ? "" : " empty") +
@@ -136,6 +147,33 @@ function renderTeacherRealmList() {
     });
   });
   document.getElementById("auto-unlock-toggle").checked = STATE.teacherAutoUnlock;
+  const pt = document.getElementById("perks-toggle");
+  if (pt) pt.checked = STATE.perksEnabled !== false;
+  renderTeacherStudents();
+}
+
+function renderTeacherStudents() {
+  const wrap = document.getElementById("teacher-students");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+  const names = STATE.roster ? STATE.roster.students : [];
+  if (!names.length) {
+    wrap.innerHTML = '<div class="empty-note">No class roster set yet.</div>';
+    return;
+  }
+  names.forEach(n => {
+    const row = document.createElement("div");
+    row.className = "teacher-student";
+    const stats = STATE.studentStats[n] || {};
+    row.innerHTML = `<span class="ts-name">${escapeHtml(n)}</span>
+      <span class="ts-stats">${stats.correct || 0} correct · ${stats.wrong || 0} wrong</span>`;
+    const btn = document.createElement("button");
+    btn.className = "pixel-btn tiny danger";
+    btn.textContent = "Remove";
+    btn.addEventListener("click", () => window.teacherRemoveStudent(n));
+    row.appendChild(btn);
+    wrap.appendChild(row);
+  });
 }
 
 // ---------------------------- leaderboards ---------------------------------
@@ -368,10 +406,21 @@ function renderTopHud(prefix) {
   // shields render right after the hearts
   const heartsEl = document.getElementById(`${prefix}-hearts`);
   if (heartsEl) {
-    for (let i = 0; i < (run.shields || 0); i++) {
-      const sp = document.createElement("span");
-      sp.className = "shield-pip";
-      heartsEl.appendChild(sp);
+    // Shields can now reach the high teens, and drawing one pip each turned
+    // the HUD into a bar chart. Past six they collapse into a single pip
+    // with a count.
+    const n = run.shields || 0;
+    if (n > 6) {
+      const wrap = document.createElement("span");
+      wrap.className = "shield-stack";
+      wrap.innerHTML = '<span class="shield-pip"></span><b>&times;' + n + "</b>";
+      heartsEl.appendChild(wrap);
+    } else {
+      for (let i = 0; i < n; i++) {
+        const sp = document.createElement("span");
+        sp.className = "shield-pip";
+        heartsEl.appendChild(sp);
+      }
     }
   }
   const st = document.getElementById(`${prefix}-streak`);
@@ -393,6 +442,9 @@ function renderTopHud(prefix) {
   const rl = document.getElementById(`${prefix}-relics`);
   if (rl) rl.textContent = run.relics.length
     ? run.relics.map(r => r.name).join(" · ") : "No relics yet";
+  // the HUD is redrawn after every state change, so this is the one place
+  // that reliably keeps the hero's status chips honest
+  refreshStatus();
 }
 
 function renderStudentChips() {
@@ -450,6 +502,11 @@ function animateSprite(spriteId, cls, ms = 600) {
   s.classList.remove("hurt", "attack", "dying", "arriving");
   void s.offsetWidth;
   s.classList.add(cls);
+  // "dying" is the one animation that must NOT be cleared on a timer. It ends
+  // on opacity 0 and holds there (animation-fill-mode: forwards); stripping
+  // the class put the monster back on its feet while the reward cards were
+  // still on screen. It is cleared when the next room stages a foe.
+  if (cls === "dying") return;
   setTimeout(() => s.classList.remove(cls), ms);
 }
 
@@ -511,12 +568,25 @@ function applySky(skyElId, skyName) {
       f.className = "sky-flash " + cls;
       el.appendChild(f);
     });
-    // a few bolt streaks high in the scene
-    [["17%", "1%", "26%", ""], ["57%", "0%", "20%", "b2"], ["81%", "3%", "16%", "b3"]]
-      .forEach(([left, top, h, cls]) => {
+    // the big strike's wash - driven from JS so thunder lands with it
+    const wash = document.createElement("div");
+    wash.className = "sky-wash";
+    el.appendChild(wash);
+
+    // Bolts: were 6px wide and confined to the top quarter, which read as
+    // scratches. Now they are fat, forked and long enough to fall behind the
+    // fighters. Widths and heights vary so no two look stamped.
+    [["12%", "0%", "62%", 22, ""],
+     ["31%", "2%", "44%", 15, "b2"],
+     ["48%", "0%", "70%", 26, "b3"],
+     ["66%", "3%", "40%", 14, ""],
+     ["82%", "0%", "58%", 20, "b2"],
+     ["93%", "5%", "34%", 12, "b3"]]
+      .forEach(([left, top, h, w, cls]) => {
         const b = document.createElement("div");
         b.className = "sky-bolt " + cls;
-        b.style.left = left; b.style.top = top; b.style.height = h;
+        b.style.left = left; b.style.top = top;
+        b.style.height = h; b.style.width = w + "px";
         el.appendChild(b);
       });
   }
@@ -567,6 +637,10 @@ function drainPopups() {
   document.getElementById("popup-continue").textContent = o.button || "Continue";
   document.getElementById("popup-layer").classList.add("open");
   _popupCurrentOnClose = o.onClose || null;
+  // A queued popup can carry its own second button. addPopupCancel() only
+  // ever reaches the card that is on screen RIGHT NOW, which is no use for a
+  // reward card sitting behind two others in the queue.
+  if (o.cancel) addPopupCancel(o.cancel, o.onCancel);
 }
 
 let _popupCurrentOnClose = null;
@@ -686,6 +760,30 @@ function renderInventory(opts = {}) {
       }));
     });
   }
+}
+
+function renderForge() {
+  document.getElementById("forge-ember").textContent = STATE.ember;
+  document.getElementById("forge-feedback").textContent = "";
+  const grid = document.getElementById("forge-grid");
+  grid.innerHTML = "";
+  FORGE_PERKS.forEach(perk => {
+    const owned = STATE.permanentPerks.includes(perk.id);
+    const poor = !owned && STATE.ember < perk.cost;
+    const tile = itemTile(
+      { icon: perk.icon, name: perk.name, effect: perk.effect, desc: perk.desc },
+      {
+        sold: owned, unaffordable: poor,
+        buttonLabel: owned ? "Forged" : "Forge it",
+        disabled: owned || poor,
+        onClick: () => window.forgeBuy(perk.id),
+      });
+    const price = document.createElement("div");
+    price.className = "it-price";
+    price.innerHTML = `<span class="icon-ember"></span>${perk.cost}`;
+    tile.insertBefore(price, tile.querySelector(".buy-btn"));
+    grid.appendChild(tile);
+  });
 }
 
 function renderShop(nodeId) {
@@ -820,11 +918,75 @@ function paintHero(imgId, shieldRowId) {
   renderShieldRow(shieldRowId);
 }
 
-// Shields are shown in the HUD beside the hearts; this row is intentionally
-// left empty so the same information isn't duplicated under the hero sprite.
-function renderShieldRow(elId) {
-  const el = document.getElementById(elId);
-  if (el) el.innerHTML = "";
+// The row under the hero now carries live status, not just shields.
+function renderShieldRow(elId) { renderStatusRow(elId); }
+
+// Refresh whichever hero status row is currently on screen.
+function refreshStatus() {
+  renderStatusRow("hero-shields");
+  renderStatusRow("boss-hero-shields");
+}
+
+// ---------------------------------------------------------------------------
+// Whose turn it is.
+//
+// The name used to change quietly in a small chip. In a room of thirty
+// ten-year-olds that is the single most missable thing on the screen, so it
+// now gets a card across the top of the scene for a moment.
+// ---------------------------------------------------------------------------
+function showTurnCallout(name) {
+  if (!name) return;
+  let el = document.getElementById("turn-callout");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "turn-callout";
+    el.className = "turn-callout";
+    document.getElementById("app").appendChild(el);
+  }
+  el.innerHTML = `<span class="tc-label">Your turn</span>
+                  <span class="tc-name">${escapeHtml(name)}</span>`;
+  el.classList.remove("show");
+  void el.offsetWidth;
+  el.classList.add("show");
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove("show"), 1500);
+}
+
+// ---------------------------------------------------------------------------
+// The storm.
+//
+// The CSS bolts drift along on their own timers for ambience. This is the big
+// one: a full-scene white wash, a fat forked bolt and a thunder crack, fired
+// on a loose timer and again whenever something hits hard.
+// ---------------------------------------------------------------------------
+function activeSkyId() {
+  const boss = document.getElementById("screen-boss");
+  if (boss && boss.classList.contains("active")) return "boss-sky";
+  const enc = document.getElementById("screen-encounter");
+  if (enc && enc.classList.contains("active")) return "corridor-sky";
+  return null;
+}
+
+function lightningStrike(withThunder = true) {
+  const id = activeSkyId();
+  if (!id) return;
+  const sky = document.getElementById(id);
+  if (!sky) return;
+  const wash = sky.querySelector(".sky-wash");
+  if (wash) runOnce(wash, "go", 760);
+  const bolts = sky.querySelectorAll(".sky-bolt");
+  if (bolts.length) {
+    const b = bolts[Math.floor(Math.random() * bolts.length)];
+    runOnce(b, "strike", 620);
+  }
+  if (withThunder) SFX.thunder();
+}
+
+let _stormTimer = null;
+function armStorm() {
+  clearTimeout(_stormTimer);
+  const next = 6500 + Math.random() * 7000;
+  _stormTimer = setTimeout(() => { lightningStrike(true); armStorm(); }, next);
 }
 
 // ---------------------------------------------------------------------------
@@ -883,13 +1045,111 @@ function clearScenery() {
   el.className = "room-scenery";
 }
 
-// the monster's telegraphed intent
+// The monster's telegraphed intent, with a countdown showing WHEN it lands.
+// Knowing an attack is coming is useless if you can't tell whether it arrives
+// this turn or in three, so the dots tick down and turn red on the last one.
 function renderIntent(elId, m) {
   const el = document.getElementById(elId);
   if (!el) return;
-  if (!m) { el.textContent = ""; el.className = "intent"; return; }
-  el.textContent = intentLabel(m);
-  el.className = "intent " + (INTENT_CLASS[m.intent && m.intent.kind] || "");
+  if (!m) { el.innerHTML = ""; el.className = "intent"; return; }
+
+  const label = intentLabel(m);
+  if (!label) { el.innerHTML = ""; el.className = "intent"; return; }
+
+  let when = "", imminent = false;
+  if (!m.stunned) {
+    const turns = Math.max(0, m.turnsUntilAct);
+    imminent = turns <= 1;
+    const dots = Array.from({ length: Math.max(1, Math.min(4, m.cadence)) },
+      (_, i) => `<i class="${i < turns ? "" : "spent"}"></i>`).join("");
+    when = `<span class="intent-when">${
+      imminent ? "NEXT TURN" : `in ${turns} turns`
+    }<span class="intent-dots">${dots}</span></span>`;
+  }
+  el.innerHTML = `<span class="intent-label">${escapeHtml(label)}</span>${when}`;
+  el.className = "intent " + (INTENT_CLASS[m.intent && m.intent.kind] || "") +
+                 (imminent ? " imminent" : "");
+}
+
+// ---------------------------------------------------------------------------
+// Status chips under the hero.
+//
+// Debuffs used to be announced once in a small line of feedback text and then
+// vanish, so a class could be Chilled or Exposed for three turns with nothing
+// on screen saying so. These sit under the hero's feet and stay while active.
+// ---------------------------------------------------------------------------
+const STATUS_CHIPS = {
+  chill:  { label: "CHILLED",  cls: "chill",  hint: "next hit deals no damage" },
+  expose: { label: "EXPOSED",  cls: "expose", hint: "next wrong answer costs 2" },
+  freeze: { label: "FROZEN",   cls: "freeze", hint: "you must Brace" },
+};
+
+function renderStatusRow(elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const run = STATE.run;
+  el.innerHTML = "";
+  if (!run) return;
+
+  const add = (label, cls, hint) => {
+    const c = document.createElement("div");
+    c.className = "status-chip " + cls;
+    c.innerHTML = `<b>${label}</b>${hint ? `<span>${hint}</span>` : ""}`;
+    el.appendChild(c);
+  };
+
+  if (run.debuff && STATUS_CHIPS[run.debuff]) {
+    const s = STATUS_CHIPS[run.debuff];
+    add(s.label, s.cls, s.hint);
+  }
+  if (run.bracing)      add("BRACING", "brace", "a correct answer blocks");
+  if (run.shieldActive) add("STORM SHIELD", "ward", "blocks the next hit");
+  if (run.streakGuard)  add("GUARDED", "ward", "next attack blocked");
+  if ((run.shields || 0) > 0) add(`SHIELDS ${run.shields}`, "shield", "");
+  if ((run.streak || 0) >= 2) add(`STREAK ${run.streak}`, "streak", "");
+}
+
+// ---------------------------------------------------------------------------
+// The Momentum meter and its spend buttons.
+// ---------------------------------------------------------------------------
+function renderMomentum(prefix) {
+  const run = STATE.run;
+  const pips = document.getElementById(`${prefix}-mo-pips`);
+  const moves = document.getElementById(`${prefix}-mo-moves`);
+  if (!pips || !moves || !run) return;
+
+  const have = momentum(), cap = momentumCap();
+  pips.innerHTML = "";
+  for (let i = 0; i < cap; i++) {
+    const p = document.createElement("i");
+    p.className = "mo-pip" + (i < have ? " lit" : "");
+    pips.appendChild(p);
+  }
+  const count = document.createElement("b");
+  count.textContent = `${have}/${cap}`;
+  pips.appendChild(count);
+
+  moves.innerHTML = "";
+  MOMENTUM_MOVES.forEach(mv => {
+    const cost = mv.cost();
+    const primed = (mv.id === "rouse" && run.moRouse) ||
+                   (mv.id === "guard" && run.moGuard);
+    const btn = document.createElement("button");
+    btn.className = "mo-move" + (primed ? " primed" : "") +
+                    (have < cost && !primed ? " poor" : "");
+    btn.disabled = primed || have < cost;
+    btn.title = mv.blurb;
+    btn.innerHTML = `<span class="mv-cost">${cost}</span>
+                     <span class="mv-name">${mv.name}</span>
+                     <span class="mv-blurb">${primed ? "Ready" : mv.blurb}</span>`;
+    btn.addEventListener("click", () => window.useMomentum(mv.id, prefix));
+    moves.appendChild(btn);
+  });
+}
+
+function flashMomentum(prefix) {
+  const el = document.getElementById(`${prefix}-mo-pips`);
+  if (el) runOnce(el, "gained", 620);
 }
 
 // big centre-screen shout for streaks and enrage
@@ -929,7 +1189,7 @@ function renderHeroSelect(chosenId) {
 }
 
 // a second button on the current popup, for cancellable prompts
-function addPopupCancel(label) {
+function addPopupCancel(label, onCancel) {
   const card = document.getElementById("popup-card");
   const existing = card.querySelector(".popup-cancel");
   if (existing) existing.remove();
@@ -941,6 +1201,7 @@ function addPopupCancel(label) {
     _popupCurrentOnClose = null;   // cancel the confirm action
     btn.remove();
     closePopup();
+    if (onCancel) onCancel();
   });
   document.getElementById("popup-continue").after(btn);
 }

@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 4.2 — classroom edition.** Realm 1 (Unit 1, Extreme Weather) is
+class. **Version 5.0 — classroom edition.** Realm 1 (Unit 1, Extreme Weather) is
 fully playable; Realms 2–9 appear as locked placeholders using the correct
 themes from the school syllabus.
 
@@ -22,6 +22,130 @@ once the page has loaded.
 If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
+
+## What's new in v5.0 — the fights matter
+
+Instrumenting v4.3 over 3,000 runs turned up something the wipe rate was
+hiding: a Fight room lasted **2.3 questions**, the monster acted **0.72 times**,
+and **58% of fights had no damage even aimed at the party**. The monster
+telegraphed an attack and then died before its turn arrived. All the danger sat
+in the six Elite and Boss rooms out of twenty-one. This build fixes the
+distribution, not the difficulty.
+
+| | v4.3 | v5.0 |
+|---|---|---|
+| Questions per normal fight | 2.3 | **4.6** |
+| Times the monster acts per fight | 0.72 | **1.8** |
+| Fights with no damage aimed at you | 58% | **7%** |
+| Fights that cost no hearts | 92% | **64%** |
+| Damage absorbed by shields | 84% | **62%** |
+| Questions per run | 34.6 | 35.6 |
+
+**Deeper fights, shorter map.** Monsters have 4 health (was 2), Elites 7, and
+the map is 15 layers instead of 20. The lesson is the same length and asks the
+same number of questions — you trade twenty shallow rooms for fifteen that
+matter.
+
+**Momentum.** Every correct answer banks 1, capped at 6. Spend it on
+**Insight** (remove a wrong option), **Rouse** (double shards on your next hit),
+**Guard** (stop 2 damage from the next attack) or **Rally** (heal a heart).
+It halves when you leave a room, so it can't be hoarded for the Boss. A correct
+answer now produces a decision for the whole class instead of a number going
+down.
+
+**Nothing in the game shortens a fight.** An earlier draft of Momentum had a
+Heavy Strike that dealt extra damage. Simulation caught it cutting a run from
+36 questions to 25 — the exact rule this game exists to protect. Every Momentum
+move is defensive, economic or informational instead, and Commit pays in shards
+and Momentum rather than damage.
+
+**Commit.** On tier 3 and tier 4 questions the named student may answer with
+**no options on screen**, out loud, for double shards and bonus Momentum. The
+room adjudicates. Recall is a far harder test than recognition, and this makes
+children volunteer for it because it is the powerful move.
+
+**Campfires replace Rest rooms.** There is time for one thing only: **Mend**
+(hearts), **Repair** (shields) or **Sharpen** (a permanent extra heart for the
+run). Safe Paths no longer restore shields. The damage a fight did now has to
+be paid for by not doing something else.
+
+**Brace is no longer a trap.** At 2 monster health it cost half a fight to
+block one blow, so a class that never pressed it played better than one that
+did. At 4 it costs a quarter of a fight against a visible countdown — a real
+judgement call.
+
+**Team Up has a price.** Three per run instead of unlimited. Its only cost used
+to be one extra question, which is a thing we want, so it was free — and free
+is not a decision.
+
+**Balance.** A typical class wipes 9% of runs at 95% accuracy, 35% at 85% and
+71% at 75%. A class that ignores Momentum entirely still wins about half its
+runs at 85%; one that plays it well wipes 24%. Momentum is upside, never a
+requirement.
+
+## What's new in v4.3
+
+**The Ember Forge.** Ember was banked at the end of every run and bought
+absolutely nothing. It now buys six permanent upgrades for the class — a
+starting heart, starting shards, an extra potion, a starting relic, sturdier
+repairs, a second Last Stand. A run that ends in a wipe still leaves the room
+better equipped than it walked in, which was the whole point of banking it.
+The pool is deliberately shallow and one-off so difficulty can't drift away
+across a term, and the Teacher Menu can switch perks off entirely.
+
+**Armour actually matters now.** Shields no longer refill in every room. They
+persist, and are only topped up at a **Rest room** or a **Safe Path**, with the
+new **Patch Kit** potion, or by wearing better armour. Starting hearts are 5
+(was 4) to compensate.
+
+**Harder questions for Elites and the Boss.** A new bank of 35 tier-4 questions
+that test whether students can *use* Unit 1's language rather than recognise
+it: correct the mistake, reason in two steps, transform one form into another,
+work out which word a situation calls for. Every one of the 32 curriculum items
+has a hard version, so the Boss now asks the demanding one wherever it exists.
+
+**Monsters have voices.** All 17 announce themselves with their own cry —
+growls, shrieks, glass, whooshes, crunches, bells — and die on a lower, slower
+version of it. Still entirely synthesized; nothing licensed.
+
+**A countdown on every telegraphed attack.** The intent banner now says how
+many turns until the blow lands, with dots that tick down and go red on the
+last one.
+
+**Live status under the hero.** Chilled, Exposed, Frozen, Bracing, Guarded,
+Shields and Streak all appear as chips under the hero's feet and stay there
+while they are active. Debuffs used to be announced once and then vanish.
+
+**Whose turn it is** now gets a card across the top of the screen with a chime,
+rather than quietly changing a small chip.
+
+**The storm got serious.** Lightning bolts are three times wider, forked, and
+long enough to fall behind the fighters, with a full-scene white wash and
+rolling thunder. A bolt cracks when an Elite or the Boss arrives.
+
+**Gear is never equipped over your head.** Finding a weapon or armour now shows
+what you're carrying alongside what you've found, with two buttons: take it, or
+keep what you have.
+
+**Potions can be used in a fight** — the student still answers their question,
+so no review is lost, but the party doesn't attack that turn.
+
+**Giant-Slayer is now EPIC** and applies to Elites only. Against the Boss it was
+halving the number of curriculum items the class faced before the realm ended.
+Two more epics join it: the **Storm Crown** and the **Oracle's Eye**.
+
+**Fixed: defeated monsters got back up.** The death animation ends invisible
+and holds there, but the code was stripping it on a timer, so the monster
+reappeared while the reward cards were still on screen.
+
+**More teacher resets.** Reset Current Run, **New Term** (keeps the class list,
+clears everything else), **remove a single student** who has left, and Factory
+Reset.
+
+**Balance, re-measured** with the new shield rules and the elite question bank:
+about 1 run in 30 ends in a wipe at perfect accuracy, 1 in 5 at 90%, and just
+under half at 80%. A fully forged class does markedly better, which is what the
+Ember is for.
 
 ## What's new in v4.2 (painted art)
 
@@ -266,16 +390,18 @@ Everything balance-related is in `js/config.js`:
 
 | Setting | Default | What it does |
 |---|---|---|
-| `START_HEARTS` | 4 | Party hearts (the deep reserve) |
-| `BASE_ROOM_SHIELDS` | 6 | Shields refreshed on entering each room (drop to 5 for a harder game) |
+| `START_HEARTS` | 13 | Party hearts (monsters act 2.5x as often as v4.3) |
+| `REST_SHIELDS` | 10 | Shields restored by a campfire **Repair** only |
+| `MONSTER_HP` | 4 | Correct answers to fell a monster — the main fight-length dial |
+| `MOMENTUM_CAP` | 6 | How much Momentum can be banked at once |
+| `COMMIT_MIN_TIER` | 3 | Question tier at which Commit is offered |
 | `BOSS_CADENCE` | 3 | Boss acts every N student turns (lower = harder) |
 | `REST_HEAL` | 3 | Hearts restored by a Rest room |
-| `TIER_DAMAGE` | 1/1/2 | Hearts lost per wrong answer, by question tier |
+| `TIER_DAMAGE` | 1/1/2/2 | Hearts lost per wrong answer, by question tier (4 = Elite bank) |
 | `SHOPS_PER_MAP` | 3 | Guaranteed shops, placed deep in the map |
-| `MONSTER_HP` | 2 | Correct answers to defeat a regular monster |
-| `ELITE_HP` | 5 | Correct answers to defeat an Elite |
+| `ELITE_HP` | 7 | Correct answers to defeat an Elite |
 | `TEAMUP_HP_COST` | 1 | HP the monster regains when a partner is called |
-| `LAYERS_PER_REALM` | 20 | Map length — raise for longer lessons |
+| `LAYERS_PER_REALM` | 15 | Map length — raise for longer lessons |
 | `MAX_ELITES_PER_MAP` | 4 | How many long fights appear per map |
 | `BOSS_MAX_QUESTIONS` | 20 | Cap on the boss gauntlet |
 | `LAST_STAND_ENABLED` | true | One sudden-death question at 0 hearts |
@@ -295,6 +421,8 @@ js/mapgen.js          Procedural branching map generator
 js/state.js           Save/load, roster, stats, run lifecycle
 js/items.js           Relics, potions, weapons, armour, enchantments
 js/heroes.js          Playable hero definitions
+js/forge.js           Ember Forge perks and their run-start effects
+js/momentum.js        The Momentum pool and the moves it buys
 js/combat.js          Monster instances, intents, attacks, debuffs
 js/ui.js              Rendering (map, HUD, popups, tiles, shop)
 js/main.js            Game flow, combat, animation sequencing

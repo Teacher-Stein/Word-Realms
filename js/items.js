@@ -64,10 +64,14 @@ const RELICS = [
     desc:"Strike back before the blow has finished landing.",
     effect:"Correct answers delay the monster's attack" },
 
-  { id:"giant_slayer", name:"Giant-Slayer",    rarity:"rare",
+  // EPIC. Deliberately breaks the "gear never shortens a fight" rule, because
+  // a class that has earned it should feel it. Elites ONLY: the boss's health
+  // is the count of curriculum items nobody has faced yet, so halving it would
+  // end the realm with half the unit untested.
+  { id:"giant_slayer", name:"Giant-Slayer",    rarity:"epic",
     icon:"assets/items/giant_slayer.png",
     desc:"Forged for things far larger than yourself.",
-    effect:"Deal 2 damage to Elites and Bosses" },
+    effect:"Deal 2 damage to Elites (not the Boss)" },
 
   // ---- survival ----
   { id:"stone_heart",  name:"Stone Heart",     rarity:"uncommon",
@@ -78,7 +82,7 @@ const RELICS = [
   { id:"aegis_charm",  name:"Aegis Charm",     rarity:"uncommon",
     icon:"assets/items/aegis_charm.png",
     desc:"A shell of still air that reforms itself.",
-    effect:"Gain 1 shield at the start of each room" },
+    effect:"+2 shields at every rest point" },
 
   { id:"last_breath",  name:"Last Breath",     rarity:"rare",
     icon:"assets/items/last_breath.png",
@@ -122,6 +126,16 @@ const RELICS = [
     desc:"Two heads. One roar.",
     effect:"Team Up may be used twice per monster" },
 
+  { id:"storm_crown",  name:"Storm Crown",     rarity:"epic",
+    icon:"assets/items/storm_crown.png",
+    desc:"Worn by whoever the storm decides to spare.",
+    effect:"+1 max heart and +3 shields at every rest point" },
+
+  { id:"oracle_eye",   name:"Oracle's Eye",    rarity:"epic",
+    icon:"assets/items/oracle_eye.png",
+    desc:"It has already watched this fight happen once.",
+    effect:"Monsters always telegraph one turn earlier" },
+
   { id:"streak_totem", name:"Momentum Totem",  rarity:"rare",
     icon:"assets/items/streak_totem.png",
     desc:"It spins faster the better things are going.",
@@ -144,6 +158,13 @@ const POTIONS = [
     icon:"assets/items/potion_shield.png",
     desc:"A dome of hardened air holds for exactly one blow.",
     effect:"Blocks the next hit taken" },
+
+  // Shields no longer refill for free in every room, so there has to be
+  // something worth spending shards on between rest points.
+  { id:"potion_patch",   name:"Patch Kit",       price:16,
+    icon:"assets/items/potion_patch.png",
+    desc:"Wire, hide and a great deal of swearing.",
+    effect:"Restore 6 shields" },
 ];
 
 
@@ -171,7 +192,7 @@ const ARMOURS = [
   { id:"windwarden",   slot:"armour", name:"Windwarden Plate", rarity:"common",
     icon:"assets/items/windwarden.png",
     desc:"Layered against a gale that never stops.",
-    effect:"+2 shields at the start of each room" },
+    effect:"+3 shields at every rest point" },
   { id:"stormhide",    slot:"armour", name:"Stormhide Cloak",  rarity:"uncommon",
     icon:"assets/items/stormhide.png",
     desc:"Cut from something that survived the eye.",
@@ -179,7 +200,7 @@ const ARMOURS = [
   { id:"aegis_mantle", slot:"armour", name:"Aegis Mantle",     rarity:"rare",
     icon:"assets/items/aegis_mantle.png",
     desc:"The storm simply declines to touch you.",
-    effect:"+3 shields per room, blocks Expose" },
+    effect:"+5 shields at every rest point, blocks Expose" },
 ];
 
 const ENCHANTMENTS = [
@@ -191,7 +212,7 @@ const ENCHANTMENTS = [
     effect:"Weapon: +3 shards per hit" },
   { id:"ward_etch",   name:"Ward Etch",   icon:"assets/items/ward_etch.png",
     desc:"A closed circle, unbroken.",
-    effect:"Armour: +1 shield per room" },
+    effect:"Armour: +2 shields at every rest point" },
   { id:"thorn_etch",  name:"Thorn Etch",  icon:"assets/items/thorn_etch.png",
     desc:"Sharp on the inside as well as the out.",
     effect:"Armour: attackers lose shards when they hit you" },
@@ -202,7 +223,7 @@ const ALL_GEAR = WEAPONS.concat(ARMOURS);
 function gearById(id)  { return ALL_GEAR.find(g => g.id === id); }
 function enchantById(id){ return ENCHANTMENTS.find(e => e.id === id); }
 
-const RARITY_PRICE = { common: 26, uncommon: 38, rare: 52 };
+const RARITY_PRICE = { common: 26, uncommon: 38, rare: 52, epic: 78 };
 
 function relicById(id)  { return RELICS.find(r => r.id === id); }
 function potionById(id) { return POTIONS.find(p => p.id === id); }
