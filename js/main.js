@@ -154,6 +154,15 @@ window.enterRealm = function (realmId) {
   renderStudentChips();
 };
 
+// Run `fn` once every queued popup has been dismissed, so the class always
+// sees a reward card before the game moves on.
+function afterPopups(fn) {
+  if (!popupsPending()) { fn(); return; }
+  const iv = setInterval(() => {
+    if (!popupsPending()) { clearInterval(iv); fn(); }
+  }, 140);
+}
+
 function backToMap(advanceTurn = true) {
   if (!STATE.run) return;
   if (advanceTurn) nextStudent();
@@ -199,6 +208,7 @@ window.travelToNode = function (nodeId) {
         case "rest":     enterRest();       break;
         case "treasure": enterTreasure();   break;
         case "safe":     enterSafe();       break;
+        case "shop":     enterShop(nodeId);  break;
         case "boss":     startBoss();       break;
         default:         backToMap(false);
       }
@@ -215,9 +225,18 @@ function renderQuestion(q, ids, onAnswer) {
   $(ids.feedback).textContent = "";
   $(ids.feedback).className = "enc-feedback";
 
+  // Potion of Clarity: grey out one wrong option before anyone answers
+  let trimmed = null;
+  if (STATE.run && STATE.run.clarityActive) {
+    const wrongs = q.choices.filter(c => c !== q.answer);
+    if (wrongs.length) trimmed = pick(wrongs);
+    STATE.run.clarityActive = false;
+    saveState();
+  }
+
   shuffle(q.choices).forEach(opt => {
     const div = document.createElement("div");
-    div.className = "choice";
+    div.className = "choice" + (opt === trimmed ? " removed locked" : "");
     div.textContent = opt;
     div.addEventListener("click", () => {
       if (div.classList.contains("locked") || div.classList.contains("removed")) return;
@@ -236,14 +255,22 @@ function renderQuestion(q, ids, onAnswer) {
     });
     choicesEl.appendChild(div);
   });
+  if (trimmed) {
+    const fb = $(ids.feedback);
+    fb.textContent = "Potion of Clarity removed a wrong answer!";
+    fb.className = "enc-feedback good";
+  }
 }
 
 // ===================== FIGHT / ELITE =====================
 function startFight(isElite) {
+  $("btn-use-item").style.display = "none";
   const realm = currentRealm();
+  clearCorridorFx("corridor", "hit-flash", "slash-fx");
   const run = STATE.run;
   const monster = isElite ? pick(realm.elites) : pick(realm.monsters);
-  const maxHp = isElite ? CONFIG.ELITE_HP : CONFIG.MONSTER_HP;
+  let maxHp = isElite ? CONFIG.ELITE_HP : CONFIG.MONSTER_HP;
+  if (isElite && hasRelic("thunder_sigil")) maxHp = Math.max(2, maxHp - 1);
 
   run.encounter = {
     monster, isElite, hp: maxHp, maxHp,
@@ -305,23 +332,34 @@ function resolveFightAnswer(correct, q) {
         run.stats.monsters++;
         bumpStat(student, "monsters");
         enc.helpers.forEach(h => bumpStat(h, "monsters"));
-        $("enc-feedback").textContent =
-          `${enc.monster.name} is defeated! +${gain} shards`;
-        $("enc-feedback").className = "enc-feedback good";
         renderTopHud("enc");
-        // elites drop a relic
+
+        showPopup({
+          banner: "MONSTER DEFEATED", tone: "good",
+          title: enc.monster.name + " falls!",
+          effect: `+${gain} Knowledge Shards`,
+          desc: enc.isElite
+            ? "An Elite guardian - the party is stronger for it."
+            : "The path ahead is clear.",
+          extra: `Felled by ${student}${enc.helpers.length ? " & " + enc.helpers.join(" & ") : ""}`,
+        });
+
+        // elites always drop a relic
         if (enc.isElite) {
           const relic = availableRelic();
-          addRelic(relic);
-          bumpStat(student, "relics");
-          setTimeout(() => {
-            SFX.relic();
-            $("enc-feedback").textContent = `Relic found: ${relic.name} — ${relic.desc}`;
-          }, 700);
+          if (relic) {
+            addRelic(relic);
+            bumpStat(student, "relics");
+            showPopup({
+              banner: "RELIC FOUND", tone: "", icon: relic.icon,
+              title: relic.name, effect: relic.effect, desc: relic.desc,
+              onClose: () => SFX.relic(),
+            });
+          }
         }
         run.encounter = null;
         saveState();
-        setTimeout(() => backToMap(true), enc.isElite ? 2400 : 1500);
+        afterPopups(() => backToMap(true));
       }, 520);
     } else {
       // still standing - next student takes the next swing
@@ -346,7 +384,7 @@ function resolveFightAnswer(correct, q) {
         playHitFlash("hit-flash", "corridor");
         if (res.blocked) {
           SFX.heal();
-          $("enc-feedback").textContent += " Lucky Charm absorbed the hit!";
+          $("enc-feedback").textContent += ` ${res.blockedBy} absorbed the hit!`;
         } else {
           SFX.heartLost();
           bumpStat(student, "damage");
@@ -389,20 +427,25 @@ function doTeamUp(btnId, hpElId, feedbackId) {
   ctx.teamUpUsed = true;
   ctx.helpers = ctx.helpers || [];
   if (partner) ctx.helpers.push(partner);
-  // pausing to bring a partner in gives the monster time to recover
-  ctx.maxHp += CONFIG.TEAMUP_HP_COST;
-  ctx.hp    += CONFIG.TEAMUP_HP_COST;
+  // pausing to bring a partner in gives the monster time to recover,
+  // unless the Iron Bell relic makes the call instant
+  const hpCost = hasRelic("iron_bell") ? 0 : CONFIG.TEAMUP_HP_COST;
+  ctx.maxHp += hpCost;
+  ctx.hp    += hpCost;
   run.stats.teamups++;
   bumpStat(run.currentStudent, "teamups");
   saveState();
 
   SFX.teamup();
-  renderMonsterHp(hpElId, ctx.hp, ctx.maxHp, ctx.maxHp - 1);
-  const fb = $(feedbackId);
-  fb.textContent = partner
-    ? `${partner} joins the fight! The monster recovers ${CONFIG.TEAMUP_HP_COST} HP while you talk.`
-    : "A partner joins the fight!";
-  fb.className = "enc-feedback good";
+  renderMonsterHp(hpElId, ctx.hp, ctx.maxHp, hpCost ? ctx.maxHp - 1 : -1);
+  showPopup({
+    banner: "TEAM UP", tone: "good",
+    title: partner ? `${partner} joins the fight!` : "A partner joins the fight!",
+    effect: hpCost
+      ? `The monster recovers ${hpCost} HP while you confer`
+      : "The Iron Bell rings — no HP cost!",
+    desc: "Both warriors share the credit for this monster.",
+  });
   updateTeamUpButton(btnId);
 }
 
@@ -413,6 +456,8 @@ $("btn-teamup-boss").addEventListener("click", () =>
 
 // ===================== EVENT =====================
 function enterEvent() {
+  $("btn-use-item").style.display = "none";
+  clearCorridorFx("corridor", "hit-flash", "slash-fx");
   const realm = currentRealm();
   const ev = pick(REALM1_EVENTS);
   applySky("corridor-sky", realm.sky);
@@ -436,18 +481,25 @@ function enterEvent() {
       SFX.click();
       const fb = $("enc-feedback");
       if (!risky) {
-        fb.textContent = "You move on safely, empty-handed.";
-        fb.className = "enc-feedback";
-        setTimeout(() => backToMap(true), 1200);
+        showPopup({
+          banner: "MOVED ON", tone: "neutral", title: "You walk away",
+          effect: "No risk, no reward",
+          desc: "Sometimes that's the wise call.",
+        });
+        afterPopups(() => backToMap(true));
         return;
       }
       if (Math.random() < 0.62) {
         addShards(4);
         SFX.treasure();
-        fb.textContent = "It pays off! +4 Knowledge Shards.";
-        fb.className = "enc-feedback good";
         renderTopHud("enc");
-        setTimeout(() => backToMap(true), 1500);
+        showPopup({
+          banner: "IT PAYS OFF", tone: "good", title: "A good decision",
+          effect: "+4 Knowledge Shards",
+          desc: "The Storm Chaser nods approvingly.",
+          extra: `Chosen by ${STATE.run.currentStudent}`,
+        });
+        afterPopups(() => backToMap(true));
       } else {
         SFX.monsterAttack();
         playHitFlash("hit-flash", "corridor");
@@ -477,46 +529,189 @@ function enterEvent() {
 
 // ===================== REST =====================
 function enterRest() {
+  clearCorridorFx("corridor", "hit-flash", "slash-fx");
   const realm = currentRealm();
-  const amount = STATE.run.relics.some(r => r.id === "warm_cloak") ? 2 : 1;
+  const before = STATE.run.hearts;
+  const amount = hasRelic("warm_cloak") ? 2 : 1;
   heal(amount);
+  const healed = STATE.run.hearts - before;
   SFX.heal();
   applySky("corridor-sky", realm.sky);
   $("monster-sprite").src = "";
   $("monster-hp").innerHTML = "";
   $("enc-who").textContent = "A sheltered chamber, out of the wind.";
-  $("enc-question").textContent =
-    `The party rests and recovers ${amount} heart${amount > 1 ? "s" : ""}.`;
+  $("enc-question").textContent = "The party sets down their packs.";
   $("enc-choices").innerHTML = "";
   $("enc-feedback").textContent = "";
   $("btn-teamup").disabled = true;
+  $("btn-use-item").style.display = "none";
   renderTopHud("enc");
   renderStudentChips();
   showScreen("screen-encounter");
-  setTimeout(() => backToMap(true), 1900);
+  showPopup({
+    banner: "REST", tone: "good", title: "A sheltered chamber",
+    effect: healed > 0
+      ? `+${healed} heart${healed > 1 ? "s" : ""}`
+      : "Already at full health",
+    desc: hasRelic("warm_cloak")
+      ? "Your Warm Cloak makes the rest twice as restorative."
+      : "The wind can't reach you here.",
+    extra: `Hearts: ${STATE.run.hearts}/${STATE.run.maxHearts}`,
+  });
+  afterPopups(() => backToMap(true));
 }
 
 // ===================== SAFE PATH =====================
 function enterSafe() {
+  clearCorridorFx("corridor", "hit-flash", "slash-fx");
   const realm = currentRealm();
   applySky("corridor-sky", realm.sky);
   $("monster-sprite").src = "";
   $("monster-hp").innerHTML = "";
-  $("enc-who").textContent = "Safe Path";
+  $("enc-who").textContent = "Safe Path — a quiet stretch of corridor";
   $("enc-question").textContent =
-    "The party slips through quietly. No danger — but no reward either.";
+    "No danger here, and no reward. A good moment to use something from your pack.";
   $("enc-choices").innerHTML = "";
   $("enc-feedback").textContent = "";
   $("btn-teamup").disabled = true;
+
+  // Safe rooms are the one place the party can spend a potion freely.
+  const useBtn = $("btn-use-item");
+  const havePotions = STATE.run.potions.length > 0;
+  useBtn.style.display = "";
+  useBtn.disabled = !havePotions;
+  useBtn.textContent = havePotions
+    ? `Use an Item (${STATE.run.potions.length})`
+    : "No items to use";
+  useBtn.onclick = () => openInventory({ usable: true, from: "safe" });
+
+  const choices = $("enc-choices");
+  const cont = document.createElement("div");
+  cont.className = "choice";
+  cont.textContent = "Move on";
+  cont.addEventListener("click", () => {
+    SFX.move();
+    useBtn.style.display = "none";
+    backToMap(true);
+  });
+  choices.appendChild(cont);
+
   renderTopHud("enc");
   renderStudentChips();
   showScreen("screen-encounter");
   SFX.move();
-  setTimeout(() => backToMap(true), 1700);
 }
+
+// ===================== SHOP =====================
+function enterShop(nodeId) {
+  SFX.doorOpen();
+  STATE.run.activeShopNode = nodeId;
+  saveState();
+  renderShop(nodeId);
+  showScreen("screen-shop");
+}
+
+window.shopBuy = function (nodeId, kind, index) {
+  const res = buyFromShop(nodeId, kind, index);
+  const fb = $("shop-feedback");
+  if (!res.ok) {
+    SFX.wrong();
+    fb.textContent = res.reason === "poor"
+      ? "Not enough Knowledge Shards for that."
+      : "That one's already gone.";
+    fb.className = "shop-feedback bad";
+    return;
+  }
+  SFX.treasure();
+  if (kind === "relics") {
+    bumpStat(STATE.run.currentStudent, "relics");
+    SFX.relic();
+  }
+  showPopup({
+    banner: kind === "relics" ? "RELIC PURCHASED" : "POTION PURCHASED",
+    tone: "good", icon: res.item.icon,
+    title: res.item.name, effect: res.item.effect, desc: res.item.desc,
+    extra: `Bought by ${STATE.run.currentStudent} · ${STATE.run.shards} shards left`,
+  });
+  renderShop(nodeId);
+};
+
+$("shop-leave").addEventListener("click", () => {
+  SFX.click();
+  STATE.run.activeShopNode = null;
+  saveState();
+  backToMap(true);
+});
+
+// ===================== INVENTORY =====================
+let _inventoryReturn = null;
+function openInventory(opts = {}) {
+  SFX.click();
+  _inventoryReturn = opts.from || null;
+  renderInventory({
+    usable: !!opts.usable,
+    onUse: id => usePotion(id),
+  });
+  showScreen("screen-inventory");
+}
+
+function usePotion(id) {
+  const p = potionById(id);
+  if (!p || !consumePotion(id)) return;
+  const run = STATE.run;
+  let effectText = p.effect;
+
+  if (id === "potion_heal") {
+    const before = run.hearts;
+    heal(2);
+    effectText = `+${run.hearts - before} heart${run.hearts - before === 1 ? "" : "s"}`;
+    SFX.heal();
+  } else if (id === "potion_shield") {
+    run.shieldActive = true;
+    SFX.unlockChime();
+  } else if (id === "potion_clarity") {
+    run.clarityActive = true;
+    SFX.unlockChime();
+  }
+  saveState();
+
+  showPopup({
+    banner: "POTION USED", tone: "good", icon: p.icon,
+    title: p.name, effect: effectText, desc: p.desc,
+    extra: id === "potion_heal"
+      ? `Hearts: ${run.hearts}/${run.maxHearts}`
+      : "Active on the next question.",
+  });
+  renderInventory({ usable: true, onUse: usePotion });
+  ["hud", "enc", "boss"].forEach(renderTopHudSafe);
+}
+
+function renderTopHudSafe(prefix) {
+  try { renderTopHud(prefix); } catch (e) { /* screen not present */ }
+}
+
+$("inv-close").addEventListener("click", () => {
+  SFX.click();
+  if (_inventoryReturn === "safe") {
+    const useBtn = $("btn-use-item");
+    const n = STATE.run.potions.length;
+    useBtn.disabled = n === 0;
+    useBtn.textContent = n ? `Use an Item (${n})` : "No items to use";
+    showScreen("screen-encounter");
+  } else {
+    showScreen("screen-map");
+    renderTopHud("hud");
+    renderMap();
+  }
+  _inventoryReturn = null;
+});
+
+$("btn-inventory").addEventListener("click", () => openInventory({ usable: false }));
 
 // ===================== TREASURE =====================
 function enterTreasure() {
+  $("btn-use-item").style.display = "none";
+  clearCorridorFx("corridor", "hit-flash", "slash-fx");
   const realm = currentRealm();
   const q = drawQuestion(realm);
   applySky("corridor-sky", realm.sky);
@@ -538,29 +733,40 @@ function enterTreasure() {
       run.stats.correct++;
       bumpStat(student, "correct");
       SFX.treasure();
-      const bonus = run.relics.some(r => r.id === "storm_map") ? 3 : 0;
-      if (Math.random() < 0.45) {
-        const relic = availableRelic();
+      const bonus = hasRelic("storm_map") ? 3 : 0;
+      const relic = (hasRelic("scholars_lens") || Math.random() < 0.45)
+        ? availableRelic() : null;
+      if (relic) {
         addRelic(relic);
         bumpStat(student, "relics");
-        SFX.relic();
-        $("enc-feedback").textContent = `Relic found: ${relic.name} — ${relic.desc}`;
+        showPopup({
+          banner: "RELIC FOUND", tone: "", icon: relic.icon,
+          title: relic.name, effect: relic.effect, desc: relic.desc,
+          onClose: () => SFX.relic(),
+        });
       } else {
-        addShards(CONFIG.SHARDS_TREASURE + bonus);
-        $("enc-feedback").textContent =
-          `The chest bursts open! +${CONFIG.SHARDS_TREASURE + bonus} shards`;
+        const amount = CONFIG.SHARDS_TREASURE + bonus;
+        addShards(amount);
+        showPopup({
+          banner: "TREASURE", tone: "good", title: "The chest bursts open!",
+          effect: `+${amount} Knowledge Shards`,
+          desc: bonus ? "Your Storm-Worn Map led you to the deeper cache." : "",
+          extra: `Opened by ${student}`,
+        });
       }
-      $("enc-feedback").className = "enc-feedback good";
     } else {
       run.stats.wrong++;
       bumpStat(student, "wrong");
       SFX.wrong();
       addShards(1);
-      $("enc-feedback").textContent = "The lock holds firm... but you scrape out 1 shard.";
-      $("enc-feedback").className = "enc-feedback bad";
+      showPopup({
+        banner: "LOCKED", tone: "bad", title: "The lock holds firm",
+        effect: "+1 Knowledge Shard",
+        desc: "You scrape a little something from the hinges before moving on.",
+      });
     }
     renderTopHud("enc");
-    setTimeout(() => backToMap(true), 2100);
+    afterPopups(() => backToMap(true));
   });
 }
 
@@ -568,6 +774,7 @@ function enterTreasure() {
 function startBoss() {
   const realm = currentRealm();
   const run = STATE.run;
+  clearCorridorFx("boss-corridor", "boss-hit-flash", "boss-slash-fx");
 
   // The boss tests every curriculum item the class hasn't faced yet, so
   // skipping rooms means a longer boss rather than skipped content.
@@ -643,8 +850,14 @@ function resolveBossAnswer(correct, q) {
         SFX.monsterDown();
         run.stats.monsters++;
         bumpStat(student, "monsters");
-        setTimeout(handleVictory, 900);
-      }, 500);
+        showPopup({
+          banner: "BOSS DEFEATED", tone: "good",
+          title: currentRealm().boss.name + " is beaten!",
+          effect: "The realm is yours",
+          extra: `Final blow by ${student}`,
+        });
+        afterPopups(handleVictory);
+      }, 700);
       return;
     }
     setTimeout(() => {
@@ -665,7 +878,7 @@ function resolveBossAnswer(correct, q) {
         playHitFlash("boss-hit-flash", "boss-corridor");
         if (res.blocked) {
           SFX.heal();
-          $("boss-feedback").textContent += " Lucky Charm absorbed the hit!";
+          $("boss-feedback").textContent += ` ${res.blockedBy} absorbed the hit!`;
         } else {
           SFX.heartLost();
           bumpStat(student, "damage");
@@ -750,5 +963,7 @@ $("btn-play-again").addEventListener("click", () => {
 $("btn-result-menu").addEventListener("click", () => {
   SFX.click(); showScreen("screen-menu"); renderMenu();
 });
+
+$("popup-continue").addEventListener("click", () => { SFX.click(); closePopup(); });
 
 bootstrap();

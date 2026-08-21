@@ -512,3 +512,124 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
   .game-title { font-size: 2.4rem; letter-spacing: 4px; }
   .realm-grid { grid-template-columns: repeat(2,1fr); }
 }
+
+/* ===========================================================================
+   REWARD POPUPS, INVENTORY TILES, SHOP
+   =========================================================================== */
+
+/* --- popup overlay: rewards appear centre-screen and wait to be dismissed,
+       rather than as small text that vanishes before anyone can read it. --- */
+.popup-layer {
+  position: fixed; inset: 0; z-index: 50;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(6, 3, 14, .72); backdrop-filter: blur(3px);
+}
+.popup-layer.open { display: flex; animation: popupFade .22s ease; }
+@keyframes popupFade { from { opacity: 0; } to { opacity: 1; } }
+
+.popup-card {
+  position: relative; text-align: center; width: min(560px, 92vw);
+  padding: 28px 32px 26px;
+  background: linear-gradient(#2f2058, #1a1130);
+  border: 4px solid var(--gold); border-radius: 18px;
+  box-shadow: 0 0 60px rgba(255,215,106,.35), 0 20px 60px rgba(0,0,0,.7);
+  animation: popupPop .34s cubic-bezier(.2,.9,.3,1.4);
+}
+@keyframes popupPop {
+  0%   { transform: scale(.7) translateY(30px); opacity: 0; }
+  100% { transform: scale(1) translateY(0);     opacity: 1; }
+}
+.popup-card.bad     { border-color: var(--bad);  box-shadow: 0 0 60px rgba(255,84,112,.35), 0 20px 60px rgba(0,0,0,.7); }
+.popup-card.good    { border-color: var(--good); box-shadow: 0 0 60px rgba(99,230,160,.35), 0 20px 60px rgba(0,0,0,.7); }
+.popup-card.neutral { border-color: var(--accent-light); box-shadow: 0 0 50px rgba(144,117,214,.3), 0 20px 60px rgba(0,0,0,.7); }
+
+.popup-banner {
+  position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+  background: var(--gold); color: #2a1c00; font-weight: 900; font-size: .95rem;
+  letter-spacing: 3px; padding: 7px 22px; border-radius: 8px;
+  border: 3px solid #2a1c00; white-space: nowrap;
+}
+.popup-card.bad     .popup-banner { background: var(--bad);  color: #2a0810; border-color: #2a0810; }
+.popup-card.good    .popup-banner { background: var(--good); color: #06281a; border-color: #06281a; }
+.popup-card.neutral .popup-banner { background: var(--accent-light); color: #150e26; border-color: #150e26; }
+
+.popup-icon {
+  width: 132px; height: 132px; margin: 20px auto 12px; display: block;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,.6));
+  animation: iconFloat 2.6s ease-in-out infinite;
+}
+.popup-icon:not([src]), .popup-icon[src=""] { display: none; }
+@keyframes iconFloat { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-9px);} }
+
+.popup-title  { font-size: 2rem; font-weight: 900; color: var(--gold); letter-spacing: 1px; }
+.popup-card.bad  .popup-title { color: var(--bad); }
+.popup-card.good .popup-title { color: var(--good); }
+.popup-effect {
+  display: inline-block; margin: 10px 0 6px; padding: 7px 16px;
+  background: rgba(12,7,20,.6); border: 2px solid var(--accent);
+  border-radius: 8px; font-weight: 800; font-size: 1.15rem; color: #cfe6ff;
+}
+.popup-desc  { font-size: 1.05rem; line-height: 1.5; opacity: .9; margin-top: 8px; font-style: italic; }
+.popup-extra { font-size: 1.1rem; font-weight: 800; margin-top: 12px; color: var(--good); min-height: 0; }
+.popup-card .pixel-btn { margin-top: 20px; }
+
+/* --- item tiles (inventory + shop) --- */
+.inv-head { color: var(--gold); font-size: 1.15rem; margin: 20px 0 10px;
+  border-bottom: 2px solid var(--accent); padding-bottom: 6px; }
+.inv-note { font-weight: 400; font-size: .85rem; opacity: .7; font-style: italic; }
+.inv-summary { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+
+.tile-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 14px;
+}
+.item-tile {
+  background: linear-gradient(#2b1d4c, #1b1231);
+  border: 3px solid var(--accent); border-radius: 12px;
+  padding: 14px 12px; text-align: center; position: relative;
+  transition: transform .1s ease, border-color .1s ease;
+}
+.item-tile img { width: 76px; height: 76px; image-rendering: pixelated;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
+.item-tile .it-name   { font-weight: 900; font-size: 1.05rem; color: var(--gold); margin-top: 6px; }
+.item-tile .it-effect { font-size: .92rem; color: #cfe6ff; font-weight: 700; margin-top: 6px; line-height: 1.35; }
+.item-tile .it-desc   { font-size: .82rem; opacity: .72; font-style: italic; margin-top: 6px; line-height: 1.35; }
+.item-tile .it-rarity {
+  position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+  font-size: .62rem; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 2px 10px; border-radius: 5px; border: 2px solid #150e26; background: #8a7fb0; color: #150e26;
+}
+.item-tile.rarity-uncommon { border-color: #63b8e6; }
+.item-tile.rarity-uncommon .it-rarity { background: #63b8e6; }
+.item-tile.rarity-rare     { border-color: var(--gold); }
+.item-tile.rarity-rare .it-rarity { background: var(--gold); }
+.item-tile.empty-slot { opacity: .45; border-style: dashed; }
+
+/* shop specifics */
+.shop-intro  { font-style: italic; opacity: .9; }
+.shop-purse  { float: right; font-style: normal; font-weight: 800; color: var(--gold); }
+.item-tile .it-price {
+  display: inline-flex; align-items: center; gap: 6px; justify-content: center;
+  margin-top: 10px; font-weight: 900; color: var(--gold); font-size: 1.05rem;
+}
+.item-tile .buy-btn { margin-top: 10px; width: 100%; }
+.item-tile.sold { opacity: .45; }
+.item-tile.sold::after {
+  content: 'SOLD'; position: absolute; inset: 0; display: flex;
+  align-items: center; justify-content: center; font-weight: 900;
+  font-size: 1.6rem; letter-spacing: 4px; color: var(--bad);
+  background: rgba(10,6,18,.55); border-radius: 9px;
+}
+.item-tile.unaffordable { filter: grayscale(.55); }
+.shop-feedback { min-height: 1.5em; margin-top: 14px; font-weight: 800; font-size: 1.05rem; }
+.shop-feedback.good { color: var(--good); }
+.shop-feedback.bad  { color: var(--bad); }
+
+/* usable tiles (Safe room / potions) */
+.item-tile.usable { cursor: pointer; }
+.item-tile.usable:hover { transform: translateY(-4px); border-color: var(--gold); }
+
+/* HUD potion pips */
+.badge.potions { border-color: #7ee8ff; }
+.potion-mini { width: 20px; height: 20px; image-rendering: pixelated; vertical-align: middle; }

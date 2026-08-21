@@ -5,7 +5,7 @@ const CONFIG = {
   TEACHER_PIN: "1234",
 
   // --- party ---
-  START_HEARTS: 6,
+  START_HEARTS: 4,        // lowered in v3 - potions/relics cover the gap
   MAX_HEARTS: 8,
 
   // --- combat ---

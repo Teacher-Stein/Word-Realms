@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 2 — classroom edition.** Realm 1 (Unit 1, Extreme Weather) is
+class. **Version 3 — classroom edition.** Realm 1 (Unit 1, Extreme Weather) is
 fully playable; Realms 2–9 appear as locked placeholders using the correct
 themes from the school syllabus.
 
@@ -22,6 +22,35 @@ once the page has loaded.
 If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
+
+## What's new in v3
+
+**Relics and potions have real tiles.** Every relic and potion has its own
+icon, name, plain-language effect and flavour text. Open **Inventory** from the
+map footer to see everything the party is carrying.
+
+**The Storm Pedlar (shop).** A new room type. Spend Knowledge Shards on relics
+(2 in stock, priced by rarity) or potions (3 in stock). Stock is fixed per shop,
+so leaving and coming back shows the same wares.
+
+**Three potions.** Healing Draught (+2 hearts), Potion of Clarity (removes a
+wrong answer from the next question), Storm Shield (blocks the next hit).
+
+**Safe rooms are now useful.** They're the one place the party can freely open
+the pack and drink a potion before pressing on.
+
+**Rewards are pop-up cards.** Shards, relics, potions, heals, event outcomes,
+team-ups and boss kills all show a centre-screen card with an icon and a
+*Continue* button. Nothing vanishes before the class has read it.
+
+**Health lowered to 4 hearts** (was 6), with potions and relics to compensate.
+
+**Sounds hit much harder** — every impact now carries a sub-bass thump, and
+overall levels are roughly doubled.
+
+**Fixed:** entering any room made the screen flash red and shake as if the party
+had been attacked. The damage animation's CSS classes were never cleared, and a
+CSS animation restarts whenever its element becomes visible again.
 
 ## What's new in v2
 
@@ -123,7 +152,7 @@ Everything balance-related is in `js/config.js`:
 
 | Setting | Default | What it does |
 |---|---|---|
-| `START_HEARTS` | 6 | Party health at the start of a run |
+| `START_HEARTS` | 4 | Party health at the start of a run |
 | `MONSTER_HP` | 2 | Correct answers to defeat a regular monster |
 | `ELITE_HP` | 5 | Correct answers to defeat an Elite |
 | `TEAMUP_HP_COST` | 1 | HP the monster regains when a partner is called |
@@ -144,10 +173,12 @@ js/audio.js           Procedural chiptune sound engine
 js/content.js         Realm data + the Realm 1 question bank
 js/mapgen.js          Procedural branching map generator
 js/state.js           Save/load, roster, stats, run lifecycle
-js/ui.js              Rendering (map, HUD, effects)
+js/items.js           Relic + potion definitions
+js/ui.js              Rendering (map, HUD, popups, tiles, shop)
 js/main.js            Game flow, combat, animation sequencing
 assets/sprites/       Original monster/NPC pixel art
-assets/nodes/         Room icons, lantern totem, footprints
+assets/nodes/         Room icons (incl. shop), lantern totem, footprints
+assets/items/         Relic + potion icons
 assets/tiles/         Dungeon wall/floor/torch tiles
 tools/gen_*.py        Scripts that regenerate the art (Python + Pillow)
 data/units.json       Extracted syllabus data for all 9 units (reference)

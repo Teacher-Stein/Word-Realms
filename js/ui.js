@@ -10,11 +10,12 @@ const NODE_ART = {
   rest:     "assets/nodes/node_rest.png",
   treasure: "assets/nodes/node_treasure.png",
   safe:     "assets/nodes/node_safe.png",
+  shop:     "assets/nodes/node_shop.png",
   boss:     "assets/nodes/node_boss.png",
 };
 const NODE_LABEL = {
   start: "Entrance", fight: "Fight", elite: "Elite", event: "Event",
-  rest: "Rest", treasure: "Treasure", safe: "Safe Path", boss: "BOSS",
+  rest: "Rest", treasure: "Treasure", safe: "Safe Path", shop: "Shop", boss: "BOSS",
 };
 
 // map layout constants
@@ -308,6 +309,11 @@ function renderTopHud(prefix) {
   if (sh) sh.textContent = run.shards;
   const em = document.getElementById(`${prefix}-ember`);
   if (em) em.textContent = STATE.ember;
+  const po = document.getElementById(`${prefix}-potions`);
+  if (po) {
+    const n = run.potions ? run.potions.length : 0;
+    po.textContent = n ? `${n} potion${n > 1 ? "s" : ""}` : "No potions";
+  }
   const rl = document.getElementById(`${prefix}-relics`);
   if (rl) rl.textContent = run.relics.length
     ? run.relics.map(r => r.name).join(" · ") : "No relics yet";
@@ -335,18 +341,32 @@ function renderMonsterHp(elId, current, max, addedIndex = -1) {
 }
 
 // ----------------------------- effects -------------------------------------
-function playSlash(fxId) {
-  const el = document.getElementById(fxId);
+// NOTE: these effect classes MUST be cleared once the animation ends.
+// A CSS animation restarts whenever its element goes from display:none back
+// to visible, so a leftover .go/.shake class made the red damage flash and
+// screen shake replay every time the class walked into any room.
+function runOnce(el, cls, ms) {
   if (!el) return;
-  el.classList.remove("go");
-  void el.offsetWidth;      // restart the animation
-  el.classList.add("go");
+  el.classList.remove(cls);
+  void el.offsetWidth;             // force reflow so the animation restarts
+  el.classList.add(cls);
+  clearTimeout(el._fxTimer);
+  el._fxTimer = setTimeout(() => el.classList.remove(cls), ms);
+}
+function playSlash(fxId) {
+  runOnce(document.getElementById(fxId), "go", 420);
 }
 function playHitFlash(flashId, corridorId) {
-  const f = document.getElementById(flashId);
-  const c = document.getElementById(corridorId);
-  if (f) { f.classList.remove("go"); void f.offsetWidth; f.classList.add("go"); }
-  if (c) { c.classList.remove("shake"); void c.offsetWidth; c.classList.add("shake"); }
+  runOnce(document.getElementById(flashId), "go", 520);
+  runOnce(document.getElementById(corridorId), "shake", 480);
+}
+// Belt and braces: strip any lingering effect classes when a corridor screen
+// is shown, so nothing can flash on entry.
+function clearCorridorFx(corridorId, flashId, slashId) {
+  [[corridorId, "shake"], [flashId, "go"], [slashId, "go"]].forEach(([id, cls]) => {
+    const el = document.getElementById(id);
+    if (el) { clearTimeout(el._fxTimer); el.classList.remove(cls); }
+  });
 }
 function animateSprite(spriteId, cls, ms = 600) {
   const s = document.getElementById(spriteId);
@@ -380,4 +400,181 @@ function applySky(skyElId, skyName) {
         el.appendChild(b);
       });
   }
+}
+
+// ===========================================================================
+// REWARD POPUPS
+// Rewards get a centre-screen card that waits to be dismissed, so nothing
+// important vanishes before the class has read it.
+// ===========================================================================
+let _popupQueue = [];
+let _popupOpen = false;
+
+/**
+ * showPopup({banner, title, effect, desc, extra, icon, tone, onClose})
+ * tone: "good" | "bad" | "neutral" | "" (gold)
+ * Popups queue up, so several rewards in a row are shown one after another.
+ */
+function showPopup(opts) {
+  _popupQueue.push(opts);
+  if (!_popupOpen) drainPopups();
+}
+
+function drainPopups() {
+  if (!_popupQueue.length) {
+    _popupOpen = false;
+    document.getElementById("popup-layer").classList.remove("open");
+    return;
+  }
+  _popupOpen = true;
+  const o = _popupQueue.shift();
+  const card = document.getElementById("popup-card");
+  card.className = "popup-card " + (o.tone || "");
+  document.getElementById("popup-banner").textContent = o.banner || "REWARD";
+  document.getElementById("popup-title").textContent  = o.title || "";
+  const eff = document.getElementById("popup-effect");
+  eff.textContent = o.effect || "";
+  eff.style.display = o.effect ? "" : "none";
+  const desc = document.getElementById("popup-desc");
+  desc.textContent = o.desc || "";
+  desc.style.display = o.desc ? "" : "none";
+  const extra = document.getElementById("popup-extra");
+  extra.textContent = o.extra || "";
+  extra.style.display = o.extra ? "" : "none";
+  const icon = document.getElementById("popup-icon");
+  if (o.icon) { icon.src = o.icon; icon.style.display = ""; }
+  else { icon.removeAttribute("src"); icon.style.display = "none"; }
+  document.getElementById("popup-continue").textContent = o.button || "Continue";
+  document.getElementById("popup-layer").classList.add("open");
+  _popupCurrentOnClose = o.onClose || null;
+}
+
+let _popupCurrentOnClose = null;
+function closePopup() {
+  const fn = _popupCurrentOnClose;
+  _popupCurrentOnClose = null;
+  const layer = document.getElementById("popup-layer");
+  layer.classList.remove("open");
+  if (fn) fn();
+  // let the fade finish before the next card pops
+  setTimeout(drainPopups, 120);
+}
+
+function popupsPending() { return _popupOpen || _popupQueue.length > 0; }
+
+// ===========================================================================
+// ITEM TILES
+// ===========================================================================
+function itemTile(item, opts = {}) {
+  const div = document.createElement("div");
+  div.className = "item-tile" +
+    (item.rarity ? " rarity-" + item.rarity : "") +
+    (opts.sold ? " sold" : "") +
+    (opts.usable ? " usable" : "") +
+    (opts.unaffordable ? " unaffordable" : "");
+  let html = "";
+  if (item.rarity) html += `<div class="it-rarity">${item.rarity}</div>`;
+  html += `<img src="${item.icon}" alt="">
+           <div class="it-name">${escapeHtml(item.name)}</div>
+           <div class="it-effect">${escapeHtml(item.effect)}</div>
+           <div class="it-desc">${escapeHtml(item.desc)}</div>`;
+  if (opts.price != null) {
+    html += `<div class="it-price"><span class="icon-shard"></span>${opts.price}</div>`;
+  }
+  div.innerHTML = html;
+  if (opts.buttonLabel) {
+    const btn = document.createElement("button");
+    btn.className = "pixel-btn tiny buy-btn";
+    btn.textContent = opts.buttonLabel;
+    btn.disabled = !!opts.disabled;
+    btn.addEventListener("click", e => { e.stopPropagation(); opts.onClick && opts.onClick(); });
+    div.appendChild(btn);
+  } else if (opts.onClick) {
+    div.addEventListener("click", opts.onClick);
+  }
+  return div;
+}
+
+function renderInventory(opts = {}) {
+  const run = STATE.run;
+  document.getElementById("inv-summary").innerHTML = `
+    <span class="badge"><span class="icon-shard"></span>${run.shards} shards</span>
+    <span class="badge ember"><span class="icon-ember"></span>${STATE.ember} ember</span>
+    <span class="badge">${run.hearts}/${run.maxHearts} hearts</span>`;
+
+  const rel = document.getElementById("inv-relics");
+  rel.innerHTML = "";
+  if (!run.relics.length) {
+    rel.innerHTML = '<div class="item-tile empty-slot"><div class="it-name">No relics yet</div>' +
+      '<div class="it-desc">Beat an Elite, open a chest, or visit the pedlar.</div></div>';
+  } else {
+    run.relics.forEach(r => {
+      const full = relicById(r.id) || r;
+      rel.appendChild(itemTile(full));
+    });
+  }
+
+  const pot = document.getElementById("inv-potions");
+  pot.innerHTML = "";
+  if (!run.potions.length) {
+    pot.innerHTML = '<div class="item-tile empty-slot"><div class="it-name">No potions</div>' +
+      '<div class="it-desc">Buy them from the Storm Pedlar.</div></div>';
+  } else {
+    // group identical potions
+    const counts = {};
+    run.potions.forEach(id => counts[id] = (counts[id] || 0) + 1);
+    Object.entries(counts).forEach(([id, n]) => {
+      const p = potionById(id);
+      if (!p) return;
+      const label = n > 1 ? `${p.name} ×${n}` : p.name;
+      pot.appendChild(itemTile({ ...p, name: label }, {
+        usable: !!opts.usable,
+        buttonLabel: opts.usable ? "Use" : null,
+        onClick: opts.usable ? () => opts.onUse(id) : null,
+      }));
+    });
+  }
+}
+
+function renderShop(nodeId) {
+  const run = STATE.run;
+  const stock = shopStockFor(nodeId);
+  document.getElementById("shop-shards").textContent = run.shards;
+  document.getElementById("shop-feedback").textContent = "";
+
+  const relEl = document.getElementById("shop-relics");
+  relEl.innerHTML = "";
+  stock.relics.forEach((entry, i) => {
+    const r = relicById(entry.id);
+    if (!r) return;
+    relEl.appendChild(itemTile(r, {
+      price: entry.price, sold: entry.sold,
+      unaffordable: !entry.sold && run.shards < entry.price,
+      buttonLabel: entry.sold ? "Sold" : "Buy",
+      disabled: entry.sold || run.shards < entry.price,
+      onClick: () => window.shopBuy(nodeId, "relics", i),
+    }));
+  });
+
+  const potEl = document.getElementById("shop-potions");
+  potEl.innerHTML = "";
+  stock.potions.forEach((entry, i) => {
+    const p = potionById(entry.id);
+    if (!p) return;
+    potEl.appendChild(itemTile(p, {
+      price: entry.price, sold: entry.sold,
+      unaffordable: !entry.sold && run.shards < entry.price,
+      buttonLabel: entry.sold ? "Sold" : "Buy",
+      disabled: entry.sold || run.shards < entry.price,
+      onClick: () => window.shopBuy(nodeId, "potions", i),
+    }));
+  });
+}
+
+// potion count for the HUD
+function renderPotionBadge(prefix) {
+  const el = document.getElementById(`${prefix}-potions`);
+  if (!el || !STATE.run) return;
+  const n = STATE.run.potions.length;
+  el.textContent = n ? `${n} potion${n > 1 ? "s" : ""}` : "No potions";
 }

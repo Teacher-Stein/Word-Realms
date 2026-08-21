@@ -19,6 +19,7 @@ function shuffle(arr) {
 // can never fill up with 5-hit fights.
 const NODE_WEIGHTS = [
   ["fight", 12], ["event", 4], ["rest", 3], ["treasure", 3], ["safe", 3],
+  ["shop", 2],
 ];
 
 function weightedNodeType() {

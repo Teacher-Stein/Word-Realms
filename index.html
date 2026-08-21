@@ -109,8 +109,12 @@
         <li><b>Team Up</b> lets a student bring in a partner, but the monster
             gains 1 HP while you're talking. Once per monster.</li>
         <li><b>Rest</b> heals. <b>Treasure</b> gives shards or a relic.
-            <b>Event</b> is a story choice. <b>Safe Path</b> skips a room with
-            no risk and no reward.</li>
+            <b>Event</b> is a story choice. <b>Shop</b> sells relics and potions
+            for Knowledge Shards.</li>
+        <li><b>Safe Path</b> has no danger and no reward - but it's the one place
+            the party can stop and drink a potion.</li>
+        <li>Open <b>Inventory</b> any time from the map to see every relic and
+            potion the party is carrying, and what each one does.</li>
         <li>The <b>Boss</b> tests every word and grammar point the class hasn't
             faced yet, so nothing gets skipped for good.</li>
         <li>Lose all hearts and the run resets with a brand-new map — but the
@@ -128,6 +132,7 @@
       <div class="hud-block currency">
         <span class="badge"><span class="icon-shard"></span><span id="hud-shards">0</span></span>
         <span class="badge ember"><span class="icon-ember"></span><span id="hud-ember">0</span></span>
+        <span class="badge potions" id="hud-potions" title="Potions">No potions</span>
         <span class="badge relics" id="hud-relics" title="Relics">—</span>
       </div>
     </div>
@@ -144,6 +149,7 @@
       </div>
       <div class="turn-hint" id="turn-hint">Pick a glowing room to enter</div>
       <div class="map-footer">
+        <button id="btn-inventory" class="pixel-btn tiny">Inventory</button>
         <button id="btn-recenter"   class="pixel-btn tiny ghost">Recentre</button>
         <button id="btn-map-teacher" class="pixel-btn tiny ghost">Teacher</button>
         <button id="btn-map-menu"    class="pixel-btn tiny ghost">Menu</button>
@@ -197,6 +203,7 @@
       <div class="choices" id="enc-choices"></div>
       <div class="panel-foot">
         <div class="enc-feedback" id="enc-feedback"></div>
+        <button id="btn-use-item" class="pixel-btn tiny" style="display:none;">Use an Item</button>
         <button id="btn-teamup" class="pixel-btn tiny teamup">Team Up (+1 monster HP)</button>
       </div>
     </div>
@@ -259,10 +266,57 @@
     </div>
   </section>
 
+
+  <!-- ===================== REWARD / INFO POPUP ===================== -->
+  <div id="popup-layer" class="popup-layer">
+    <div class="popup-card" id="popup-card">
+      <div class="popup-banner" id="popup-banner">REWARD</div>
+      <img class="popup-icon" id="popup-icon" alt="">
+      <div class="popup-title" id="popup-title"></div>
+      <div class="popup-effect" id="popup-effect"></div>
+      <div class="popup-desc" id="popup-desc"></div>
+      <div class="popup-extra" id="popup-extra"></div>
+      <button id="popup-continue" class="pixel-btn">Continue</button>
+    </div>
+  </div>
+
+  <!-- ===================== INVENTORY ===================== -->
+  <section id="screen-inventory" class="screen">
+    <div class="panel-card wide">
+      <h2>Party Inventory</h2>
+      <div class="inv-summary" id="inv-summary"></div>
+      <h3 class="inv-head">Relics <span class="inv-note">— permanent for this run</span></h3>
+      <div class="tile-grid" id="inv-relics"></div>
+      <h3 class="inv-head">Potions <span class="inv-note">— one use each</span></h3>
+      <div class="tile-grid" id="inv-potions"></div>
+      <div class="row-buttons">
+        <button id="inv-close" class="pixel-btn">Back</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SHOP ===================== -->
+  <section id="screen-shop" class="screen">
+    <div class="panel-card wide">
+      <h2>The Storm Pedlar</h2>
+      <p class="shop-intro">"Shards for goods, no haggling. The storm waits for
+         no one." <span class="shop-purse">Shards: <b id="shop-shards">0</b></span></p>
+      <h3 class="inv-head">Relics</h3>
+      <div class="tile-grid" id="shop-relics"></div>
+      <h3 class="inv-head">Potions</h3>
+      <div class="tile-grid" id="shop-potions"></div>
+      <div class="shop-feedback" id="shop-feedback"></div>
+      <div class="row-buttons">
+        <button id="shop-leave" class="pixel-btn">Leave the shop</button>
+      </div>
+    </div>
+  </section>
+
 </div>
 
 <script src="js/config.js"></script>
 <script src="js/audio.js"></script>
+<script src="js/items.js"></script>
 <script src="js/content.js"></script>
 <script src="js/mapgen.js"></script>
 <script src="js/state.js"></script>

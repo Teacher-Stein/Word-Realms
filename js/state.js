@@ -4,18 +4,6 @@
 // Data is shaped so it can later be pushed to a shared backend unchanged.
 // ---------------------------------------------------------------------------
 
-const RELIC_POOL = [
-  { id:"lucky_charm", name:"Lucky Charm",
-    desc:"The first wrong answer each realm costs no heart." },
-  { id:"second_wind", name:"Second Wind",
-    desc:"Start each run with 1 extra heart." },
-  { id:"echo_shard",  name:"Echo Shard",
-    desc:"Removes one wrong option, once per realm." },
-  { id:"storm_map",   name:"Storm-Worn Map",
-    desc:"Bonus shards from every Treasure room." },
-  { id:"warm_cloak",  name:"Warm Cloak",
-    desc:"Rest rooms heal 2 hearts instead of 1." },
-];
 
 function defaultState() {
   return {
@@ -37,11 +25,29 @@ function loadState() {
   try {
     const raw = localStorage.getItem(CONFIG.SAVE_KEY);
     if (!raw) return defaultState();
-    return Object.assign(defaultState(), JSON.parse(raw));
+    const st = Object.assign(defaultState(), JSON.parse(raw));
+    migrateRun(st);
+    return st;
   } catch (e) {
     console.warn("save load failed, starting fresh", e);
     return defaultState();
   }
+}
+
+// A run saved by an older version won't have the newer fields. Fill them in
+// rather than wiping a class's progress in the middle of a lesson.
+function migrateRun(st) {
+  const r = st.run;
+  if (!r) return;
+  if (!Array.isArray(r.potions)) r.potions = [];
+  if (!r.shopStock)              r.shopStock = {};
+  if (!Array.isArray(r.relics))  r.relics = [];
+  if (!Array.isArray(r.absent))  r.absent = [];
+  if (typeof r.shieldActive  !== "boolean") r.shieldActive  = false;
+  if (typeof r.clarityActive !== "boolean") r.clarityActive = false;
+  if (!r.stats) r.stats = { correct: 0, wrong: 0, monsters: 0, teamups: 0 };
+  // Older maps contain no shop rooms - harmless, they just won't appear
+  // until the next run.
 }
 
 function saveState() {
@@ -137,6 +143,10 @@ function startNewRun(realmId) {
     maxHearts: Math.max(CONFIG.START_HEARTS, hearts),
     shards: 0,
     relics: [],
+    potions: [],          // consumable ids held by the party
+    shieldActive: false,  // Storm Shield blocks the next hit
+    clarityActive: false, // Potion of Clarity trims the next question
+    shopStock: {},        // nodeId -> generated stock, so a shop is stable
     coveredKeys: [],       // curriculum items already tested this run
     usedQuestionIdx: [],   // avoid repeating the exact same question
     usedLuckyCharm: false,
@@ -189,10 +199,15 @@ function drawQuestion(realm) {
 function damage(n = 1) {
   const run = STATE.run;
   if (!run) return { blocked: false, dead: false };
+  if (run.shieldActive) {
+    run.shieldActive = false;
+    saveState();
+    return { blocked: true, blockedBy: "Storm Shield", dead: false };
+  }
   if (!run.usedLuckyCharm && run.relics.some(r => r.id === "lucky_charm")) {
     run.usedLuckyCharm = true;
     saveState();
-    return { blocked: true, dead: false };
+    return { blocked: true, blockedBy: "Lucky Charm", dead: false };
   }
   run.hearts = Math.max(0, run.hearts - n);
   saveState();
@@ -209,19 +224,82 @@ function heal(n = 1) {
 function addShards(n) { STATE.run.shards += n; saveState(); }
 function addEmber(n)  { STATE.ember += n; saveState(); }
 
+function hasRelic(id) {
+  return !!(STATE.run && STATE.run.relics.some(r => r.id === id));
+}
+
 function addRelic(relic) {
   STATE.run.relics.push(relic);
   if (relic.id === "second_wind") {
     STATE.run.maxHearts += 1;
-    STATE.run.hearts += 1;
+    STATE.run.hearts = Math.min(STATE.run.maxHearts, STATE.run.hearts + 1);
   }
   saveState();
 }
 
-function availableRelic() {
+// A relic the party doesn't already hold. `rarities` narrows the pool.
+function availableRelic(rarities = null) {
   const owned = STATE.run.relics.map(r => r.id);
-  const pool = RELIC_POOL.filter(r => !owned.includes(r.id));
-  return pool.length ? pick(pool) : pick(RELIC_POOL);
+  let pool = RELICS.filter(r => !owned.includes(r.id));
+  if (rarities) {
+    const narrowed = pool.filter(r => rarities.includes(r.rarity));
+    if (narrowed.length) pool = narrowed;
+  }
+  return pool.length ? pick(pool) : null;
+}
+
+// --------------------------- potions ---------------------------------------
+function addPotion(id) {
+  STATE.run.potions.push(id);
+  saveState();
+}
+
+function consumePotion(id) {
+  const i = STATE.run.potions.indexOf(id);
+  if (i === -1) return false;
+  STATE.run.potions.splice(i, 1);
+  saveState();
+  return true;
+}
+
+// --------------------------- shop ------------------------------------------
+// Stock is generated once per shop node and remembered, so re-entering or
+// resuming the lesson shows the same wares.
+function shopStockFor(nodeId) {
+  const run = STATE.run;
+  if (run.shopStock[nodeId]) return run.shopStock[nodeId];
+  const owned = run.relics.map(r => r.id);
+  const pool = shuffle(RELICS.filter(r => !owned.includes(r.id)));
+  const relicPicks = [];
+  // one better-than-common relic where possible, plus one of anything
+  const fancy = pool.find(r => r.rarity !== "common");
+  if (fancy) relicPicks.push(fancy);
+  pool.forEach(r => {
+    if (relicPicks.length < 2 && !relicPicks.includes(r)) relicPicks.push(r);
+  });
+  const stock = {
+    relics: relicPicks.map(r => ({ id: r.id, price: relicPrice(r), sold: false })),
+    potions: shuffle(POTIONS).slice(0, 3)
+      .map(p => ({ id: p.id, price: p.price, sold: false })),
+  };
+  run.shopStock[nodeId] = stock;
+  saveState();
+  return stock;
+}
+
+function buyFromShop(nodeId, kind, index) {
+  const run = STATE.run;
+  const stock = run.shopStock[nodeId];
+  if (!stock) return { ok: false, reason: "no stock" };
+  const entry = stock[kind][index];
+  if (!entry || entry.sold) return { ok: false, reason: "sold" };
+  if (run.shards < entry.price) return { ok: false, reason: "poor" };
+  run.shards -= entry.price;
+  entry.sold = true;
+  if (kind === "relics") addRelic(relicById(entry.id));
+  else addPotion(entry.id);
+  saveState();
+  return { ok: true, item: itemById(entry.id), kind };
 }
 
 // ---------------------------------------------------------------------------
@@ -247,7 +325,10 @@ function clearRealm() {
   const realmId = run.realmId;
   const score = runScore();
   const minutes = Math.max(1, Math.round((Date.now() - run.startedAt) / 60000));
-  const emberGained = Math.round(run.shards / 2) + 5;
+  let emberGained = Math.round(run.shards / 2) + 5;
+  if (run.relics.some(r => r.id === "ember_pouch")) {
+    emberGained = Math.round(emberGained * 1.5);
+  }
   addEmber(emberGained);
 
   STATE.leaderboard.push({
