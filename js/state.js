@@ -45,6 +45,9 @@ function migrateRun(st) {
   if (!Array.isArray(r.absent))  r.absent = [];
   if (typeof r.shieldActive  !== "boolean") r.shieldActive  = false;
   if (typeof r.clarityActive !== "boolean") r.clarityActive = false;
+  if (typeof r.usedLastStand  !== "boolean") r.usedLastStand  = false;
+  if (typeof r.usedLastBreath !== "boolean") r.usedLastBreath = false;
+  if (typeof r.usedEcho       !== "boolean") r.usedEcho       = false;
   if (!r.stats) r.stats = { correct: 0, wrong: 0, monsters: 0, teamups: 0 };
   // Older maps contain no shop rooms - harmless, they just won't appear
   // until the next run.
@@ -163,6 +166,8 @@ function startNewRun(realmId, heroId) {
     usedQuestionIdx: [],   // avoid repeating the exact same question
     usedLuckyCharm: false,
     usedEcho: false,
+    usedLastStand: false,  // the one sudden-death reprieve, once per run
+    usedLastBreath: false, // the Last Breath relic grants a second one
     startedAt: Date.now(),
     turnQueue: null,
     currentStudent: null,

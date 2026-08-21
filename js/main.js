@@ -320,13 +320,25 @@ function renderQuestion(q, ids, onAnswer) {
   $(ids.feedback).textContent = "";
   $(ids.feedback).className = "enc-feedback";
 
-  // Potion of Clarity: grey out one wrong option before anyone answers
-  let trimmed = null;
+  // Grey out one WRONG option before anyone answers. Two things can do this:
+  // the Potion of Clarity, and the Echo Shard relic, which fires itself once
+  // per run on the first grammar question. Neither ever touches the correct
+  // answer - removing a wrong option helps, it never punishes knowing.
+  let trimmed = null, trimSource = "";
   if (STATE.run && STATE.run.clarityActive) {
     const wrongs = q.choices.filter(c => c !== q.answer);
     if (wrongs.length) trimmed = pick(wrongs);
     STATE.run.clarityActive = false;
+    trimSource = "Potion of Clarity";
     saveState();
+  } else if (STATE.run && q.tier === 3 && !STATE.run.usedEcho && hasRelic("echo_shard")) {
+    const wrongs = q.choices.filter(c => c !== q.answer);
+    if (wrongs.length) {
+      trimmed = pick(wrongs);
+      STATE.run.usedEcho = true;
+      trimSource = "Echo Shard";
+      saveState();
+    }
   }
 
   shuffle(q.choices).forEach(opt => {
@@ -352,15 +364,23 @@ function renderQuestion(q, ids, onAnswer) {
   });
   if (trimmed) {
     const fb = $(ids.feedback);
-    fb.textContent = "Potion of Clarity removed a wrong answer!";
+    fb.textContent = `${trimSource} removed a wrong answer!`;
     fb.className = "enc-feedback good";
   }
+  // The question panel and the corridor share the screen, so a long question
+  // with four long options shortens the corridor. Re-fit the foe now that the
+  // panel's real height is known, or a tall monster is cut off at the top.
+  refitCurrentStage();
+  requestAnimationFrame(refitCurrentStage);
 }
 
 // ===================== FIGHT / ELITE =====================
 function startFight(isElite) {
   const realm = currentRealm();
   clearCorridorFx("corridor", "hit-flash", "slash-fx");
+  clearScenery();
+  updateStageScale("corridor");
+  showCombatButtons(true);
   $("btn-use-item").style.display = "none";
   const run = STATE.run;
 
@@ -745,7 +765,96 @@ function offerGear(gear) {
 }
 
 function onPartyDown(ctx) {
-  handleDeath();
+  tryLastStand(ctx, () => nextCombatTurn(ctx));
+}
+
+// ---------------------------------------------------------------------------
+// LAST STAND
+// At zero hearts the party gets one sudden-death question instead of dying on
+// the spot. Answer it and they get back up with a single heart; miss it and
+// the run is over. Once per run, so it's a reprieve rather than a safety net.
+//
+// It costs no review time - it IS a question - and it can't hide an answer,
+// so the rule that knowledge is never punished still holds.
+// ---------------------------------------------------------------------------
+function tryLastStand(ctx, onSurvive) {
+  const run = STATE.run;
+  if (!run || !CONFIG.LAST_STAND_ENABLED) { handleDeath(); return; }
+
+  // The Last Breath relic buys a second one - which is the whole reason to
+  // spend 52 shards on it.
+  let viaRelic = false;
+  if (!run.usedLastStand) {
+    run.usedLastStand = true;
+  } else if (hasRelic("last_breath") && !run.usedLastBreath) {
+    run.usedLastBreath = true;
+    viaRelic = true;
+  } else {
+    handleDeath();
+    return;
+  }
+  saveState();
+
+  const m = ctx && ctx.monster;
+  const isBoss = !!(m && m.isBoss);
+  const ids = isBoss
+    ? { question: "boss-question", choices: "boss-choices", feedback: "boss-feedback" }
+    : { question: "enc-question", choices: "enc-choices", feedback: "enc-feedback" };
+  const whoId = isBoss ? "boss-who" : "enc-who";
+  const hud   = isBoss ? "boss" : "enc";
+
+  document.querySelectorAll(".pixel-btn.brace, .pixel-btn.teamup")
+    .forEach(b => b.disabled = true);
+  SFX.bossRoar();
+
+  showPopup({
+    banner: "LAST STAND", tone: "bad",
+    title: viaRelic ? "Your Last Breath flares" : "The party is on its knees",
+    effect: "One question stands between you and the end of the run",
+    desc: viaRelic
+      ? "The relic buys one more chance. Answer and they rise again; miss it and the realm resets."
+      : "Answer it and they get back up with a single heart. Miss it and the realm resets.",
+    extra: `It falls to ${run.currentStudent}`,
+    button: "Face it",
+    onClose: () => {
+      showStreakBanner("LAST STAND — ANSWER OR FALL");
+      $("app").classList.add("last-stand");
+      const q = drawQuestion(currentRealm());
+      $(whoId).textContent = "LAST STAND — everything rides on this answer.";
+      renderQuestion(q, ids, correct => {
+        $("app").classList.remove("last-stand");
+        const student = STATE.run.currentStudent;
+        if (correct) {
+          markCovered(q.cover);
+          STATE.run.stats.correct++;
+          bumpStat(student, "correct");
+          STATE.run.hearts = 1;
+          STATE.run.shields = 0;
+          STATE.run.streak = 0;
+          if (m) m.stunned = true;           // the foe reels back too
+          clearDebuff();
+          saveState();
+          SFX.victory();
+          renderTopHud(hud);
+          if (m) renderIntent(isBoss ? "boss-intent" : "monster-intent", m);
+          showPopup({
+            banner: "BACK ON THEIR FEET", tone: "good",
+            title: `${student} saves the party!`,
+            effect: "+1 heart — the run continues",
+            desc: "A Last Stand can only be made once in a run. Guard it well.",
+          });
+          afterPopups(() => { if (onSurvive) onSurvive(); });
+        } else {
+          STATE.run.stats.wrong++;
+          bumpStat(student, "wrong");
+          resetStreak();
+          saveState();
+          SFX.defeat();
+          setTimeout(handleDeath, 1500);
+        }
+      });
+    },
+  });
 }
 
 // ---- team up ----
@@ -806,6 +915,15 @@ function doBrace(which) {
 $("btn-brace").addEventListener("click", () => doBrace("enc"));
 $("btn-brace-boss").addEventListener("click", () => doBrace("boss"));
 
+// Brace and Team Up only mean something when there is something to fight, so
+// they are hidden outright in Rest, Safe, Treasure and Event rooms.
+function showCombatButtons(show) {
+  ["btn-brace", "btn-teamup"].forEach(id => {
+    const b = $(id);
+    if (b) b.style.display = show ? "" : "none";
+  });
+}
+
 // enable/disable the combat action buttons for the current turn
 function updateCombatButtons(prefix) {
   const run = STATE.run;
@@ -834,12 +952,17 @@ function updateCombatButtons(prefix) {
 function enterEvent() {
   $("btn-use-item").style.display = "none";
   clearCorridorFx("corridor", "hit-flash", "slash-fx");
+  clearFoeStage();
+  clearScenery();
+  updateStageScale("corridor");
+  showCombatButtons(false);
   const realm = currentRealm();
   const ev = pick(REALM1_EVENTS);
   applySky("corridor-sky", realm.sky);
+  paintHero("hero-sprite", "hero-shields");
   $("monster-sprite").src = realm.npc.sprite;
-  renderMonsterHp("monster-hp", 0, 0);
-  $("monster-hp").innerHTML = "";
+  $("monster-sprite").style.width = spriteWidth(realm.npc.sprite) + "px";
+  $("monster-name").textContent = realm.npc.name;
   $("enc-who").textContent = ev.who;
   $("enc-question").textContent = ev.text;
   $("btn-teamup").disabled = true;
@@ -888,7 +1011,8 @@ function enterEvent() {
         fb.className = "enc-feedback bad";
         renderTopHud("enc");
         setTimeout(() => {
-          if (res.dead) handleDeath(); else backToMap(true);
+          if (res.dead) tryLastStand({ monster: null }, () => backToMap(true));
+          else backToMap(true);
         }, 1500);
       }
     });
@@ -906,6 +1030,9 @@ function enterEvent() {
 // ===================== REST =====================
 function enterRest() {
   clearCorridorFx("corridor", "hit-flash", "slash-fx");
+  clearFoeStage();
+  showScenery("rest");
+  showCombatButtons(false);
   const realm = currentRealm();
   const before = STATE.run.hearts;
   const amount = CONFIG.REST_HEAL + (hasRelic("warm_cloak") ? 1 : 0);
@@ -913,14 +1040,36 @@ function enterRest() {
   const healed = STATE.run.hearts - before;
   SFX.heal();
   applySky("corridor-sky", realm.sky);
-  $("monster-sprite").src = "";
-  $("monster-hp").innerHTML = "";
+  paintHero("hero-sprite", "hero-shields");
   $("enc-who").textContent = "A sheltered chamber, out of the wind.";
-  $("enc-question").textContent = "The party sets down their packs.";
-  $("enc-choices").innerHTML = "";
+  $("enc-question").textContent =
+    "The party sets down their packs. Bandages, hot food, and a bed out of the storm.";
   $("enc-feedback").textContent = "";
   $("btn-teamup").disabled = true;
-  $("btn-use-item").style.display = "none";
+
+  // A Rest room used to bounce straight back to the map behind its own reward
+  // card, so nobody ever saw the room. It now waits for the class to move on,
+  // and the pack can be opened here the same as on a Safe Path.
+  const useBtn = $("btn-use-item");
+  const havePotions = STATE.run.potions.length > 0;
+  useBtn.style.display = "";
+  useBtn.disabled = !havePotions;
+  useBtn.textContent = havePotions
+    ? `Use an Item (${STATE.run.potions.length})` : "No items to use";
+  useBtn.onclick = () => openInventory({ usable: true, from: "safe" });
+
+  const choices = $("enc-choices");
+  choices.innerHTML = "";
+  const cont = document.createElement("div");
+  cont.className = "choice";
+  cont.textContent = "Move on";
+  cont.addEventListener("click", () => {
+    SFX.move();
+    useBtn.style.display = "none";
+    backToMap(true);
+  });
+  choices.appendChild(cont);
+
   renderTopHud("enc");
   renderStudentChips();
   showScreen("screen-encounter");
@@ -934,17 +1083,18 @@ function enterRest() {
       : "The wind can't reach you here.",
     extra: `Hearts: ${STATE.run.hearts}/${STATE.run.maxHearts}`,
   });
-  afterPopups(() => backToMap(true));
 }
 
 // ===================== SAFE PATH =====================
 function enterSafe() {
   clearCorridorFx("corridor", "hit-flash", "slash-fx");
+  clearFoeStage();
+  showScenery("safe");
+  showCombatButtons(false);
   const realm = currentRealm();
   applySky("corridor-sky", realm.sky);
-  $("monster-sprite").src = "";
-  $("monster-hp").innerHTML = "";
-  $("enc-who").textContent = "Safe Path — a quiet stretch of corridor";
+  paintHero("hero-sprite", "hero-shields");
+  $("enc-who").textContent = "Safe Path — a fire burns in a quiet stretch of corridor";
   $("enc-question").textContent =
     "No danger here, and no reward. A good moment to use something from your pack.";
   $("enc-choices").innerHTML = "";
@@ -1088,11 +1238,13 @@ $("btn-inventory").addEventListener("click", () => openInventory({ usable: false
 function enterTreasure() {
   $("btn-use-item").style.display = "none";
   clearCorridorFx("corridor", "hit-flash", "slash-fx");
+  clearFoeStage();
+  showScenery("treasure");
+  showCombatButtons(false);
   const realm = currentRealm();
   const q = drawQuestion(realm);
   applySky("corridor-sky", realm.sky);
-  $("monster-sprite").src = "";
-  $("monster-hp").innerHTML = "";
+  paintHero("hero-sprite", "hero-shields");
   $("enc-who").textContent = "A locked chest hums with old storm-magic.";
   $("btn-teamup").disabled = true;
   renderTopHud("enc");
@@ -1151,6 +1303,8 @@ function startBoss() {
   const realm = currentRealm();
   const run = STATE.run;
   clearCorridorFx("boss-corridor", "boss-hit-flash", "boss-slash-fx");
+  clearScenery();
+  updateStageScale("boss-corridor");
 
   const missing = realm.coverKeys.filter(k => !run.coveredKeys.includes(k));
   let queue = shuffle(missing);

@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 4 — classroom edition.** Realm 1 (Unit 1, Extreme Weather) is
+class. **Version 4.1 — classroom edition.** Realm 1 (Unit 1, Extreme Weather) is
 fully playable; Realms 2–9 appear as locked placeholders using the correct
 themes from the school syllabus.
 
@@ -22,6 +22,43 @@ once the page has loaded.
 If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
+
+## What's new in v4.1 (playtest fixes)
+
+**The monster's information moved underneath it.** The nameplate, health and
+telegraphed intent used to sit above the sprite, where a tall monster pushed
+them off the top of the screen. They now sit under the monster, and the whole
+scene rescales itself if the window is too short to hold everything — on a
+1080p classroom TV nothing is ever cut off.
+
+**Rooms have furniture.** A Rest room has a bed, a Safe Path has a campfire, a
+Treasure room has a chest and the Storm Pedlar has a market stall. The hero
+now stands in every room, not only in fights.
+
+**Fixed: empty rooms showed the last monster's leftovers.** Walking into a Rest
+room displayed the previous monster's name and its next attack with no monster
+in sight. The corridor is shared by every room type and was never being wiped.
+
+**Fixed: a Rest room bounced straight back to the map** behind its own reward
+card, so nobody ever saw the room. It now waits for the class to move on, and
+the pack can be opened there the same as on a Safe Path.
+
+**Monsters hit more often.** Every monster now acts every other student turn
+(the slower half used to act every third), and the boss acts every third turn
+instead of every fourth. Frenzied variants act on *every* turn.
+
+**Last Stand.** The first time the party runs out of hearts, one student gets a
+single sudden-death question, framed in red across the whole screen. Answer it
+and the party gets back up with one heart and the monster reels; miss it and
+the run is over. Once per run — the counterweight to the faster monsters.
+
+**Two dead relics now do something.** *Last Breath* grants a second Last Stand.
+*Echo Shard* removes a wrong option from the run's first grammar question.
+
+**Balance, re-measured.** With the faster monsters and Last Stand together:
+roughly 1 run in 9 ends in a wipe at perfect accuracy, 1 in 5 at 90%, 1 in 3 at
+80% and half at 70% — and almost all of those wipes now happen at the boss
+rather than halfway through the map. Question count per run is unchanged (~35).
 
 ## What's new in v4 (Build A)
 
@@ -197,6 +234,10 @@ later.
 
 **Realms 2–9 are not built yet.** They're visible but locked.
 
+**Very short windows shrink the sprites.** The game is built for a 1920×1080
+classroom TV, where every sprite is drawn at full size. On a small laptop
+screen the fight scene scales itself down so nothing is cut off.
+
 ---
 
 ## Tuning the game
@@ -206,8 +247,8 @@ Everything balance-related is in `js/config.js`:
 | Setting | Default | What it does |
 |---|---|---|
 | `START_HEARTS` | 4 | Party hearts (the deep reserve) |
-| `BASE_ROOM_SHIELDS` | 6 | Shields refreshed on entering each room |
-| `BOSS_CADENCE` | 4 | Boss acts every N student turns |
+| `BASE_ROOM_SHIELDS` | 6 | Shields refreshed on entering each room (drop to 5 for a harder game) |
+| `BOSS_CADENCE` | 3 | Boss acts every N student turns (lower = harder) |
 | `REST_HEAL` | 3 | Hearts restored by a Rest room |
 | `TIER_DAMAGE` | 1/1/2 | Hearts lost per wrong answer, by question tier |
 | `SHOPS_PER_MAP` | 3 | Guaranteed shops, placed deep in the map |
@@ -217,6 +258,7 @@ Everything balance-related is in `js/config.js`:
 | `LAYERS_PER_REALM` | 20 | Map length — raise for longer lessons |
 | `MAX_ELITES_PER_MAP` | 4 | How many long fights appear per map |
 | `BOSS_MAX_QUESTIONS` | 20 | Cap on the boss gauntlet |
+| `LAST_STAND_ENABLED` | true | One sudden-death question at 0 hearts |
 | `TEACHER_PIN` | "1234" | Teacher Menu PIN |
 
 ---
@@ -238,6 +280,7 @@ js/ui.js              Rendering (map, HUD, popups, tiles, shop)
 js/main.js            Game flow, combat, animation sequencing
 assets/sprites/       Original monster/NPC pixel art
 assets/nodes/         Room icons (incl. shop), lantern totem, footprints
+assets/scenery/       Bed, campfire, chest and market stall for the rooms
 assets/items/         Relic, potion, gear and enchantment icons
 assets/heroes/        Hero sprites
 assets/tiles/         Dungeon wall/floor/torch tiles

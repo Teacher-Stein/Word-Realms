@@ -111,9 +111,13 @@
         <li>The game picks one student per turn. Use <b>Reroll</b> if they're absent.</li>
         <li><b>Fight</b> rooms take 2 correct answers, <b>Elite</b> rooms take 5.
             Elites always drop a relic.</li>
-        <li>Watch the monster's <b>intent</b> above its head - it tells you what is
-            coming and when. Monsters attack on their own schedule, not only when
+        <li>Watch the monster's <b>intent</b> underneath it - it tells you what is
+            coming and when. Monsters act every other turn, not only when
             you answer wrongly.</li>
+        <li><b>Last Stand.</b> The first time the party runs out of hearts, one
+            student gets a single sudden-death question. Answer it and the party
+            gets back up with one heart. Miss it and the run is over. Once per
+            run only.</li>
         <li><b>Grammar questions pay more shards but cost 2 hearts if you get them
             wrong.</b> Vocabulary costs 1.</li>
         <li><b>Brace</b> to defend: you still answer a question, but a correct answer
@@ -128,8 +132,8 @@
         <li><b>Shops</b> appear deeper in the map, once you have shards to spend.
             <b>Safe Path</b> is where you can drink a potion.</li>
         <li>The <b>Boss</b> tests everything the class hasn't faced yet.</li>
-        <li>Lose all hearts and the run ends - but the party banks Ember or keeps
-            a relic for next time.</li>
+        <li>Lose all hearts a second time and the run ends - but the party banks
+            Ember or keeps a relic for next time.</li>
       </ul>
       <button id="btn-howto-close" class="pixel-btn">Close</button>
     </div>
@@ -226,12 +230,19 @@
         <img id="hero-sprite" class="hero-sprite" alt="">
         <div class="shield-row" id="hero-shields"></div>
       </div>
+      <!-- The monster's nameplate, HP and intent sit BELOW the sprite. Above
+           it they were clipped off the top of the corridor on a 16:9 TV. -->
       <div class="combatant foe-side" id="monster-stage">
-        <div class="intent" id="monster-intent"></div>
-        <div class="monster-hp" id="monster-hp"></div>
         <img id="monster-sprite" class="monster-sprite" alt="">
-        <div class="nameplate" id="monster-name"></div>
+        <div class="foe-info">
+          <div class="foe-info-row">
+            <div class="nameplate" id="monster-name"></div>
+            <div class="monster-hp" id="monster-hp"></div>
+          </div>
+          <div class="intent" id="monster-intent"></div>
+        </div>
       </div>
+      <img id="room-scenery" class="room-scenery" alt="">
       <div class="slash-fx" id="slash-fx"></div>
       <div class="vignette"></div>
       <div class="hit-flash" id="hit-flash"></div>
@@ -287,10 +298,14 @@
         <div class="shield-row" id="boss-hero-shields"></div>
       </div>
       <div class="combatant foe-side huge" id="boss-stage">
-        <div class="intent" id="boss-intent"></div>
-        <div class="monster-hp boss-hp" id="boss-hp"></div>
         <img id="boss-sprite" class="monster-sprite boss-sprite" alt="">
-        <div class="nameplate" id="boss-name"></div>
+        <div class="foe-info">
+          <div class="foe-info-row">
+            <div class="nameplate" id="boss-name"></div>
+            <div class="monster-hp boss-hp" id="boss-hp"></div>
+          </div>
+          <div class="intent" id="boss-intent"></div>
+        </div>
       </div>
       <div class="slash-fx" id="boss-slash-fx"></div>
       <div class="vignette"></div>
@@ -362,6 +377,7 @@
   <!-- ===================== SHOP ===================== -->
   <section id="screen-shop" class="screen">
     <div class="panel-card wide">
+      <img class="shop-stall" id="shop-stall" src="assets/scenery/stall.png" alt="">
       <h2>The Storm Pedlar</h2>
       <p class="shop-intro">"Shards for goods, no haggling. The storm waits for
          no one." <span class="shop-purse">Shards: <b id="shop-shards">0</b></span></p>

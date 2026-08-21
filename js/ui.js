@@ -27,6 +27,50 @@ const MAP_PAD_Y = 110;
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
+  // A hidden section has no measurable height, so the shared sprite scale can
+  // only be worked out once the screen is actually on. Re-measure here and
+  // correct anything that was sized from the previous screen's value.
+  if (id === "screen-encounter" || id === "screen-boss") {
+    const boss = id === "screen-boss";
+    updateStageScale(boss ? "boss-corridor" : "corridor");
+    fixSpriteWidths();
+    fixSceneryWidth();
+    // A sprite that hasn't decoded yet measures as zero, so fit once now and
+    // again on the next frame, when the browser has laid the scene out.
+    refitCurrentStage();
+    requestAnimationFrame(() => { fixSpriteWidths(); refitCurrentStage(); });
+  }
+}
+
+function refitCurrentStage() {
+  const boss = document.getElementById("screen-boss");
+  if (boss && boss.classList.contains("active")) {
+    fitStage("boss-corridor", "boss-stage");
+    return;
+  }
+  const enc = document.getElementById("screen-encounter");
+  if (enc && enc.classList.contains("active")) fitStage("corridor", "monster-stage");
+}
+
+// Belt and braces on top of updateStageScale(): measure what actually got
+// laid out and step the scale down until the foe - sprite, nameplate, HP and
+// intent together - is fully inside the corridor. Nothing may be cut off the
+// top of the screen, which is what sent us looking at this in the first place.
+function fitStage(corridorId, stageId) {
+  const c = document.getElementById(corridorId);
+  const st = document.getElementById(stageId);
+  if (!c || !st) return;
+  for (let i = 0; i < 6 && STAGE_SCALE > 1; i++) {
+    // offsetTop/offsetHeight ignore CSS transforms. getBoundingClientRect()
+    // does not - and the monster's arrival animation starts at scale(.6), so
+    // measuring rects mid-animation reported a sprite that fitted when the
+    // full-size one did not.
+    if (!st.offsetHeight) return;
+    if (st.offsetTop >= 6) return;
+    STAGE_SCALE = Math.max(1, STAGE_SCALE - 0.5);
+    fixSpriteWidths();
+    fixSceneryWidth();
+  }
 }
 
 // ------------------------------- hearts ------------------------------------
@@ -649,32 +693,68 @@ function renderPotionBadge(prefix) {
 
 // Every sprite in the game is displayed at the same pixel scale, so the whole
 // cast shares one pixel size. Sizes come from the PNG's natural width.
-const SPRITE_SCALE = 3;
-const _spriteWidths = {};
+const SPRITE_SCALE = 3;      // the scale a classroom TV gets
+const TALLEST_SPRITE = 152;  // the boss, in true pixels - the worst case
+let STAGE_SCALE = SPRITE_SCALE;
+
+// One scale for everything on screen, so the whole cast keeps a single pixel
+// size. It only drops below 3x on a window too short to fit a full-size
+// monster AND the info block that now sits underneath it - on a projector or
+// classroom TV it is always 3x.
+function updateStageScale(corridorId) {
+  const c = document.getElementById(corridorId);
+  const h = c ? c.clientHeight : 0;
+  if (!h) { STAGE_SCALE = SPRITE_SCALE; return STAGE_SCALE; }
+  const usable = h * 0.94 - 110;                // info block + floor margin
+  let s = Math.floor((usable / TALLEST_SPRITE) * 2) / 2;   // half-step scales
+  STAGE_SCALE = Math.max(1, Math.min(SPRITE_SCALE, s));
+  return STAGE_SCALE;
+}
+
+const _spriteNatural = {};
 function spriteWidth(src) {
-  if (_spriteWidths[src]) return _spriteWidths[src];
-  const img = new Image();
-  img.src = src;
-  const w = (img.naturalWidth || 0) * SPRITE_SCALE;
-  if (w) _spriteWidths[src] = w;
-  return w || 200;   // sensible fallback until the image has loaded
+  let nat = _spriteNatural[src];
+  if (nat == null) {
+    const img = new Image();
+    img.src = src;
+    nat = img.naturalWidth || 0;
+    if (nat) _spriteNatural[src] = nat;
+  }
+  return nat ? nat * STAGE_SCALE : 200;   // fallback until the image loads
 }
 
 // Once images finish loading, correct any width we had to guess.
+const _SCALED_IMGS = ["hero-sprite", "monster-sprite", "boss-sprite", "boss-hero-sprite"];
 function fixSpriteWidths() {
-  ["hero-sprite", "monster-sprite", "boss-sprite", "boss-hero-sprite"].forEach(id => {
+  _SCALED_IMGS.forEach(id => {
     const el = document.getElementById(id);
-    if (el && el.naturalWidth) el.style.width = (el.naturalWidth * SPRITE_SCALE) + "px";
+    if (el && el.naturalWidth) el.style.width = (el.naturalWidth * STAGE_SCALE) + "px";
   });
 }
 window.addEventListener("load", fixSpriteWidths);
-["hero-sprite", "monster-sprite", "boss-sprite", "boss-hero-sprite"].forEach(id => {
+_SCALED_IMGS.forEach(id => {
   document.addEventListener("DOMContentLoaded", () => {
     const el = document.getElementById(id);
     if (el) el.addEventListener("load", () => {
-      if (el.naturalWidth) el.style.width = (el.naturalWidth * SPRITE_SCALE) + "px";
+      if (el.naturalWidth) el.style.width = (el.naturalWidth * STAGE_SCALE) + "px";
+      refitCurrentStage();
     });
   });
+});
+function fixSceneryWidth() {
+  const sc = document.getElementById("room-scenery");
+  if (sc && sc.naturalWidth && sc.getAttribute("src")) {
+    sc.style.width = (sc.naturalWidth * STAGE_SCALE) + "px";
+  }
+}
+
+// Resizing the window (or plugging in the TV) changes how much room the
+// corridor has, so rescale what's already on screen.
+window.addEventListener("resize", () => {
+  const boss = document.getElementById("screen-boss");
+  updateStageScale(boss && boss.classList.contains("active") ? "boss-corridor" : "corridor");
+  fixSpriteWidths();
+  fixSceneryWidth();
 });
 
 // tinted monster variants (a recolour multiplies the roster without new art)
@@ -701,6 +781,58 @@ function paintHero(imgId, shieldRowId) {
 function renderShieldRow(elId) {
   const el = document.getElementById(elId);
   if (el) el.innerHTML = "";
+}
+
+// ---------------------------------------------------------------------------
+// Room staging.
+//
+// The corridor is reused by every room type, so anything left over from the
+// last fight - the monster's nameplate, its HP pips, its telegraphed intent -
+// stays on screen unless it is explicitly wiped. That's what made a Rest room
+// show "the remnants of a monster action with no monster at all".
+// ---------------------------------------------------------------------------
+function clearFoeStage(prefix = "monster") {
+  const sprite = document.getElementById(prefix === "boss" ? "boss-sprite" : "monster-sprite");
+  if (sprite) {
+    sprite.setAttribute("src", "");
+    sprite.classList.remove("hurt", "attack", "dying", "arriving");
+    sprite.style.filter = "";
+  }
+  const name = document.getElementById(prefix === "boss" ? "boss-name" : "monster-name");
+  if (name) name.textContent = "";
+  const hp = document.getElementById(prefix === "boss" ? "boss-hp" : "monster-hp");
+  if (hp) hp.innerHTML = "";
+  renderIntent(prefix === "boss" ? "boss-intent" : "monster-intent", null);
+}
+
+// Furniture for the rooms that have no monster in them.
+const SCENERY = {
+  rest:     { src: "assets/scenery/bed.png",      cls: "" },
+  safe:     { src: "assets/scenery/campfire.png", cls: "fire" },
+  campfire: { src: "assets/scenery/campfire.png", cls: "fire" },
+  treasure: { src: "assets/scenery/chest.png",    cls: "" },
+  shop:     { src: "assets/scenery/stall.png",    cls: "" },
+};
+
+function showScenery(kind) {
+  const el = document.getElementById("room-scenery");
+  if (!el) return;
+  const s = SCENERY[kind];
+  if (!s) { clearScenery(); return; }
+  updateStageScale("corridor");
+  el.className = "room-scenery " + s.cls;
+  el.setAttribute("src", s.src);
+  const applyWidth = () => {
+    if (el.naturalWidth) el.style.width = (el.naturalWidth * STAGE_SCALE) + "px";
+  };
+  if (el.complete) applyWidth(); else el.addEventListener("load", applyWidth, { once: true });
+}
+
+function clearScenery() {
+  const el = document.getElementById("room-scenery");
+  if (!el) return;
+  el.setAttribute("src", "");
+  el.className = "room-scenery";
 }
 
 // the monster's telegraphed intent

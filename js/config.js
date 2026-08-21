@@ -46,8 +46,9 @@ const CONFIG = {
   // --- survivability (tuned with tools/../sim: at 100% accuracy the party
   //     almost always survives; at 80% roughly 4 runs in 10 end in a wipe) ---
   BASE_ROOM_SHIELDS: 6,      // refreshed (not stacked) on entering a room
+                             // <- lower this to 5 for a harder game
   REST_HEAL: 3,              // hearts restored by a Rest room
-  BOSS_CADENCE: 4,           // boss acts every N student turns
+  BOSS_CADENCE: 3,           // boss acts every N student turns (v4.1: was 4)
 
   // --- monster behaviour ---
   VARIANT_CHANCE: 0.30,      // chance a regular monster is a tinted variant
@@ -55,7 +56,9 @@ const CONFIG = {
   ENRAGE_AFTER_TURNS: 4,     // monster turns before it enrages (+1 damage)
 
   // --- failure ladder ---
-  LAST_STAND_ENABLED: true,  // one sudden-death question at 0 hearts
+  LAST_STAND_ENABLED: true,  // one sudden-death question at 0 hearts, once
+                             // per run - the counterweight to v4.1's faster
+                             // monsters, and a genuinely tense classroom beat
   CHECKPOINT_HEARTS: 2,      // hearts restored when falling back to a campfire
 
   // --- streaks ---

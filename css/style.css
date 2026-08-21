@@ -672,9 +672,27 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
   display: flex; flex-direction: column; align-items: center; gap: 8px;
 }
 .hero-side { left: 23%; transform: translateX(-50%); }
-.foe-side  { left: 70%; transform: translateX(-50%); }
-.foe-side.tall { bottom: 15%; }
-.foe-side.huge { bottom: 11%; }
+/* The foe stands a little further back than the hero so its info block -
+   nameplate, HP and intent - has room to sit UNDERNEATH it without running
+   off the bottom of the corridor. */
+.foe-side  { left: 70%; transform: translateX(-50%); bottom: 6%; }
+.foe-side.tall { bottom: 6%; }
+.foe-side.huge { bottom: 5%; }
+
+/* nameplate + HP + intent, in flow directly below the sprite. Keeping the
+   block in flow (rather than absolutely positioned) means the sprite is
+   pushed up by exactly the space the info needs, so nothing runs off the
+   bottom of the corridor. */
+.foe-info {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  pointer-events: none;
+}
+/* wraps rather than squashing the name into a column when a boss carries a
+   20-pip health bar */
+.foe-info-row {
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 6px 14px; max-width: 46vw;
+}
 .combatant img { display: block; filter: drop-shadow(0 12px 22px rgba(0,0,0,.6)); }
 
 .hero-sprite { image-rendering: pixelated; }
@@ -715,16 +733,63 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 
 /* intent banner */
 .intent {
-  background: rgba(12,7,20,.88); border: 2px solid var(--bad); border-radius: 8px;
-  padding: 4px 13px; font-size: .86rem; font-weight: 900; color: #ffb3c0;
-  white-space: nowrap; text-shadow: 0 2px 3px #000;
+  background: rgba(12,7,20,.92); border: 2px solid var(--bad); border-radius: 8px;
+  padding: 5px 14px; font-size: .95rem; font-weight: 900; color: #ffb3c0;
+  text-align: center; max-width: 38vw; text-shadow: 0 2px 3px #000;
+  box-shadow: 0 4px 14px rgba(0,0,0,.6);
 }
 .intent.guard  { border-color: #7fc4ff; color: #bfe4ff; }
 .intent.regen  { border-color: var(--good); color: #b6f5d6; }
 .intent.charge { border-color: var(--gold); color: #ffe9b0; animation: intentPulse 1s infinite; }
 .intent:empty  { display: none; }
 @keyframes intentPulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-.nameplate { font-size: .82rem; font-weight: 800; color: var(--gold); text-shadow: 0 2px 4px #000; }
+.nameplate {
+  font-size: 1rem; font-weight: 900; letter-spacing: .5px; color: var(--gold);
+  white-space: nowrap;
+  text-shadow: 0 2px 4px #000, 0 0 12px rgba(0,0,0,.9);
+}
+.nameplate:empty { display: none; }
+
+/* ---- room scenery -------------------------------------------------------
+   Non-combat rooms used to be an empty corridor with the last monster's
+   nameplate still hanging in the air. Each now gets its own furniture. */
+.room-scenery {
+  position: absolute; left: 68%; bottom: 17%; z-index: 3;
+  transform: translateX(-50%); image-rendering: pixelated;
+  filter: drop-shadow(0 12px 22px rgba(0,0,0,.65));
+  animation: sceneryArrive .5s ease;
+}
+.room-scenery:not([src]), .room-scenery[src=""] { display: none; }
+@keyframes sceneryArrive {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(18px) scale(.9); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1); }
+}
+/* the campfire gets the same living glow as the wall torches */
+.room-scenery.fire {
+  animation: sceneryArrive .5s ease, fireGlow 1.9s ease-in-out infinite;
+}
+@keyframes fireGlow {
+  0%,100% { filter: drop-shadow(0 0 18px rgba(255,150,50,.75)) brightness(1); }
+  40%     { filter: drop-shadow(0 0 34px rgba(255,195,90,1))   brightness(1.16); }
+  70%     { filter: drop-shadow(0 0 22px rgba(255,165,60,.9))  brightness(.96); }
+}
+
+/* the pedlar's stall, shown on the shop screen */
+.shop-stall {
+  display: block; margin: 0 auto 6px; width: 240px; image-rendering: pixelated;
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,.6));
+}
+
+/* ---- Last Stand ---------------------------------------------------------
+   One sudden-death question at zero hearts. The whole screen is framed in
+   red so nobody in the room can mistake it for an ordinary turn. */
+#app.last-stand::after {
+  content: ''; position: fixed; inset: 0; z-index: 60; pointer-events: none;
+  border: 10px solid rgba(255, 60, 90, .85);
+  box-shadow: inset 0 0 90px rgba(255, 40, 70, .45);
+  animation: lastStandPulse 1.1s ease-in-out infinite;
+}
+@keyframes lastStandPulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
 
 /* debuff chip on the hero */
 .debuff {

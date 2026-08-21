@@ -209,7 +209,7 @@ function questionsForCover(cover) {
 const REALM1_MONSTERS = [
   { id:"wyrm",    name:"Thunderclap Wyrm",  sprite:"assets/sprites/wyrm.png",
     taunt:"A Thunderclap Wyrm rolls out of the clouds!",
-    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:1,shards:6}], special:null, cadence:3 },
+    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:1,shards:6}], special:null, cadence:2 },
 
   { id:"wisp",    name:"Blizzard Wisp",     sprite:"assets/sprites/wisp.png",
     taunt:"A Blizzard Wisp drifts into your path!",
@@ -217,7 +217,7 @@ const REALM1_MONSTERS = [
 
   { id:"djinn",   name:"Sandstorm Djinn",   sprite:"assets/sprites/djinn.png",
     taunt:"A Sandstorm Djinn whirls up from the dust!",
-    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:1,shards:8}], special:"expose", cadence:3 },
+    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:1,shards:8}], special:"expose", cadence:2 },
 
   { id:"funnel",  name:"Funnel Sprite",     sprite:"assets/sprites/funnel.png",
     taunt:"A Funnel Sprite spins in, cackling!",
@@ -225,7 +225,7 @@ const REALM1_MONSTERS = [
 
   { id:"brute",   name:"Hailstone Brute",   sprite:"assets/sprites/brute.png",
     taunt:"A Hailstone Brute blocks the corridor!",
-    attacks:[{kind:"heavy",dmg:2},{kind:"guard"}], special:null, cadence:3 },
+    attacks:[{kind:"heavy",dmg:2},{kind:"guard"}], special:null, cadence:2 },
 
   { id:"fang",    name:"Frost Fang",        sprite:"assets/sprites/fang.png",
     taunt:"A Frost Fang bares its teeth!",
@@ -233,11 +233,11 @@ const REALM1_MONSTERS = [
 
   { id:"serpent", name:"Flood Serpent",     sprite:"assets/sprites/serpent.png",
     taunt:"A Flood Serpent surges out of the water!",
-    attacks:[{kind:"hit",dmg:1},{kind:"regen"}], special:null, cadence:3 },
+    attacks:[{kind:"hit",dmg:1},{kind:"regen"}], special:null, cadence:2 },
 
   { id:"husk",    name:"Drought Husk",      sprite:"assets/sprites/husk.png",
     taunt:"A Drought Husk drags itself upright!",
-    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:0,shards:10}], special:"expose", cadence:3 },
+    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:0,shards:10}], special:"expose", cadence:2 },
 
   { id:"shimmer", name:"Heatwave Shimmer",  sprite:"assets/sprites/shimmer.png",
     taunt:"A Heatwave Shimmer burns the air ahead!",
@@ -249,7 +249,7 @@ const REALM1_MONSTERS = [
 
   { id:"herald",  name:"Ice Storm Herald",  sprite:"assets/sprites/herald.png",
     taunt:"An Ice Storm Herald raises its frozen blade!",
-    attacks:[{kind:"heavy",dmg:2},{kind:"guard"}], special:"chill", cadence:3 },
+    attacks:[{kind:"heavy",dmg:2},{kind:"guard"}], special:"chill", cadence:2 },
 
   { id:"siren",   name:"Siren of the Gale", sprite:"assets/sprites/siren.png",
     taunt:"The Siren of the Gale begins to shriek!",

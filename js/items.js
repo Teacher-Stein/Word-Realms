@@ -26,8 +26,8 @@ const RELICS = [
 
   { id:"echo_shard",   name:"Echo Shard",      rarity:"uncommon",
     icon:"assets/items/echo_shard.png",
-    desc:"Once per realm it whispers away a wrong answer before you choose.",
-    effect:"1 free 50/50 per realm" },
+    desc:"Once per run it whispers away a wrong answer before you choose.",
+    effect:"Removes a wrong option on your first grammar question" },
 
   { id:"scholars_lens",name:"Scholar's Lens",  rarity:"uncommon",
     icon:"assets/items/scholars_lens.png",
@@ -83,7 +83,7 @@ const RELICS = [
   { id:"last_breath",  name:"Last Breath",     rarity:"rare",
     icon:"assets/items/last_breath.png",
     desc:"One more lungful. One more step.",
-    effect:"Survive a fatal blow once per realm" },
+    effect:"A second Last Stand this run" },
 
   { id:"thaw_stone",   name:"Thaw Stone",      rarity:"common",
     icon:"assets/items/thaw_stone.png",
