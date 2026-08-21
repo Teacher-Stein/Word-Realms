@@ -6,13 +6,14 @@ const SFX = (() => {
   let ctx = null;
   let enabled = true;
   let master = null;
+  let masterVol = 0.8;
 
   function ac() {
     if (!ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       ctx = new AC();
       master = ctx.createGain();
-      master.gain.value = 1.0;
+      master.gain.value = 1.15 * masterVol;
       master.connect(ctx.destination);
     }
     if (ctx.state === "suspended") ctx.resume();
@@ -84,6 +85,7 @@ const SFX = (() => {
   return {
     setEnabled(v) { enabled = v; },
     isEnabled() { return enabled; },
+    setVolume(v) { masterVol = v; if (master) master.gain.value = 1.15 * v; },
     unlock() { ac(); },   // call from a click so browsers allow audio
 
     click()  { tone(520, 0, 0.05, "square", 0.14); },
@@ -196,6 +198,146 @@ const SFX = (() => {
       tone(784, 0, 0.11, "square", 0.24);
       tone(1046, 0.10, 0.24, "square", 0.28);
       tone(1318, 0.20, 0.24, "triangle", 0.16);
+    },
+  };
+})();
+
+// ---------------------------------------------------------------------------
+// MUSIC + AMBIENCE
+// Procedural, looping, and entirely synthesized - a low drone bed with wind,
+// plus a simple bass/arpeggio pattern that changes intensity by context.
+// Nothing here is a recording, so there is nothing to license.
+// ---------------------------------------------------------------------------
+const MUSIC = (() => {
+  let ctx = null, bus = null, windGain = null, windSrc = null;
+  let enabled = true, volume = 0.8, current = null, timer = null, step = 0;
+
+  const TRACKS = {
+    explore: { bpm: 84,  root: 110.00, scale: [0, 3, 5, 7, 10], drone: true,  lead: 0.05 },
+    fight:   { bpm: 104, root: 110.00, scale: [0, 2, 3, 7, 8],  drone: true,  lead: 0.09 },
+    elite:   { bpm: 118, root: 98.00,  scale: [0, 1, 5, 7, 8],  drone: true,  lead: 0.11 },
+    boss:    { bpm: 132, root: 87.31,  scale: [0, 1, 3, 6, 7],  drone: true,  lead: 0.13 },
+  };
+
+  function ac() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      ctx = new AC();
+      bus = ctx.createGain();
+      bus.gain.value = 0;
+      bus.connect(ctx.destination);
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+
+  function targetGain() { return enabled ? 0.16 * volume : 0; }
+
+  function rampBus(to, secs = 1.2) {
+    if (!bus) return;
+    const c = ac();
+    bus.gain.cancelScheduledValues(c.currentTime);
+    bus.gain.setValueAtTime(bus.gain.value, c.currentTime);
+    bus.gain.linearRampToValueAtTime(to, c.currentTime + secs);
+  }
+
+  // continuous filtered-noise wind bed
+  function startWind() {
+    if (windSrc) return;
+    const c = ac();
+    const len = c.sampleRate * 4;
+    const buf = c.createBuffer(1, len, c.sampleRate);
+    const d = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) {          // brown-ish noise = wind, not hiss
+      last = (last + Math.random() * 2 - 1) * 0.5;
+      d[i] = last;
+    }
+    windSrc = c.createBufferSource();
+    windSrc.buffer = buf;
+    windSrc.loop = true;
+    const filt = c.createBiquadFilter();
+    filt.type = "lowpass";
+    filt.frequency.value = 420;
+    windGain = c.createGain();
+    windGain.gain.value = 0.5;
+
+    // slow gusting
+    const lfo = c.createOscillator();
+    const lfoGain = c.createGain();
+    lfo.frequency.value = 0.06;
+    lfoGain.gain.value = 0.28;
+    lfo.connect(lfoGain).connect(windGain.gain);
+    lfo.start();
+
+    windSrc.connect(filt).connect(windGain).connect(bus);
+    windSrc.start();
+  }
+
+  function note(freq, start, dur, type, gain) {
+    const c = ac();
+    const t0 = c.currentTime + start;
+    const osc = c.createOscillator();
+    const g = c.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(gain, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(g).connect(bus);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.05);
+  }
+
+  function tick() {
+    const t = TRACKS[current];
+    if (!t || !enabled) return;
+    const beat = 60 / t.bpm;
+
+    // bass pulse on every other step
+    if (step % 2 === 0) {
+      note(t.root / 2, 0, beat * 0.9, "triangle", 0.30);
+    }
+    // sparse arpeggio drawn from the scale
+    if (step % 4 === 1 || step % 8 === 6) {
+      const deg = t.scale[Math.floor(Math.random() * t.scale.length)];
+      const oct = Math.random() < 0.4 ? 4 : 2;
+      note(t.root * Math.pow(2, deg / 12) * oct, 0, beat * 1.4, "square", t.lead);
+    }
+    // occasional high shimmer
+    if (step % 16 === 12) {
+      const deg = t.scale[Math.floor(Math.random() * t.scale.length)];
+      note(t.root * Math.pow(2, deg / 12) * 8, 0, beat * 2.2, "sine", 0.05);
+    }
+    step++;
+    timer = setTimeout(tick, beat * 1000);
+  }
+
+  return {
+    setEnabled(v) {
+      enabled = v;
+      if (!v) { rampBus(0, 0.6); }
+      else if (current) { ac(); startWind(); rampBus(targetGain()); if (!timer) tick(); }
+    },
+    setVolume(v) { volume = v; if (current && enabled) rampBus(targetGain(), 0.3); },
+    isEnabled() { return enabled; },
+
+    play(track) {
+      if (!TRACKS[track]) return;
+      if (current === track) return;
+      current = track;
+      step = 0;
+      if (!enabled) return;
+      ac();
+      startWind();
+      if (timer) { clearTimeout(timer); timer = null; }
+      rampBus(targetGain());
+      tick();
+    },
+    stop() {
+      current = null;
+      if (timer) { clearTimeout(timer); timer = null; }
+      rampBus(0, 0.8);
     },
   };
 })();

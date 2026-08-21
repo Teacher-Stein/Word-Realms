@@ -302,7 +302,39 @@ function walkTotemTo(fromId, toId, done) {
 function renderTopHud(prefix) {
   const run = STATE.run, realm = currentRealm();
   if (!run) return;
+
+  // hero portrait + identity
+  const hero = currentHero();
+  const port = document.getElementById(`${prefix}-portrait`);
+  if (port && hero) {
+    const img = port.querySelector("img");
+    if (img && img.getAttribute("src") !== hero.sprite) img.src = hero.sprite;
+  }
+  const hn = document.getElementById(`${prefix}-hero-name`);
+  if (hn && hero) hn.textContent = hero.name.toUpperCase();
+  const pn = document.getElementById(`${prefix}-party-name`);
+  if (pn) {
+    const r = STATE.roster;
+    pn.textContent = r
+      ? (r.partyName ? `${r.className} — ${r.partyName}` : r.className)
+      : "No class set";
+  }
+
   renderHearts(`${prefix}-hearts`, run.hearts, run.maxHearts);
+  // shields render right after the hearts
+  const heartsEl = document.getElementById(`${prefix}-hearts`);
+  if (heartsEl) {
+    for (let i = 0; i < (run.shields || 0); i++) {
+      const sp = document.createElement("span");
+      sp.className = "shield-pip";
+      heartsEl.appendChild(sp);
+    }
+  }
+  const st = document.getElementById(`${prefix}-streak`);
+  if (st) {
+    st.textContent = `Streak ${run.streak || 0}`;
+    st.className = "badge streak" + ((run.streak || 0) >= CONFIG.STREAK_GUARD ? " hot" : "");
+  }
   const nameEl = document.getElementById(`${prefix}-realm-name`);
   if (nameEl) nameEl.textContent = `Realm ${realm.id} · ${realm.name}`;
   const sh = document.getElementById(`${prefix}-shards`);
@@ -502,6 +534,38 @@ function renderInventory(opts = {}) {
     <span class="badge ember"><span class="icon-ember"></span>${STATE.ember} ember</span>
     <span class="badge">${run.hearts}/${run.maxHearts} hearts</span>`;
 
+  // equipment slots
+  const gearEl = document.getElementById("inv-gear");
+  if (gearEl) {
+    gearEl.innerHTML = "";
+    [["weapon","Weapon"],["armour","Armour"]].forEach(([slot,label]) => {
+      const id = run[slot];
+      const g = id ? gearById(id) : null;
+      if (!g) {
+        const empty = document.createElement("div");
+        empty.className = "item-tile slot-empty";
+        empty.innerHTML = `<div class="it-slot">${label}</div>
+          <div class="it-name">Empty</div>
+          <div class="it-desc">Find or buy ${label.toLowerCase()} on your travels.</div>`;
+        gearEl.appendChild(empty);
+        return;
+      }
+      const tile = itemTile(g, {});
+      const badge = document.createElement("div");
+      badge.className = "it-slot";
+      badge.textContent = label;
+      tile.appendChild(badge);
+      const ench = run.enchants && run.enchants[slot] ? enchantById(run.enchants[slot]) : null;
+      if (ench) {
+        const e = document.createElement("div");
+        e.className = "it-enchant";
+        e.textContent = `✦ ${ench.name} — ${ench.effect}`;
+        tile.appendChild(e);
+      }
+      gearEl.appendChild(tile);
+    });
+  }
+
   const rel = document.getElementById("inv-relics");
   rel.innerHTML = "";
   if (!run.relics.length) {
@@ -578,3 +642,134 @@ function renderPotionBadge(prefix) {
   const n = STATE.run.potions.length;
   el.textContent = n ? `${n} potion${n > 1 ? "s" : ""}` : "No potions";
 }
+
+// ===========================================================================
+// BUILD A additions
+// ===========================================================================
+
+// Every sprite in the game is displayed at the same pixel scale, so the whole
+// cast shares one pixel size. Sizes come from the PNG's natural width.
+const SPRITE_SCALE = 3;
+const _spriteWidths = {};
+function spriteWidth(src) {
+  if (_spriteWidths[src]) return _spriteWidths[src];
+  const img = new Image();
+  img.src = src;
+  const w = (img.naturalWidth || 0) * SPRITE_SCALE;
+  if (w) _spriteWidths[src] = w;
+  return w || 200;   // sensible fallback until the image has loaded
+}
+
+// Once images finish loading, correct any width we had to guess.
+function fixSpriteWidths() {
+  ["hero-sprite", "monster-sprite", "boss-sprite", "boss-hero-sprite"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.naturalWidth) el.style.width = (el.naturalWidth * SPRITE_SCALE) + "px";
+  });
+}
+window.addEventListener("load", fixSpriteWidths);
+["hero-sprite", "monster-sprite", "boss-sprite", "boss-hero-sprite"].forEach(id => {
+  document.addEventListener("DOMContentLoaded", () => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("load", () => {
+      if (el.naturalWidth) el.style.width = (el.naturalWidth * SPRITE_SCALE) + "px";
+    });
+  });
+});
+
+// tinted monster variants (a recolour multiplies the roster without new art)
+function applyVariantTint(imgId, variant) {
+  const el = document.getElementById(imgId);
+  if (!el) return;
+  el.style.filter = variant
+    ? `drop-shadow(0 12px 22px rgba(0,0,0,.6)) hue-rotate(${variant.hue}deg) saturate(${variant.sat})`
+    : "drop-shadow(0 12px 22px rgba(0,0,0,.6))";
+}
+
+// draw the chosen hero into a combat slot
+function paintHero(imgId, shieldRowId) {
+  const hero = currentHero();
+  const el = document.getElementById(imgId);
+  if (!el || !hero) return;
+  el.src = hero.sprite;
+  el.style.width = spriteWidth(hero.sprite) + "px";
+  renderShieldRow(shieldRowId);
+}
+
+// Shields are shown in the HUD beside the hearts; this row is intentionally
+// left empty so the same information isn't duplicated under the hero sprite.
+function renderShieldRow(elId) {
+  const el = document.getElementById(elId);
+  if (el) el.innerHTML = "";
+}
+
+// the monster's telegraphed intent
+function renderIntent(elId, m) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!m) { el.textContent = ""; el.className = "intent"; return; }
+  el.textContent = intentLabel(m);
+  el.className = "intent " + (INTENT_CLASS[m.intent && m.intent.kind] || "");
+}
+
+// big centre-screen shout for streaks and enrage
+function showStreakBanner(text) {
+  let el = document.getElementById("streak-banner");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "streak-banner";
+    el.className = "streak-banner";
+    document.getElementById("app").appendChild(el);
+  }
+  el.textContent = text;
+  el.classList.remove("show");
+  void el.offsetWidth;
+  el.classList.add("show");
+}
+
+// hero-select tiles
+function renderHeroSelect(chosenId) {
+  const grid = document.getElementById("hero-grid");
+  grid.innerHTML = "";
+  HEROES.forEach(h => {
+    const card = document.createElement("div");
+    card.className = "hero-card" + (chosenId === h.id ? " chosen" : "");
+    card.innerHTML = `
+      <div class="hero-art"><img src="${h.sprite}" alt=""></div>
+      <div class="h-name">${escapeHtml(h.name)}</div>
+      <div class="h-tagline">${escapeHtml(h.tagline)}</div>
+      <div class="h-perk">${escapeHtml(h.perk)}</div>`;
+    const img = card.querySelector("img");
+    img.addEventListener("load", () => {
+      img.style.width = (img.naturalWidth * 2) + "px";
+    });
+    card.addEventListener("click", () => window.pickHero(h.id));
+    grid.appendChild(card);
+  });
+}
+
+// a second button on the current popup, for cancellable prompts
+function addPopupCancel(label) {
+  const card = document.getElementById("popup-card");
+  const existing = card.querySelector(".popup-cancel");
+  if (existing) existing.remove();
+  const btn = document.createElement("button");
+  btn.className = "pixel-btn ghost popup-cancel";
+  btn.textContent = label;
+  btn.style.marginLeft = "10px";
+  btn.addEventListener("click", () => {
+    _popupCurrentOnClose = null;   // cancel the confirm action
+    btn.remove();
+    closePopup();
+  });
+  document.getElementById("popup-continue").after(btn);
+}
+
+// clear any stale cancel button whenever a popup opens
+const _origDrain = drainPopups;
+drainPopups = function () {
+  const card = document.getElementById("popup-card");
+  const stale = card && card.querySelector(".popup-cancel");
+  if (stale) stale.remove();
+  return _origDrain.apply(this, arguments);
+};

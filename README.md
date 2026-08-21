@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 3 — classroom edition.** Realm 1 (Unit 1, Extreme Weather) is
+class. **Version 4 — classroom edition.** Realm 1 (Unit 1, Extreme Weather) is
 fully playable; Realms 2–9 appear as locked placeholders using the correct
 themes from the school syllabus.
 
@@ -22,6 +22,59 @@ once the page has loaded.
 If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
+
+## What's new in v4 (Build A)
+
+**Hand-drawn sprite cast.** 12 monsters, 4 elites, a boss, an NPC and 4 playable
+heroes — 22 sprites, all cleaned, palette-matched and rendered at a uniform
+pixel scale so the whole cast looks like one game.
+
+**Choose your champion.** Every run starts with a hero-select screen. The
+Wordsmith opens with a free relic, the Grammar Knight starts armoured, the
+Phonics Ranger earns 50% more shards, the Storm Scholar starts with potions and
+gear. Your hero appears on the left of every fight and in the HUD portrait.
+
+**Side-view combat.** Hero on the left, monster on the right, both animated —
+the hero lunges when you land a hit and flinches when hit back.
+
+**Monsters telegraph their intent** and act on their own schedule, not only when
+you answer wrongly. They may attack, land a heavy blow, flurry, drain shards,
+charge a devastating hit, guard, or heal themselves. Long fights make them
+**enrage**.
+
+**Brace.** Defend instead of attacking — you still answer a question, but a
+correct answer blocks the incoming attack and clears any debuff rather than
+damaging the monster. No review time is lost.
+
+**Shields.** A blue buffer beside your hearts that refreshes each room and
+soaks damage first. Armour and relics increase it.
+
+**Difficulty tiers.** Vocabulary questions cost 1 heart when wrong; grammar
+questions cost 2 but pay more shards.
+
+**Streaks.** Three correct in a row blocks the next attack. Five gives shards
+and a potion.
+
+**Shops fixed.** They now appear only in the back two-thirds of the map, three
+per run, so you always have shards to spend when you reach one.
+
+**Rewards roughly tripled**, potions drop from monsters and chests, and every
+party starts with a Healing Draught.
+
+**24 relics** (was 10) plus weapons, armour and enchantments with their own
+inventory slots.
+
+**Party name** on the roster screen, shown in the HUD and on the leaderboard.
+
+**End Run** button on the map, with a confirmation.
+
+**Music and ambience** — a procedural storm bed with wind and a looping theme
+that shifts for elites and bosses, plus separate SFX/Music toggles and a volume
+slider. All synthesized; nothing licensed.
+
+**Difficulty was tuned with a simulator** rather than guesswork. At perfect
+accuracy a party survives ~93% of runs; at 80% accuracy roughly a third of runs
+end in a wipe. Deaths now happen at the boss rather than partway through.
 
 ## What's new in v3
 
@@ -152,7 +205,12 @@ Everything balance-related is in `js/config.js`:
 
 | Setting | Default | What it does |
 |---|---|---|
-| `START_HEARTS` | 4 | Party health at the start of a run |
+| `START_HEARTS` | 4 | Party hearts (the deep reserve) |
+| `BASE_ROOM_SHIELDS` | 6 | Shields refreshed on entering each room |
+| `BOSS_CADENCE` | 4 | Boss acts every N student turns |
+| `REST_HEAL` | 3 | Hearts restored by a Rest room |
+| `TIER_DAMAGE` | 1/1/2 | Hearts lost per wrong answer, by question tier |
+| `SHOPS_PER_MAP` | 3 | Guaranteed shops, placed deep in the map |
 | `MONSTER_HP` | 2 | Correct answers to defeat a regular monster |
 | `ELITE_HP` | 5 | Correct answers to defeat an Elite |
 | `TEAMUP_HP_COST` | 1 | HP the monster regains when a partner is called |
@@ -173,12 +231,15 @@ js/audio.js           Procedural chiptune sound engine
 js/content.js         Realm data + the Realm 1 question bank
 js/mapgen.js          Procedural branching map generator
 js/state.js           Save/load, roster, stats, run lifecycle
-js/items.js           Relic + potion definitions
+js/items.js           Relics, potions, weapons, armour, enchantments
+js/heroes.js          Playable hero definitions
+js/combat.js          Monster instances, intents, attacks, debuffs
 js/ui.js              Rendering (map, HUD, popups, tiles, shop)
 js/main.js            Game flow, combat, animation sequencing
 assets/sprites/       Original monster/NPC pixel art
 assets/nodes/         Room icons (incl. shop), lantern totem, footprints
-assets/items/         Relic + potion icons
+assets/items/         Relic, potion, gear and enchantment icons
+assets/heroes/        Hero sprites
 assets/tiles/         Dungeon wall/floor/torch tiles
 tools/gen_*.py        Scripts that regenerate the art (Python + Pillow)
 data/units.json       Extracted syllabus data for all 9 units (reference)

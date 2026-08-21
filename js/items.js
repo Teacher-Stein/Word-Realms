@@ -53,6 +53,80 @@ const RELICS = [
     icon:"assets/items/guiding_star.png",
     desc:"It lights the rooms beyond the next turning.",
     effect:"See 2 layers ahead on the map" },
+// ---- combat ----
+  { id:"keen_edge",    name:"Keen Edge",       rarity:"common",
+    icon:"assets/items/keen_edge.png",
+    desc:"A whetstone that hums when a storm is near.",
+    effect:"+2 shards per monster hit" },
+
+  { id:"riposte_ring", name:"Riposte Ring",    rarity:"uncommon",
+    icon:"assets/items/riposte_ring.png",
+    desc:"Strike back before the blow has finished landing.",
+    effect:"Correct answers delay the monster's attack" },
+
+  { id:"giant_slayer", name:"Giant-Slayer",    rarity:"rare",
+    icon:"assets/items/giant_slayer.png",
+    desc:"Forged for things far larger than yourself.",
+    effect:"Deal 2 damage to Elites and Bosses" },
+
+  // ---- survival ----
+  { id:"stone_heart",  name:"Stone Heart",     rarity:"uncommon",
+    icon:"assets/items/stone_heart.png",
+    desc:"Slow, steady, and very hard to stop.",
+    effect:"+2 max hearts, healed now" },
+
+  { id:"aegis_charm",  name:"Aegis Charm",     rarity:"uncommon",
+    icon:"assets/items/aegis_charm.png",
+    desc:"A shell of still air that reforms itself.",
+    effect:"Gain 1 shield at the start of each room" },
+
+  { id:"last_breath",  name:"Last Breath",     rarity:"rare",
+    icon:"assets/items/last_breath.png",
+    desc:"One more lungful. One more step.",
+    effect:"Survive a fatal blow once per realm" },
+
+  { id:"thaw_stone",   name:"Thaw Stone",      rarity:"common",
+    icon:"assets/items/thaw_stone.png",
+    desc:"Warm to the touch, even in a blizzard.",
+    effect:"Immune to Chill and Freeze" },
+
+  // ---- economy ----
+  { id:"coin_purse",   name:"Deep Coin Purse", rarity:"common",
+    icon:"assets/items/coin_purse.png",
+    desc:"Somehow there is always a little more inside.",
+    effect:"+25% shards from all sources" },
+
+  { id:"haggle_token", name:"Haggler's Token", rarity:"uncommon",
+    icon:"assets/items/haggle_token.png",
+    desc:"The pedlar sighs, but he takes it.",
+    effect:"Shop prices reduced by a third" },
+
+  { id:"magpie_eye",   name:"Magpie's Eye",    rarity:"uncommon",
+    icon:"assets/items/magpie_eye.png",
+    desc:"It spots the glint of something useful.",
+    effect:"Monsters sometimes drop potions" },
+
+  // ---- utility ----
+  { id:"scouts_chart", name:"Scout's Chart",   rarity:"common",
+    icon:"assets/items/scouts_chart.png",
+    desc:"Someone mapped this floor before you. Bravely.",
+    effect:"Reveals room types further ahead" },
+
+  { id:"study_notes",  name:"Study Notes",     rarity:"common",
+    icon:"assets/items/study_notes.png",
+    desc:"Scrawled in a hurry, but the answers are right.",
+    effect:"Question type shown before you choose" },
+
+  { id:"team_banner",  name:"Rally Banner",    rarity:"uncommon",
+    icon:"assets/items/team_banner.png",
+    desc:"Two heads. One roar.",
+    effect:"Team Up may be used twice per monster" },
+
+  { id:"streak_totem", name:"Momentum Totem",  rarity:"rare",
+    icon:"assets/items/streak_totem.png",
+    desc:"It spins faster the better things are going.",
+    effect:"Streak bonuses trigger one answer sooner" },
+
 ];
 
 const POTIONS = [
@@ -72,10 +146,66 @@ const POTIONS = [
     effect:"Blocks the next hit taken" },
 ];
 
+
+
+// ---------------------------------------------------------------------------
+// GEAR - one Weapon and one Armour may be equipped at a time. Neither ever
+// shortens a fight: weapons change rewards and tempo, armour absorbs damage.
+// ---------------------------------------------------------------------------
+const WEAPONS = [
+  { id:"storm_blade",  slot:"weapon", name:"Storm-Iron Blade", rarity:"common",
+    icon:"assets/items/storm_blade.png",
+    desc:"Cold iron, quenched in a thundercloud.",
+    effect:"+2 shards on every hit" },
+  { id:"thunder_pike", slot:"weapon", name:"Thunder Pike",     rarity:"uncommon",
+    icon:"assets/items/thunder_pike.png",
+    desc:"Long enough to keep the big ones honest.",
+    effect:"1 in 4 hits is a critical: double shards" },
+  { id:"warding_stave",slot:"weapon", name:"Warding Stave",    rarity:"rare",
+    icon:"assets/items/warding_stave.png",
+    desc:"It hums a warning half a second before the blow.",
+    effect:"1 in 3 hits stuns: cancels the next attack" },
+];
+
+const ARMOURS = [
+  { id:"windwarden",   slot:"armour", name:"Windwarden Plate", rarity:"common",
+    icon:"assets/items/windwarden.png",
+    desc:"Layered against a gale that never stops.",
+    effect:"+2 shields at the start of each room" },
+  { id:"stormhide",    slot:"armour", name:"Stormhide Cloak",  rarity:"uncommon",
+    icon:"assets/items/stormhide.png",
+    desc:"Cut from something that survived the eye.",
+    effect:"Elite and Boss damage reduced by 1" },
+  { id:"aegis_mantle", slot:"armour", name:"Aegis Mantle",     rarity:"rare",
+    icon:"assets/items/aegis_mantle.png",
+    desc:"The storm simply declines to touch you.",
+    effect:"+3 shields per room, blocks Expose" },
+];
+
+const ENCHANTMENTS = [
+  { id:"frost_etch",  name:"Frost Etch",  icon:"assets/items/frost_etch.png",
+    desc:"Rimed lettering along the edge.",
+    effect:"Weapon: chance to cancel the monster's next attack" },
+  { id:"greed_etch",  name:"Greed Etch",  icon:"assets/items/greed_etch.png",
+    desc:"It counts what it cuts.",
+    effect:"Weapon: +3 shards per hit" },
+  { id:"ward_etch",   name:"Ward Etch",   icon:"assets/items/ward_etch.png",
+    desc:"A closed circle, unbroken.",
+    effect:"Armour: +1 shield per room" },
+  { id:"thorn_etch",  name:"Thorn Etch",  icon:"assets/items/thorn_etch.png",
+    desc:"Sharp on the inside as well as the out.",
+    effect:"Armour: attackers lose shards when they hit you" },
+];
+
+const ALL_GEAR = WEAPONS.concat(ARMOURS);
+
+function gearById(id)  { return ALL_GEAR.find(g => g.id === id); }
+function enchantById(id){ return ENCHANTMENTS.find(e => e.id === id); }
+
 const RARITY_PRICE = { common: 26, uncommon: 38, rare: 52 };
 
 function relicById(id)  { return RELICS.find(r => r.id === id); }
 function potionById(id) { return POTIONS.find(p => p.id === id); }
-function itemById(id)   { return relicById(id) || potionById(id); }
+function itemById(id)   { return relicById(id) || potionById(id) || gearById(id) || enchantById(id); }
 
 function relicPrice(relic) { return RARITY_PRICE[relic.rarity] || 30; }

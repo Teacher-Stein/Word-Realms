@@ -22,7 +22,11 @@
         <button id="btn-scores"  class="pixel-btn small">Leaderboards</button>
         <button id="btn-teacher" class="pixel-btn small">Teacher Menu</button>
         <button id="btn-howto"   class="pixel-btn small">How To Play</button>
-        <button id="btn-sound"   class="pixel-btn small">Sound: On</button>
+        <button id="btn-sound"   class="pixel-btn small">SFX: On</button>
+        <button id="btn-music"   class="pixel-btn small">Music: On</button>
+        <label class="vol-wrap">Volume
+          <input id="vol-slider" type="range" min="0" max="100" value="80">
+        </label>
       </div>
     </div>
   </section>
@@ -35,6 +39,8 @@
          name and one student per line.</p>
       <label class="field-label">Class name</label>
       <input id="roster-class" type="text" placeholder="e.g. 5B0" maxlength="20">
+      <label class="field-label">Party name <span class="inv-note">— what this class calls their adventuring party</span></label>
+      <input id="roster-party" type="text" placeholder="e.g. The Thunder Wolves" maxlength="28">
       <label class="field-label">Students (one per line)</label>
       <textarea id="roster-names" rows="9"
         placeholder="GORD&#10;MINH&#10;LAN&#10;KHANH"></textarea>
@@ -100,39 +106,66 @@
     <div class="panel-card wide">
       <h2>How To Play</h2>
       <ul class="howto-list">
-        <li>The game picks one student per turn. That student makes ONE choice:
-            which room to enter, or which answer to give. Use <b>Reroll</b> if
-            they're absent.</li>
-        <li><b>Fight</b> rooms take 2 correct answers to clear.
-            <b>Elite</b> rooms take 5 — big rewards, big commitment.</li>
-        <li>A wrong answer lets the monster attack: the party loses a heart.</li>
-        <li><b>Team Up</b> lets a student bring in a partner, but the monster
-            gains 1 HP while you're talking. Once per monster.</li>
-        <li><b>Rest</b> heals. <b>Treasure</b> gives shards or a relic.
-            <b>Event</b> is a story choice. <b>Shop</b> sells relics and potions
-            for Knowledge Shards.</li>
-        <li><b>Safe Path</b> has no danger and no reward - but it's the one place
-            the party can stop and drink a potion.</li>
-        <li>Open <b>Inventory</b> any time from the map to see every relic and
-            potion the party is carrying, and what each one does.</li>
-        <li>The <b>Boss</b> tests every word and grammar point the class hasn't
-            faced yet, so nothing gets skipped for good.</li>
-        <li>Lose all hearts and the run resets with a brand-new map — but the
-            party keeps a relic or banks Ember for next time.</li>
+        <li><b>Choose a hero</b> at the start of each run - each begins with a
+            different advantage.</li>
+        <li>The game picks one student per turn. Use <b>Reroll</b> if they're absent.</li>
+        <li><b>Fight</b> rooms take 2 correct answers, <b>Elite</b> rooms take 5.
+            Elites always drop a relic.</li>
+        <li>Watch the monster's <b>intent</b> above its head - it tells you what is
+            coming and when. Monsters attack on their own schedule, not only when
+            you answer wrongly.</li>
+        <li><b>Grammar questions pay more shards but cost 2 hearts if you get them
+            wrong.</b> Vocabulary costs 1.</li>
+        <li><b>Brace</b> to defend: you still answer a question, but a correct answer
+            blocks the incoming attack instead of damaging the monster, and clears
+            any debuff.</li>
+        <li><b>Shields</b> (blue) refresh every room and soak damage before your
+            hearts do. Armour and relics give you more.</li>
+        <li><b>Team Up</b> brings in a partner, but the monster recovers HP while
+            you confer.</li>
+        <li>Three correct answers in a row blocks the next attack; five gives
+            shards and a potion.</li>
+        <li><b>Shops</b> appear deeper in the map, once you have shards to spend.
+            <b>Safe Path</b> is where you can drink a potion.</li>
+        <li>The <b>Boss</b> tests everything the class hasn't faced yet.</li>
+        <li>Lose all hearts and the run ends - but the party banks Ember or keeps
+            a relic for next time.</li>
       </ul>
       <button id="btn-howto-close" class="pixel-btn">Close</button>
+    </div>
+  </section>
+
+
+  <!-- ===================== HERO SELECT ===================== -->
+  <section id="screen-hero" class="screen">
+    <div class="hero-select-wrap">
+      <h2 class="hero-select-title">CHOOSE YOUR CHAMPION</h2>
+      <div class="hero-select-sub" id="hero-select-sub">One hero leads the party through this realm.</div>
+      <div class="hero-grid" id="hero-grid"></div>
+      <div class="row-buttons hero-select-actions">
+        <button id="hero-confirm" class="pixel-btn" disabled>Begin the Descent</button>
+        <button id="hero-cancel"  class="pixel-btn ghost">Back</button>
+      </div>
     </div>
   </section>
 
   <!-- ===================== MAP ===================== -->
   <section id="screen-map" class="screen">
     <div class="hud-top">
-      <div class="hud-block hearts" id="hud-hearts"></div>
+      <div class="hud-block hud-left">
+        <div class="portrait" id="hud-portrait"><img alt=""></div>
+        <div class="hud-ident">
+          <div class="hero-title" id="hud-hero-name">—</div>
+          <div class="party-title" id="hud-party-name">—</div>
+          <div class="hearts" id="hud-hearts"></div>
+        </div>
+      </div>
       <div class="hud-block realm-name" id="hud-realm-name"></div>
       <div class="hud-block currency">
         <span class="badge"><span class="icon-shard"></span><span id="hud-shards">0</span></span>
         <span class="badge ember"><span class="icon-ember"></span><span id="hud-ember">0</span></span>
         <span class="badge potions" id="hud-potions" title="Potions">No potions</span>
+        <span class="badge streak" id="hud-streak" title="Answer streak">Streak 0</span>
         <span class="badge relics" id="hud-relics" title="Relics">—</span>
       </div>
     </div>
@@ -152,6 +185,7 @@
         <button id="btn-inventory" class="pixel-btn tiny">Inventory</button>
         <button id="btn-recenter"   class="pixel-btn tiny ghost">Recentre</button>
         <button id="btn-map-teacher" class="pixel-btn tiny ghost">Teacher</button>
+        <button id="btn-end-run"     class="pixel-btn tiny danger">End Run</button>
         <button id="btn-map-menu"    class="pixel-btn tiny ghost">Menu</button>
       </div>
     </div>
@@ -160,7 +194,14 @@
   <!-- ===================== ENCOUNTER ===================== -->
   <section id="screen-encounter" class="screen">
     <div class="hud-top">
-      <div class="hud-block hearts" id="enc-hearts"></div>
+      <div class="hud-block hud-left">
+        <div class="portrait" id="enc-portrait"><img alt=""></div>
+        <div class="hud-ident">
+          <div class="hero-title" id="enc-hero-name">—</div>
+          <div class="party-title" id="enc-party-name">—</div>
+          <div class="hearts" id="enc-hearts"></div>
+        </div>
+      </div>
       <div class="hud-block realm-name" id="enc-realm-name"></div>
       <div class="hud-block currency">
         <span class="badge"><span class="icon-shard"></span><span id="enc-shards">0</span></span>
@@ -181,9 +222,15 @@
       <div class="torch t-l2"></div>
       <div class="torch t-r2"></div>
 
-      <div class="monster-stage" id="monster-stage">
+      <div class="combatant hero-side" id="hero-stage">
+        <img id="hero-sprite" class="hero-sprite" alt="">
+        <div class="shield-row" id="hero-shields"></div>
+      </div>
+      <div class="combatant foe-side" id="monster-stage">
+        <div class="intent" id="monster-intent"></div>
         <div class="monster-hp" id="monster-hp"></div>
         <img id="monster-sprite" class="monster-sprite" alt="">
+        <div class="nameplate" id="monster-name"></div>
       </div>
       <div class="slash-fx" id="slash-fx"></div>
       <div class="vignette"></div>
@@ -204,6 +251,7 @@
       <div class="panel-foot">
         <div class="enc-feedback" id="enc-feedback"></div>
         <button id="btn-use-item" class="pixel-btn tiny" style="display:none;">Use an Item</button>
+        <button id="btn-brace" class="pixel-btn tiny brace">Brace</button>
         <button id="btn-teamup" class="pixel-btn tiny teamup">Team Up (+1 monster HP)</button>
       </div>
     </div>
@@ -212,7 +260,14 @@
   <!-- ===================== BOSS ===================== -->
   <section id="screen-boss" class="screen">
     <div class="hud-top">
-      <div class="hud-block hearts" id="boss-hearts"></div>
+      <div class="hud-block hud-left">
+        <div class="portrait" id="boss-portrait"><img alt=""></div>
+        <div class="hud-ident">
+          <div class="hero-title" id="boss-hero-name">—</div>
+          <div class="party-title" id="boss-party-name">—</div>
+          <div class="hearts" id="boss-hearts"></div>
+        </div>
+      </div>
       <div class="hud-block realm-name" id="boss-realm-name"></div>
       <div class="hud-block currency">
         <span class="badge"><span class="icon-shard"></span><span id="boss-shards">0</span></span>
@@ -227,9 +282,15 @@
       <div class="wallseg w2"></div>
       <div class="wallseg w3"></div>
       <div class="wallseg w4"></div>
-      <div class="monster-stage boss-stage" id="boss-stage">
+      <div class="combatant hero-side" id="boss-hero-stage">
+        <img id="boss-hero-sprite" class="hero-sprite" alt="">
+        <div class="shield-row" id="boss-hero-shields"></div>
+      </div>
+      <div class="combatant foe-side huge" id="boss-stage">
+        <div class="intent" id="boss-intent"></div>
         <div class="monster-hp boss-hp" id="boss-hp"></div>
         <img id="boss-sprite" class="monster-sprite boss-sprite" alt="">
+        <div class="nameplate" id="boss-name"></div>
       </div>
       <div class="slash-fx" id="boss-slash-fx"></div>
       <div class="vignette"></div>
@@ -249,6 +310,7 @@
       <div class="choices" id="boss-choices"></div>
       <div class="panel-foot">
         <div class="enc-feedback" id="boss-feedback"></div>
+        <button id="btn-brace-boss" class="pixel-btn tiny brace">Brace</button>
         <button id="btn-teamup-boss" class="pixel-btn tiny teamup">Team Up (+1 boss HP)</button>
       </div>
     </div>
@@ -285,6 +347,8 @@
     <div class="panel-card wide">
       <h2>Party Inventory</h2>
       <div class="inv-summary" id="inv-summary"></div>
+      <h3 class="inv-head">Equipment <span class="inv-note">— one weapon, one armour</span></h3>
+      <div class="tile-grid" id="inv-gear"></div>
       <h3 class="inv-head">Relics <span class="inv-note">— permanent for this run</span></h3>
       <div class="tile-grid" id="inv-relics"></div>
       <h3 class="inv-head">Potions <span class="inv-note">— one use each</span></h3>
@@ -317,8 +381,10 @@
 <script src="js/config.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/items.js"></script>
+<script src="js/heroes.js"></script>
 <script src="js/content.js"></script>
 <script src="js/mapgen.js"></script>
+<script src="js/combat.js"></script>
 <script src="js/state.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>

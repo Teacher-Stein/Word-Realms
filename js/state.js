@@ -66,8 +66,12 @@ function factoryReset() {
 // ---------------------------------------------------------------------------
 // roster + student stats
 // ---------------------------------------------------------------------------
-function setRoster(className, students) {
-  STATE.roster = { className: className.trim(), students: students.slice() };
+function setRoster(className, students, partyName) {
+  STATE.roster = {
+    className: className.trim(),
+    partyName: (partyName || "").trim(),
+    students: students.slice(),
+  };
   students.forEach(ensureStudentStats);
   saveState();
 }
@@ -128,7 +132,7 @@ function rerollStudent() {
 // ---------------------------------------------------------------------------
 // run lifecycle
 // ---------------------------------------------------------------------------
-function startNewRun(realmId) {
+function startNewRun(realmId, heroId) {
   const realm = REALMS[realmId];
   const map = generateMap(realm);
   let hearts = CONFIG.START_HEARTS;
@@ -136,6 +140,7 @@ function startNewRun(realmId) {
 
   STATE.run = {
     realmId,
+    heroId,
     map,
     currentNodeId: map.nodes[0].id,
     visitedNodeIds: [map.nodes[0].id],
@@ -144,6 +149,13 @@ function startNewRun(realmId) {
     shards: 0,
     relics: [],
     potions: [],          // consumable ids held by the party
+    weapon: null,         // equipped gear id
+    armour: null,
+    enchants: {},         // slot -> enchantment id
+    shields: 0,           // absorbed before hearts
+    streak: 0,            // consecutive correct answers
+    bestStreak: 0,
+    shardMultiplier: 1,
     shieldActive: false,  // Storm Shield blocks the next hit
     clarityActive: false, // Potion of Clarity trims the next question
     shopStock: {},        // nodeId -> generated stock, so a shop is stable
@@ -199,19 +211,93 @@ function drawQuestion(realm) {
 function damage(n = 1) {
   const run = STATE.run;
   if (!run) return { blocked: false, dead: false };
-  if (run.shieldActive) {
+
+  if (run.shieldActive) {                       // Storm Shield potion
     run.shieldActive = false;
     saveState();
     return { blocked: true, blockedBy: "Storm Shield", dead: false };
   }
-  if (!run.usedLuckyCharm && run.relics.some(r => r.id === "lucky_charm")) {
+  if (!run.usedLuckyCharm && hasRelic("lucky_charm")) {
     run.usedLuckyCharm = true;
     saveState();
     return { blocked: true, blockedBy: "Lucky Charm", dead: false };
   }
+
+  // Shields soak damage before hearts are touched.
+  let absorbed = 0;
+  if (run.shields > 0) {
+    absorbed = Math.min(run.shields, n);
+    run.shields -= absorbed;
+    n -= absorbed;
+  }
   run.hearts = Math.max(0, run.hearts - n);
   saveState();
-  return { blocked: false, dead: run.hearts <= 0 };
+  return {
+    blocked: n === 0 && absorbed > 0,
+    blockedBy: absorbed > 0 ? "Shields" : null,
+    absorbed, dealt: n,
+    dead: run.hearts <= 0,
+  };
+}
+
+// ---------------------------- shields / gear -------------------------------
+function addShields(n) {
+  STATE.run.shields = Math.min(99, (STATE.run.shields || 0) + n);
+  saveState();
+}
+
+// Shields regenerate on entering a room, if the party's kit provides them.
+function refreshRoomShields() {
+  const run = STATE.run;
+  if (!run) return 0;
+  let gain = CONFIG.BASE_ROOM_SHIELDS || 0;
+  const armour = run.armour ? gearById(run.armour) : null;
+  if (armour) {
+    if (armour.id === "windwarden")   gain += 2;
+    if (armour.id === "aegis_mantle") gain += 3;
+  }
+  if (run.enchants && run.enchants.armour === "ward_etch") gain += 1;
+  if (hasRelic("aegis_charm")) gain += 1;
+  // Shields REFRESH rather than stack - otherwise they pile up room after
+  // room and the party becomes untouchable. Anything already held is kept.
+  const before = run.shields || 0;
+  run.shields = Math.max(before, gain);
+  saveState();
+  return Math.max(0, run.shields - before);
+}
+
+function equipGear(gear) {
+  const run = STATE.run;
+  const slot = gear.slot;
+  const previous = run[slot];
+  run[slot] = gear.id;
+  if (previous !== gear.id) run.enchants[slot] = null;   // etching is lost
+  saveState();
+  return previous ? gearById(previous) : null;
+}
+
+function availableGear(slot = null) {
+  const run = STATE.run;
+  let pool = ALL_GEAR.filter(g => g.id !== run.weapon && g.id !== run.armour);
+  if (slot) pool = pool.filter(g => g.slot === slot);
+  return pool.length ? pick(pool) : null;
+}
+
+function applyEnchant(slot, enchantId) {
+  STATE.run.enchants[slot] = enchantId;
+  saveState();
+}
+
+// ---------------------------- streaks --------------------------------------
+function bumpStreak() {
+  const run = STATE.run;
+  run.streak = (run.streak || 0) + 1;
+  run.bestStreak = Math.max(run.bestStreak || 0, run.streak);
+  saveState();
+  return run.streak;
+}
+function resetStreak() {
+  if (STATE.run) { STATE.run.streak = 0; saveState(); }
 }
 
 function heal(n = 1) {
@@ -221,7 +307,15 @@ function heal(n = 1) {
   saveState();
 }
 
-function addShards(n) { STATE.run.shards += n; saveState(); }
+function addShards(n) {
+  const run = STATE.run;
+  let mult = run.shardMultiplier || 1;
+  if (hasRelic("coin_purse")) mult += 0.25;
+  const gained = Math.max(1, Math.round(n * mult));
+  run.shards += gained;
+  saveState();
+  return gained;
+}
 function addEmber(n)  { STATE.ember += n; saveState(); }
 
 function hasRelic(id) {
@@ -333,6 +427,9 @@ function clearRealm() {
 
   STATE.leaderboard.push({
     className: STATE.roster ? STATE.roster.className : "Unnamed class",
+    partyName: STATE.roster ? (STATE.roster.partyName || "") : "",
+    heroId: run.heroId,
+    bestStreak: run.bestStreak || 0,
     realmId,
     score,
     minutes,

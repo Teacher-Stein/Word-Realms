@@ -19,7 +19,6 @@ function shuffle(arr) {
 // can never fill up with 5-hit fights.
 const NODE_WEIGHTS = [
   ["fight", 12], ["event", 4], ["rest", 3], ["treasure", 3], ["safe", 3],
-  ["shop", 2],
 ];
 
 function weightedNodeType() {
@@ -75,6 +74,24 @@ function generateMap(realm) {
     usedEliteLayers.add(cand.layer);
     promoted++;
   }
+
+  // ---- Place shops deliberately, deep in the map ----
+  // Randomly-weighted shops kept landing in the first few layers, where the
+  // party has no shards to spend. Instead: fixed depths in the back of the
+  // map, one per layer, spread out.
+  const firstL = Math.max(2, Math.round(layers * CONFIG.SHOP_FIRST_DEPTH));
+  const lastL  = Math.max(firstL + 1, Math.round(layers * CONFIG.SHOP_LAST_DEPTH));
+  const shopCount = Math.min(CONFIG.SHOPS_PER_MAP, lastL - firstL + 1);
+  const shopLayers = [];
+  for (let i = 0; i < shopCount; i++) {
+    const L = Math.round(firstL + (lastL - firstL) * (i / Math.max(1, shopCount - 1)));
+    if (!shopLayers.includes(L)) shopLayers.push(L);
+  }
+  shopLayers.forEach(L => {
+    const candidates = nodes.filter(n => n.layer === L && n.type !== "elite");
+    if (!candidates.length) return;
+    pick(candidates).type = "shop";
+  });
 
   // ---- Connect layers ----
   for (let L = 0; L < layerNodeIds.length - 1; L++) {
