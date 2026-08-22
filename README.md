@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 5.3 — the clock and the wager.** Realm 1 (Unit 1, Extreme Weather) is
+class. **Version 5.3.1 — the clock and the wager.** Realm 1 (Unit 1, Extreme Weather) is
 fully playable; Realms 2–9 appear as locked placeholders using the correct
 themes from the school syllabus.
 
@@ -20,6 +20,37 @@ once the page has loaded.
 5. Wait about a minute, then reload your `https://…github.io/word-realms/` link.
 
 If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
+
+---
+
+## Fixed in v5.3.1 — Brace
+
+**Brace never worked.** Not "worked badly" — the button did nothing, from the
+day it was added. It failed in three ways at once:
+
+The answer handler captured whether the party was defending at the moment the
+question was *rendered*. But Brace is pressed *after* the question is on
+screen, so the captured value was always the state from before the student
+decided. A braced, correct answer was resolved as an ordinary attack and the
+blow landed anyway. The flag could not survive to a later turn either, because
+`advanceStudentAndAsk()` clears it before drawing the next question.
+
+Underneath that, the braced branch reset the monster's clock to `cadence` and
+then the very next line ticked it down — so on a fast variant with cadence 1 it
+landed on zero and the monster swung regardless.
+
+And because the flag was set but never cleared, the Brace button greyed out
+permanently after one press.
+
+All three are fixed: the defend state is read live when the answer lands, the
+clock resets to a genuinely full one, and the flag clears on resolution.
+
+**Why no test caught it:** no harness had ever pressed the button. Four full
+automated playthroughs at four accuracy levels passed every time while a
+feature did nothing at all. `tools/tests/test_brace.py` now drives the exact
+moment — clock about to fire, press Brace, answer correctly, assert nothing is
+lost — including the cadence-1 case that broke. The suites now live in
+`tools/tests/` instead of being rebuilt from scratch each session.
 
 ---
 

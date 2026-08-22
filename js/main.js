@@ -739,16 +739,19 @@ function askFightQuestion() {
   const defending = frozen || run.bracing;
   clearStakeUI("enc");
   clearStake();
-  renderQuestion(q, ids, correct => resolveFightAnswer(correct, q, defending));
+  // NB: the answer handlers call isDefendingNow() rather than closing over
+  // `defending`. Brace is clicked AFTER the question is on screen, so a
+  // captured value is always the state from before the student decided.
+  renderQuestion(q, ids, correct => resolveFightAnswer(correct, q, isDefendingNow()));
 
   if (stakesAvailable(q, defending)) {
     offerStake("enc", q, (stake, blindResult) => {
       if (blindResult === undefined) {
         // options are on screen; renderQuestion's handler resolves it
-        renderQuestion(q, ids, correct => resolveFightAnswer(correct, q, defending));
+        renderQuestion(q, ids, correct => resolveFightAnswer(correct, q, isDefendingNow()));
         return;
       }
-      resolveFightAnswer(blindResult, q, defending);
+      resolveFightAnswer(blindResult, q, isDefendingNow());
     });
   }
 
@@ -793,10 +796,18 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
 
     if (defending) {
       // Brace: block the blow, clear the debuff, deal no damage.
+      //
+      // The +1 matters. nextCombatTurn() ticks the clock immediately after
+      // this, so setting it to `cadence` left it at cadence-1 - and on a fast
+      // variant with cadence 1 it landed on 0 and the monster swung anyway.
+      // A student who braced and answered correctly took the hit regardless,
+      // which is the exact opposite of what the button promises. Setting it to
+      // cadence+1 means the tick lands on a full fresh clock.
       clearDebuff();
-      m.turnsUntilAct = Math.max(1, m.cadence);
+      m.turnsUntilAct = Math.max(1, m.cadence) + 1;
       m.charging = null;
       run.bracing = false;
+      clearStake();
       saveState();
       SFX.heal();
       animateSprite(P.hero, "bracing", 620);
@@ -1332,6 +1343,21 @@ $("btn-teamup-boss").addEventListener("click", () =>
 
 // ---- Brace: defend instead of attacking. Still asks a question, so no
 // review time is lost - a correct answer blocks the blow and clears debuffs.
+// Is the party defending RIGHT NOW, at the moment an answer lands?
+//
+// This has to be read live. Brace is clicked while the question is already on
+// screen, so any value captured when the question was ASKED is the state from
+// before the student made the decision - which meant a braced, correct answer
+// was resolved as an ordinary attack and the blow landed anyway. Worse,
+// advanceStudentAndAsk() clears run.bracing before drawing the next question,
+// so the flag could never survive to be read on a later turn either: Brace was
+// a dead button from the day it was added.
+function isDefendingNow() {
+  const run = STATE.run;
+  if (!run) return false;
+  return isFrozen() || !!run.bracing;
+}
+
 function doBrace(which) {
   const run = STATE.run;
   const m = which === "boss" ? run.boss : run.encounter;
@@ -1881,16 +1907,18 @@ function askBossQuestion() {
   const defending = frozen || run.bracing;
   clearStakeUI("boss");
   clearStake();
-  renderQuestion(q, ids, correct => resolveCombatAnswer(bossCtx(), correct, q, defending));
+  // Live-read, same as the fight path - see isDefendingNow().
+  renderQuestion(q, ids,
+    correct => resolveCombatAnswer(bossCtx(), correct, q, isDefendingNow()));
 
   if (stakesAvailable(q, defending)) {
     offerStake("boss", q, (stake, blindResult) => {
       if (blindResult === undefined) {
         renderQuestion(q, ids,
-          correct => resolveCombatAnswer(bossCtx(), correct, q, defending));
+          correct => resolveCombatAnswer(bossCtx(), correct, q, isDefendingNow()));
         return;
       }
-      resolveCombatAnswer(bossCtx(), blindResult, q, defending);
+      resolveCombatAnswer(bossCtx(), blindResult, q, isDefendingNow());
     });
   }
   updateCombatButtons("boss");
