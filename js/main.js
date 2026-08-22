@@ -497,88 +497,114 @@ $("pause-award").addEventListener("click", () => {
   nodes.forEach(c => { if (c.textContent === q.answer) c.click(); });
 });
 
-// ===================== MOMENTUM =====================
-window.useMomentum = function (id, prefix) {
-  const res = spendMomentum(id);
-  const fb = $(prefix === "boss" ? "boss-feedback" : "enc-feedback");
-  if (!res.ok) {
-    SFX.wrong();
-    fb.textContent = res.reason === "already"
-      ? `${res.move.name} is already ready.` : "Not enough Momentum for that.";
-    fb.className = "enc-feedback bad";
-    return;
-  }
-  SFX.unlockChime();
-  fb.textContent = `${res.move.name} — ${res.note}`;
-  fb.className = "enc-feedback good";
-  renderMomentum(prefix);
-  renderTopHud(prefix);
-};
+// ===================== STAKES =====================
+// Before the options appear, the student on turn picks how much they are
+// putting on this answer. SAFE plays normally. RISKY doubles the shards and
+// doubles what a mistake costs - and on an `open` question it escalates to
+// answering BLIND, with nothing on screen to pick from.
+//
+// Nothing can mark a spoken answer, so the room adjudicates a blind call. That
+// is the point: it turns a silent multiple-choice tap into the whole class
+// listening to one person back themselves out loud.
+let _pendingStake = null;
 
-// ===================== COMMIT =====================
-// A hard question may be taken with NO options on screen for double reward.
-// Nothing can mark a spoken answer, so the room adjudicates - which is the
-// point: it turns a silent multiple-choice tap into the whole class listening
-// to one person commit to an answer out loud.
-let _pendingCommit = null;
-
-function commitEls(side) {
+function stakeEls(side) {
   return {
-    gate:    $(`${side}-commit-gate`),
+    gate:    $(`${side}-stake-gate`),
     say:     $(`${side}-commit-say`),
     choices: $(`${side}-choices`),
   };
 }
 
-function clearCommitUI(side) {
-  if (_pendingCommit && _pendingCommit.side === side) _pendingCommit = null;
-  const e = commitEls(side);
+function clearStakeUI(side) {
+  if (_pendingStake && _pendingStake.side === side) _pendingStake = null;
+  const e = stakeEls(side);
   if (e.gate) e.gate.style.display = "none";
   if (e.say) e.say.style.display = "none";
   if (e.choices) e.choices.classList.remove("hidden");
 }
+// kept under the old name so nothing that still calls it breaks
+function clearCommitUI(side) { clearStakeUI(side); }
 
-function offerCommit(side, q, onSafe, onCommit) {
-  const e = commitEls(side);
-  _pendingCommit = { side, q, onSafe, onCommit };
+// onPick(stake) is called once the class has chosen.
+function offerStake(side, q, onPick) {
+  const e = stakeEls(side);
+  if (!e.gate) { onPick(STAKE_SAFE); return; }
+  _pendingStake = { side, q, onPick };
   e.choices.classList.add("hidden");
   e.say.style.display = "none";
   e.gate.style.display = "";
+  renderStakeGate(side, q);
 }
 
 document.addEventListener("click", ev => {
-  const btn = ev.target.closest(".cg-go, .cg-safe, .cs-yes, .cs-no");
-  if (!btn || !_pendingCommit) return;
+  const btn = ev.target.closest(".sg-safe, .sg-risky, .cs-yes, .cs-no");
+  if (!btn || !_pendingStake) return;
   const side = btn.dataset.side;
-  if (side !== _pendingCommit.side) return;
-  const e = commitEls(side);
-  const P = _pendingCommit;
+  if (side !== _pendingStake.side) return;
+  const e = stakeEls(side);
+  const P = _pendingStake;
 
-  if (btn.classList.contains("cg-safe")) {
+  if (btn.classList.contains("sg-safe")) {
     SFX.click();
-    _pendingCommit = null;
-    clearCommitUI(side);
-    P.onSafe();
+    setStake(STAKE_SAFE);
+    _pendingStake = null;
+    clearStakeUI(side);
+    P.onPick(STAKE_SAFE);
     return;
   }
-  if (btn.classList.contains("cg-go")) {
+
+  if (btn.classList.contains("sg-risky")) {
+    setStake(STAKE_RISKY);
+    // On a selection-only question RISKY just raises the stakes and the
+    // options come straight back. Only an `open` question goes blind - the
+    // correct answer is never hidden from someone who could have picked it.
+    if (!stakeIsBlind(P.q, STAKE_RISKY)) {
+      SFX.unlockChime();
+      _pendingStake = null;
+      clearStakeUI(side);
+      const fb = $(side === "boss" ? "boss-feedback" : "enc-feedback");
+      fb.textContent = "RISKY — double shards, double damage if it's wrong.";
+      fb.className = "enc-feedback";
+      P.onPick(STAKE_RISKY);
+      return;
+    }
     SFX.bossRoar();
     e.gate.style.display = "none";
     e.say.style.display = "";
-    showStreakBanner("COMMITTED — NO OPTIONS");
+    showStreakBanner("RISKY — NO OPTIONS, SAY IT OUT LOUD");
     return;
   }
-  // adjudicated
+
+  // a blind call, adjudicated by the room
   const correct = btn.classList.contains("cs-yes");
   const fb = $(side === "boss" ? "boss-feedback" : "enc-feedback");
   fb.textContent = correct
-    ? `Committed and landed it — the answer was "${P.q.answer}". Double reward!`
+    ? `Called it blind — the answer was "${P.q.answer}". Triple shards!`
     : `Not this time — the answer was "${P.q.answer}".`;
   fb.className = "enc-feedback " + (correct ? "good" : "bad");
-  _pendingCommit = null;
-  clearCommitUI(side);
-  P.onCommit(correct);
+  _pendingStake = null;
+  clearStakeUI(side);
+  P.onPick(STAKE_RISKY, correct);
 });
+
+// ===================== FOCUS =====================
+window.useFocusNow = function (prefix) {
+  const fb = $(prefix === "boss" ? "boss-feedback" : "enc-feedback");
+  if (!useFocus()) {
+    SFX.wrong();
+    fb.textContent = "Focus is already spent for this fight.";
+    fb.className = "enc-feedback bad";
+    return;
+  }
+  SFX.unlockChime();
+  showStreakBanner("FOCUS — THE WHOLE CLASS ANSWERS");
+  fb.textContent =
+    `Hands up, everyone. Get this right and ${CONFIG.FOCUS_STUN_ANSWERS} answers ` +
+    `are struck off the monster's clock.`;
+  fb.className = "enc-feedback good";
+  updateCombatButtons(prefix);
+};
 
 // ===================== SHARED QUESTION RENDERER =====================
 function renderQuestion(q, ids, onAnswer) {
@@ -656,6 +682,8 @@ function startFight(isElite) {
   clearScenery();
   updateStageScale("corridor");
   showCombatButtons(true);
+  resetFocus();                 // one Focus per FIGHT, not per run
+  clearStake();
   STATE.run.potionUsedThisTurn = false;
   const run = STATE.run;
 
@@ -692,7 +720,12 @@ function startFight(isElite) {
 function askFightQuestion() {
   const realm = currentRealm();
   const run = STATE.run;
-  const m = run.encounter;
+  const m = run && run.encounter;
+  // The fight can end between a turn being scheduled and the next question
+  // being drawn - a blind call adjudicated a beat after the monster fell, or a
+  // party wipe mid-animation. monsterDefeated() nulls run.encounter, so
+  // without this the whole screen throws on the next draw.
+  if (!run || !m) return;
   const q = drawQuestion(realm, !!m.isElite);
   m.currentQ = q;
   saveState();
@@ -704,23 +737,26 @@ function askFightQuestion() {
   }
   const ids = { question: "enc-question", choices: "enc-choices", feedback: "enc-feedback" };
   const defending = frozen || run.bracing;
-  const ask = () => renderQuestion(q, ids,
-    correct => resolveFightAnswer(correct, q, defending));
-
-  clearCommitUI("enc");
+  clearStakeUI("enc");
+  clearStake();
   renderQuestion(q, ids, correct => resolveFightAnswer(correct, q, defending));
-  if (commitAvailable(q, defending)) {
-    offerCommit("enc", q, ask, correct => {
-      STATE.run.committed = true;
-      resolveFightAnswer(correct, q, defending);
+
+  if (stakesAvailable(q, defending)) {
+    offerStake("enc", q, (stake, blindResult) => {
+      if (blindResult === undefined) {
+        // options are on screen; renderQuestion's handler resolves it
+        renderQuestion(q, ids, correct => resolveFightAnswer(correct, q, defending));
+        return;
+      }
+      resolveFightAnswer(blindResult, q, defending);
     });
   }
-  renderMomentum("enc");
+
   updateCombatButtons("enc");
   if (m.isElite) coach("elite");
-  if (momentum() > 0) coach("momentum");
+  if (stakesAvailable(q, defending)) coach("stakes");
+  if (focusAvailable()) coach("focus");
   if (m.intent && !m.stunned) coach("intent");
-  if (commitAvailable(q, defending)) coach("commit");
 }
 
 // The shared resolution used by fights and the boss.
@@ -764,7 +800,8 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
       saveState();
       SFX.heal();
       animateSprite(P.hero, "bracing", 620);
-      $(P.feedback).textContent = "Braced! The attack is turned aside.";
+      $(P.feedback).textContent =
+        `Braced! The attack is turned aside — its clock resets to ${Math.max(1, m.cadence)} answers.`;
       $(P.feedback).className = "enc-feedback good";
       renderIntent(P.intent, m);
       renderTopHud(P.hud);
@@ -787,12 +824,21 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
       return;
     }
 
-    const committed = !!run.committed;
-    run.committed = false;
+    const stake = currentStake();
+    const blind = stakeIsBlind(q, stake);
+    // A stake pays in shards - never in damage. Extra damage would mean a
+    // shorter fight, and a shorter fight is fewer questions.
     const dmg = playerDamageAgainst(m);
-    // Committing pays in shards and Momentum - never in damage. Extra damage
-    // would mean a shorter fight, and a shorter fight is fewer questions.
-    const moGained = gainMomentum(1 + (committed ? CONFIG.COMMIT_MOMENTUM : 0));
+
+    // Focus: a correct answer strikes ticks off the monster's clock. This
+    // LENGTHENS the fight, which is the only reason it is allowed to exist.
+    const stun = consumeFocus(true);
+    let focusNote = "";
+    if (stun) {
+      m.turnsUntilAct = Math.min(m.cadence, m.turnsUntilAct + stun);
+      focusNote = ` FOCUS — ${stun} answers struck off its clock!`;
+    }
+
     SFX.playerHit();
     animateSprite(P.hero, "attacking", 560);
     setTimeout(() => playSlash(P.slash), 180);
@@ -809,25 +855,30 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
       m.hp = Math.max(0, m.hp - dmg);
       floatText(P.foeStage, `-${dmg}`, "damage");
       const { amount, crit } = hitShards(q, m);
-      let payout = amount * momentumShardMultiplier();      // a primed Rouse
-      if (committed) payout *= CONFIG.COMMIT_SHARD_MULT;
-      const gained = addShards(payout);
+      const gained = addShards(amount * stakeShardMult(stake, blind));
+      const shielded = payStakeShield(blind);
+      if (shielded) {
+        floatText(P.heroStage, `+${shielded} shield`, "shield");
+        renderShieldRow(P.shields);
+      }
       if (rollStun()) {
         m.stunned = true;
-        $(P.feedback).textContent = `A stunning blow! ${m.name} loses its next turn.`;
+        $(P.feedback).textContent =
+          `A stunning blow! ${m.name} loses its next turn.` + focusNote;
       } else {
         $(P.feedback).textContent =
-          committed ? `Committed and landed it! +${gained} shards and +${CONFIG.COMMIT_MOMENTUM} Momentum`
-        : crit      ? `Critical hit! +${gained} shards`
-                    : `A clean hit! +${gained} shards`;
+          (blind ? `Called it blind! +${gained} shards${shielded ? ` and +${shielded} shield` : ""}`
+         : crit  ? `Critical hit! +${gained} shards`
+                 : `A clean hit! +${gained} shards`)
+          + stakeNote(stake, blind, true) + focusNote;
       }
       $(P.feedback).className = "enc-feedback good";
     }
+    clearStake();
     renderMonsterHp(P.hpEl, m.hp, m.maxHp);
     renderIntent(P.intent, m);
     renderTopHud(P.hud);
-    renderMomentum(P.hud);
-    if (moGained) flashMomentum(P.hud);
+    updateCombatButtons(P.hud);
     saveState();
 
     if (m.hp <= 0) { setTimeout(() => monsterDefeated(ctx), 620); return; }
@@ -839,8 +890,17 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
     bumpStat(student, "wrong");
     resetStreak();
     run.bracing = false;
-    run.committed = false;
-    const dmg = wrongAnswerDamage(q);
+
+    // This is where RISKY bites. The stake multiplies what the mistake costs;
+    // it never touched what a correct answer deals.
+    const stake = currentStake();
+    const blind = stakeIsBlind(q, stake);
+    const dmg = wrongAnswerDamage(q) * stakeDamageMult(stake);
+    consumeFocus(false);          // a missed Focus is simply spent
+    clearStake();
+    if (stake === STAKE_RISKY) {
+      $(P.feedback).textContent += stakeNote(stake, blind, false);
+    }
     saveState();
     setTimeout(() => {
       SFX.monsterAttack();
@@ -858,23 +918,9 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
 
 // Apply one incoming hit with all the animation/audio that goes with it.
 function applyHit(rawDmg, m, P) {
-  // A primed Guard takes the top off the blow before shields or hearts.
+  // v5.3: Momentum's Guard is gone. Relics and streaks still blunt blows
+  // further down; nothing takes the top off here any more.
   let incoming = rawDmg;
-  let guarded = 0;
-  if (incoming > 0) {
-    guarded = Math.min(incoming, momentumGuardAmount());
-    incoming -= guarded;
-  }
-  if (guarded && incoming <= 0) {
-    SFX.heal();
-    floatText(P.heroStage, "GUARDED", "block");
-    animateSprite(P.hero, "bracing", 620);
-    $(P.feedback).textContent = "GUARDED — the blow is turned aside!";
-    $(P.feedback).className = "enc-feedback good";
-    renderTopHud(P.hud);
-    renderMomentum(P.hud);
-    return { blocked: true, blockedBy: "Guard", absorbed: 0, dealt: 0, dead: false };
-  }
   const dmg = incomingDamage(incoming, m);
   const res = damage(dmg);
   playHitFlash(P.flash, P.corridor);
@@ -894,9 +940,7 @@ function applyHit(rawDmg, m, P) {
     if (res.absorbed) floatText(P.heroStage, `-${res.absorbed} shield`, "shield");
     floatText(P.heroStage, `-${res.dealt}`, "damage");
     bumpStat(STATE.run.currentStudent, "damage", Math.max(1, res.dealt));
-    $(P.feedback).textContent = guarded
-      ? `Guard held ${guarded} — ${res.dealt} still got through!`
-      : res.absorbed
+    $(P.feedback).textContent = res.absorbed
       ? `Shields broke — ${res.dealt} damage through!`
       : `${m.name} strikes for ${res.dealt}!`;
     $(P.feedback).className = "enc-feedback bad";
@@ -944,8 +988,24 @@ function nextCombatTurn(ctx) {
         hpEl:"monster-hp", shields:"hero-shields",
         heroStage:"hero-stage", foeStage:"monster-stage", hud:"enc" };
 
-  const acts = tickMonsterClock(m);
-  if (!acts) { advanceStudentAndAsk(ctx); return; }
+  const tick = tickMonsterClock(m);
+  if (!tick.acts) {
+    // Redraw the clock AFTER the tick. This used to be skipped, which left the
+    // countdown one turn stale for the whole of the next question - the number
+    // on screen while a student was choosing was always wrong by one, and
+    // "NEXT ANSWER" only ever flashed up during the feedback right before the
+    // blow landed. The warning is worthless if it arrives after the decision.
+    renderIntent(P.intent, m);
+    if (tick.held) {
+      SFX.heal();
+      $(P.feedback).textContent = "The Riposte Ring holds it back — the clock does not move!";
+      $(P.feedback).className = "enc-feedback good";
+      setTimeout(() => advanceStudentAndAsk(ctx), 1000);
+      return;
+    }
+    advanceStudentAndAsk(ctx);
+    return;
+  }
 
   const result = monsterTakeTurn(m);
   renderIntent(P.intent, m);
@@ -1091,8 +1151,8 @@ function monsterDefeated(ctx) {
   }
 
   run.encounter = null;
-  _pendingCommit = null;      // nothing left to commit to
-  decayMomentum();      // tempo, not a bank - it can't be hoarded for the boss
+  _pendingStake = null;       // nothing left to stake on
+  clearStake();
   saveState();
   afterPopups(() => backToMap(true));
 }
@@ -1286,17 +1346,17 @@ function doBrace(which) {
 }
 $("btn-brace").addEventListener("click", () => doBrace("enc"));
 $("btn-brace-boss").addEventListener("click", () => doBrace("boss"));
+$("btn-focus").addEventListener("click", () => window.useFocusNow("enc"));
+$("btn-focus-boss").addEventListener("click", () => window.useFocusNow("boss"));
 
-// Brace and Team Up only mean something when there is something to fight, so
-// they are hidden outright in Rest, Safe, Treasure and Event rooms.
+// Brace, Focus and Team Up only mean something when there is something to
+// fight, so they are hidden outright in Rest, Safe, Treasure and Event rooms.
 function showCombatButtons(show) {
-  ["btn-brace", "btn-teamup"].forEach(id => {
+  ["btn-brace", "btn-teamup", "btn-focus"].forEach(id => {
     const b = $(id);
     if (b) b.style.display = show ? "" : "none";
   });
-  const mo = $("enc-mo-row");
-  if (mo) mo.style.display = show ? "" : "none";
-  if (!show) clearCommitUI("enc");
+  if (!show) clearStakeUI("enc");
 }
 
 // enable/disable the combat action buttons for the current turn
@@ -1317,6 +1377,19 @@ function updateCombatButtons(prefix) {
     itemBtn.textContent = run.potionUsedThisTurn ? "Item used this turn"
                         : n ? `Use an Item (${n})` : "No items to use";
     itemBtn.onclick = () => openInventory({ usable: true, from: isBoss ? "boss" : "fight" });
+  }
+
+  // Focus: one per fight, the party's panic button and a licensed moment for
+  // the whole class to argue about an answer together.
+  const focusBtn = $(isBoss ? "btn-focus-boss" : "btn-focus");
+  if (focusBtn) {
+    focusBtn.style.display = CONFIG.FOCUS_ENABLED && m ? "" : "none";
+    const armed = focusArmed();
+    focusBtn.disabled = !focusAvailable() || armed;
+    focusBtn.classList.toggle("armed", armed);
+    focusBtn.textContent = armed ? "FOCUS — everyone answers!"
+                         : focusAvailable() ? "Focus (whole class)"
+                         : "Focus spent";
   }
 
   if (!m) { braceBtn.disabled = true; teamBtn.disabled = true; return; }
@@ -1764,6 +1837,8 @@ function startBoss() {
   chooseIntent(m);
   run.boss = m;
   clearDebuff();
+  resetFocus();                 // the boss is a fight, so it gets its own Focus
+  clearStake();
   saveState();
 
   applySky("boss-sky", realm.sky);
@@ -1804,27 +1879,21 @@ function askBossQuestion() {
 
   const ids = { question: "boss-question", choices: "boss-choices", feedback: "boss-feedback" };
   const defending = frozen || run.bracing;
-  const ask = () => renderQuestion(q, ids,
-    correct => resolveCombatAnswer(bossCtx(), correct, q, defending));
-
-  clearCommitUI("boss");
+  clearStakeUI("boss");
+  clearStake();
   renderQuestion(q, ids, correct => resolveCombatAnswer(bossCtx(), correct, q, defending));
-  if (commitAvailable(q, defending)) {
-    offerCommit("boss", q, ask, correct => {
-      STATE.run.committed = true;
-      resolveCombatAnswer(bossCtx(), correct, q, defending);
+
+  if (stakesAvailable(q, defending)) {
+    offerStake("boss", q, (stake, blindResult) => {
+      if (blindResult === undefined) {
+        renderQuestion(q, ids,
+          correct => resolveCombatAnswer(bossCtx(), correct, q, defending));
+        return;
+      }
+      resolveCombatAnswer(bossCtx(), blindResult, q, defending);
     });
   }
-  renderMomentum("boss");
   updateCombatButtons("boss");
-}
-
-// A question can only be committed to if the clue alone tells you what to say.
-// "Choose the correct sentence:" cannot - the options ARE the question - and
-// offering the gamble on one asks a child to answer something nobody asked.
-function commitAvailable(q, defending) {
-  return CONFIG.COMMIT_ENABLED && !defending && !isFrozen() &&
-         q.open === true && (q.tier || 1) >= CONFIG.COMMIT_MIN_TIER;
 }
 
 function bossCtx() {

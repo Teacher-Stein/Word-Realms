@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 5.2 — classroom edition.** Realm 1 (Unit 1, Extreme Weather) is
+class. **Version 5.3 — the clock and the wager.** Realm 1 (Unit 1, Extreme Weather) is
 fully playable; Realms 2–9 appear as locked placeholders using the correct
 themes from the school syllabus.
 
@@ -23,7 +23,55 @@ If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
 
-## What's new in v5.2 — legibility
+## What's new in v5.3 — the clock and the wager
+
+**Fixed: the monster's countdown was lying by one.** A "turn" in this game is
+one answered question, from anybody. The countdown was being redrawn *before*
+the clock ticked and then never redrawn again, so the number sitting on screen
+while a student was choosing an answer was always one behind — and the red
+**NEXT** warning only ever flashed up during the feedback a moment before the
+blow landed, which is after the decision it was supposed to inform. It is now
+redrawn after the tick, and verified: 287 readings across four accuracy levels
+in automated play, all correct.
+
+**The countdown is measured in answers, not "turns".** A ten-year-old looking
+at a class roster reads "in 2 turns" as *two of my turns* and gets hit twice as
+fast as they expected. It now says **AFTER 2 MORE ANSWERS** and **ON THE NEXT
+ANSWER**. The Riposte Ring, which silently ate a tick a third of the time, now
+says so out loud, and a successful Brace announces that it has reset the clock.
+
+**Momentum is gone. Stakes replace it.** Momentum was optional, and in a room
+with twenty-five children and forty minutes anything optional gets skipped. It
+was also a shared pool spent on one student's turn, so it belonged to nobody.
+The decision now sits on the question itself: before the options appear, the
+student on turn picks **SAFE** or **RISKY**. RISKY pays double shards and makes
+a mistake cost double, and the gate shows the real heart cost of each choice
+rather than the word "double", so the gamble is an informed one. On a question
+whose clue alone tells you what to say, RISKY goes further — the options vanish
+and the answer is said out loud for triple shards and a shield point. It is
+never offered where the options *are* the question.
+
+That last detail matters: paying the shield on *every* RISKY made bold play
+strictly safest and turned the mechanic mandatory — a class that always played
+SAFE wiped 17 points more often, which is the exact trap Momentum fell into.
+Restricting it to blind calls and capping it at two per fight puts the choice
+back in balance.
+
+**Focus — one per fight.** The whole class answers the next question together,
+hands up, and a correct answer strikes two answers off the monster's clock. It
+buys *time*, never damage, so the fight runs longer and the class gets more
+questions out of it, not fewer.
+
+**Balance held, threat moved.** The difficulty is deliberately unchanged from
+v5.2 — 2,500 simulated runs per configuration put a typical class at 63% wipes
+at 85% accuracy against v5.2's 65% — so a class playtest of either version
+still tells you the same thing. What changed is *where* the danger comes from:
+wrong answers now account for 60% of all damage taken, up from 48%. The threat
+comes from not knowing, rather than from waiting.
+
+---
+
+## What was new in v5.2 — legibility
 
 **Fixed: Commit was offered on questions that cannot be answered aloud.** It
 was gated on how *hard* a question was, when the property that matters is
@@ -45,8 +93,8 @@ space either side. The monster now has chips at all — Guarding, Enraged,
 Stunned and Charging were only ever a line of text.
 
 **Coach mode.** The first time each mechanic actually appears, the game stops
-and explains that one thing, then never mentions it again — Momentum, the
-intent countdown, campfires, Commit, Elites, debuffs and the shop. Marks are
+and explains that one thing, then never mentions it again — Stakes, Focus,
+the intent countdown, campfires, Elites, debuffs and the shop. Marks are
 per class, resettable in the Teacher Menu, and the whole thing can be switched
 off for a class that already knows.
 
@@ -91,23 +139,32 @@ the map is 15 layers instead of 20. The lesson is the same length and asks the
 same number of questions — you trade twenty shallow rooms for fifteen that
 matter.
 
-**Momentum.** Every correct answer banks 1, capped at 6. Spend it on
-**Insight** (remove a wrong option), **Rouse** (double shards on your next hit),
-**Guard** (stop 2 damage from the next attack) or **Rally** (heal a heart).
-It halves when you leave a room, so it can't be hoarded for the Boss. A correct
-answer now produces a decision for the whole class instead of a number going
-down.
+**Stakes.** Before the options appear, the student on turn decides how much
+they are putting on the answer. **SAFE** plays normally. **RISKY** pays double
+shards and makes a mistake cost double. The gate shows the actual heart cost of
+each option, not a multiplier, and the clue is already on screen above it, so
+nobody is gambling blind on the arithmetic.
 
-**Nothing in the game shortens a fight.** An earlier draft of Momentum had a
-Heavy Strike that dealt extra damage. Simulation caught it cutting a run from
-36 questions to 25 — the exact rule this game exists to protect. Every Momentum
-move is defensive, economic or informational instead, and Commit pays in shards
-and Momentum rather than damage.
+This is the risk-and-reward lesson applied to every single question rather than
+to an abstract meter. A student who *knows* they know it gets paid for backing
+themselves; a student who is guessing learns it is fine to say so. Confidence
+calibration is a real skill and it outlives Unit 1.
 
-**Commit.** On tier 3 and tier 4 questions the named student may answer with
-**no options on screen**, out loud, for double shards and bonus Momentum. The
-room adjudicates. Recall is a far harder test than recognition, and this makes
-children volunteer for it because it is the powerful move.
+**Blind calls.** On a question whose clue alone tells you what to say, RISKY
+goes further: the options vanish, the answer is said out loud, and the room
+adjudicates. Triple shards and a shield point. Recall is a far harder test than
+recognition, and this makes children volunteer for it because it is the
+powerful move. It is never offered where the options *are* the question —
+nothing in this game may hide the correct answer from a student who knows it.
+
+**Focus.** One per fight. The whole class answers the next question together,
+and a correct answer strikes two answers off the monster's clock.
+
+**Nothing in the game shortens a fight.** An earlier draft had a Heavy Strike
+that dealt extra damage. Simulation caught it cutting a run from 36 questions
+to 25 — the exact rule this game exists to protect. Stakes move shards earned
+and damage taken, never damage dealt. Focus stuns the *clock*, not the
+monster's health, so it makes a fight longer and adds questions.
 
 **Campfires replace Rest rooms.** There is time for one thing only: **Mend**
 (hearts), **Repair** (shields) or **Sharpen** (a permanent extra heart for the
@@ -123,10 +180,13 @@ judgement call.
 to be one extra question, which is a thing we want, so it was free — and free
 is not a decision.
 
-**Balance.** A typical class wipes 9% of runs at 95% accuracy, 35% at 85% and
-71% at 75%. A class that ignores Momentum entirely still wins about half its
-runs at 85%; one that plays it well wipes 24%. Momentum is upside, never a
-requirement.
+**Balance.** Measured in v5.3 over 2,500 simulated runs per configuration: a
+typical class wipes 19% of runs at 95% accuracy, 63% at 85% and 92% at 75%. A
+class that plays everything SAFE and never touches Focus wipes 75% at 85%; a
+class that goes all-in on RISKY wipes 69%. Moderate risk is the optimal line
+and both extremes are punished, which is the lesson. These are simulated
+figures that exclude relics, potions and shop purchases, so real classes should
+do somewhat better.
 
 ## What's new in v4.3
 
@@ -435,14 +495,16 @@ Everything balance-related is in `js/config.js`:
 
 | Setting | Default | What it does |
 |---|---|---|
-| `START_HEARTS` | 13 | Party hearts (monsters act 2.5x as often as v4.3) |
-| `REST_SHIELDS` | 10 | Shields restored by a campfire **Repair** only |
+| `START_HEARTS` | 9 | Party hearts — the main survivability dial |
+| `REST_SHIELDS` | 7 | Shields restored by a campfire **Repair** only |
 | `MONSTER_HP` | 4 | Correct answers to fell a monster — the main fight-length dial |
-| `MOMENTUM_CAP` | 6 | How much Momentum can be banked at once |
-| `COMMIT_MIN_TIER` | 3 | Question tier at which Commit is offered |
-| `BOSS_CADENCE` | 3 | Boss acts every N student turns (lower = harder) |
-| `REST_HEAL` | 3 | Hearts restored by a Rest room |
-| `TIER_DAMAGE` | 1/1/2/2 | Hearts lost per wrong answer, by question tier (4 = Elite bank) |
+| `STAKE_RISKY_DAMAGE` | 2 | Multiplier on a wrong answer when RISKY is taken |
+| `STAKE_BLIND_SHARDS` | 3 | Shard multiplier for a blind call |
+| `STAKE_MIN_TIER` | 2 | Question tier at which a blind call is offered |
+| `FOCUS_STUN_ANSWERS` | 2 | Answers struck off the clock by a landed Focus |
+| `BOSS_CADENCE` | 4 | Boss acts every N answers (lower = harder) |
+| `REST_HEAL` | 5 | Hearts restored by a campfire **Mend** |
+| `TIER_DAMAGE` | 1/1/3/3 | Hearts lost per wrong answer, by question tier (4 = Elite bank) |
 | `SHOPS_PER_MAP` | 3 | Guaranteed shops, placed deep in the map |
 | `ELITE_HP` | 7 | Correct answers to defeat an Elite |
 | `TEAMUP_HP_COST` | 1 | HP the monster regains when a partner is called |
@@ -467,7 +529,7 @@ js/state.js           Save/load, roster, stats, run lifecycle
 js/items.js           Relics, potions, weapons, armour, enchantments
 js/heroes.js          Playable hero definitions
 js/forge.js           Ember Forge perks and their run-start effects
-js/momentum.js        The Momentum pool and the moves it buys
+js/stakes.js          Stakes (SAFE/RISKY), blind calls and Focus
 js/coach.js           First-time explanations for each mechanic
 js/combat.js          Monster instances, intents, attacks, debuffs
 js/ui.js              Rendering (map, HUD, popups, tiles, shop)

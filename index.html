@@ -156,8 +156,8 @@
         <li><b>Fight</b> rooms take 2 correct answers, <b>Elite</b> rooms take 5.
             Elites always drop a relic.</li>
         <li>Watch the monster's <b>intent</b> underneath it - it tells you what is
-            coming and when. Monsters act every other turn, not only when
-            you answer wrongly.</li>
+            coming and when. Its clock counts down one step per
+            answer from anyone in the class, not only when you answer wrongly.</li>
         <li><b>Last Stand.</b> The first time the party runs out of hearts, one
             student gets a single sudden-death question. Answer it and the party
             gets back up with one heart. Miss it and the run is over. Once per
@@ -167,27 +167,31 @@
         <li><b>Brace</b> to defend: you still answer a question, but a correct answer
             blocks the incoming attack instead of damaging the monster, and clears
             any debuff.</li>
-        <li><b>Momentum</b> builds with every correct answer. Spend it on
-            <b>Insight</b> (remove a wrong option), <b>Rouse</b> (double shards
-            on your next hit), <b>Guard</b> (stop 2 damage from the next attack)
-            or <b>Rally</b> (heal a heart). You can't afford everything — that's
-            the point. It halves when you leave a room, so it can't be hoarded.</li>
+        <li><b>Stakes.</b> Before the options appear, decide how much you are
+            putting on the answer. <b>SAFE</b> plays normally. <b>RISKY</b> pays
+            double shards and makes a mistake cost double. Backing yourself when
+            you know it is the whole skill.</li>
+        <li><b>Focus</b> — once per fight, the whole class answers together.
+            Get it right and 2 answers are struck off the monster's clock. It
+            buys time, never damage, so the fight runs <i>longer</i>.</li>
         <li>At a <b>Campfire</b> there is time for <b>one</b> thing only: Mend
             hearts, Repair shields, or Sharpen for a permanent extra heart.</li>
         <li><b>Shields</b> (blue) soak damage before your hearts do and do NOT
             come back on their own. Only a Campfire Repair, a Patch Kit or
             better armour restores them.</li>
-        <li>On the hardest questions you may <b>Commit</b>: answer with the
-            options hidden, out loud, for double shards and bonus Momentum.
-            Nothing in the game ever makes a fight shorter — the questions are
-            the point.</li>
+        <li>On a question whose clue alone tells you what to say, <b>RISKY</b>
+            goes further: the options vanish and you say the answer out loud for
+            <b>triple</b> shards. It is never offered where the options ARE the
+            question. Nothing in this game ever makes a fight shorter — the
+            questions are the point.</li>
         <li><b>Elite rooms ask harder questions</b> — they test whether you can
             use the language, not just recognise it. Wrong costs 2 hearts;
             right pays the most shards in the game. The Boss asks them too.</li>
         <li>You can open the pack <b>during a fight</b>. The student still
             answers their question, but the party doesn't attack that turn.</li>
-        <li>Watch the countdown on the monster's intent — it says how many turns
-            until the blow lands, and turns red on the last one.</li>
+        <li>Watch the countdown on the monster's intent. It counts in
+            <b>answers from anybody</b>, not just your own turns, and turns red
+            when the next answer sets it off.</li>
         <li><b>Team Up</b> brings in a partner, but the monster recovers HP while
             you confer.</li>
         <li>Three correct answers in a row blocks the next attack; five gives
@@ -316,13 +320,6 @@
       <img id="room-scenery" class="room-scenery" alt="">
       <div class="slash-fx" id="slash-fx"></div>
       <div class="vignette"></div>
-            <div class="mo-row" id="enc-mo-row">
-        <div class="mo-meter">
-          <span class="mo-label">Momentum</span>
-          <span class="mo-pips" id="enc-mo-pips"></span>
-        </div>
-        <div class="mo-moves" id="enc-mo-moves"></div>
-      </div>
       <div class="hit-flash" id="hit-flash"></div>
     </div>
 
@@ -336,16 +333,10 @@
         </div>
       </div>
       <div class="q" id="enc-question">—</div>
-      <div class="commit-gate" id="enc-commit-gate" style="display:none;">
-        <div class="cg-text">This one is worth <b>double</b>. Take it with the options hidden?</div>
-        <div class="cg-buttons">
-          <button class="pixel-btn cg-go" data-side="enc">Commit — no options</button>
-          <button class="pixel-btn ghost cg-safe" data-side="enc">Show me the options</button>
-        </div>
-      </div>
+      <div class="stake-gate" id="enc-stake-gate" style="display:none;"></div>
       <div class="commit-say" id="enc-commit-say" style="display:none;">
         <div class="cs-title">Say the answer out loud.</div>
-        <div class="cs-sub">The class decides. No options, double reward.</div>
+        <div class="cs-sub">The class decides. No options, triple shards.</div>
         <div class="cs-buttons">
           <button class="pixel-btn cs-yes" data-side="enc">They got it</button>
           <button class="pixel-btn danger cs-no" data-side="enc">Not quite</button>
@@ -355,6 +346,7 @@
       <div class="panel-foot">
         <div class="enc-feedback" id="enc-feedback"></div>
         <button id="btn-use-item" class="pixel-btn tiny" style="display:none;">Use an Item</button>
+        <button id="btn-focus" class="pixel-btn tiny focus">Focus (whole class)</button>
         <button id="btn-brace" class="pixel-btn tiny brace">Brace</button>
         <button id="btn-teamup" class="pixel-btn tiny teamup">Team Up (+1 monster HP)</button>
       </div>
@@ -406,13 +398,6 @@
       </div>
       <div class="slash-fx" id="boss-slash-fx"></div>
       <div class="vignette"></div>
-            <div class="mo-row" id="boss-mo-row">
-        <div class="mo-meter">
-          <span class="mo-label">Momentum</span>
-          <span class="mo-pips" id="boss-mo-pips"></span>
-        </div>
-        <div class="mo-moves" id="boss-mo-moves"></div>
-      </div>
       <div class="hit-flash" id="boss-hit-flash"></div>
     </div>
 
@@ -426,16 +411,10 @@
         </div>
       </div>
       <div class="q" id="boss-question">—</div>
-      <div class="commit-gate" id="boss-commit-gate" style="display:none;">
-        <div class="cg-text">This one is worth <b>double</b>. Take it with the options hidden?</div>
-        <div class="cg-buttons">
-          <button class="pixel-btn cg-go" data-side="boss">Commit — no options</button>
-          <button class="pixel-btn ghost cg-safe" data-side="boss">Show me the options</button>
-        </div>
-      </div>
+      <div class="stake-gate" id="boss-stake-gate" style="display:none;"></div>
       <div class="commit-say" id="boss-commit-say" style="display:none;">
         <div class="cs-title">Say the answer out loud.</div>
-        <div class="cs-sub">The class decides. No options, double reward.</div>
+        <div class="cs-sub">The class decides. No options, triple shards.</div>
         <div class="cs-buttons">
           <button class="pixel-btn cs-yes" data-side="boss">They got it</button>
           <button class="pixel-btn danger cs-no" data-side="boss">Not quite</button>
@@ -445,6 +424,7 @@
       <div class="panel-foot">
         <div class="enc-feedback" id="boss-feedback"></div>
         <button id="btn-use-item-boss" class="pixel-btn tiny" style="display:none;">Use an Item</button>
+        <button id="btn-focus-boss" class="pixel-btn tiny focus">Focus (whole class)</button>
         <button id="btn-brace-boss" class="pixel-btn tiny brace">Brace</button>
         <button id="btn-teamup-boss" class="pixel-btn tiny teamup">Team Up (+1 boss HP)</button>
       </div>
@@ -535,7 +515,7 @@
 <script src="js/items.js"></script>
 <script src="js/heroes.js"></script>
 <script src="js/forge.js"></script>
-<script src="js/momentum.js"></script>
+<script src="js/stakes.js"></script>
 <script src="js/coach.js"></script>
 <script src="js/content.js"></script>
 <script src="js/mapgen.js"></script>

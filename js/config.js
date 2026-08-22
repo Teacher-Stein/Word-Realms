@@ -77,32 +77,41 @@ const CONFIG = {
                              // monsters, and a genuinely tense classroom beat
   CHECKPOINT_HEARTS: 2,      // hearts restored when falling back to a campfire
 
-  // --- momentum ---
-  // Banked on every correct answer, spent instead of banked. This is the
-  // decision that a correct answer now produces, instead of just a number
-  // going down.
-  // NOTHING here shortens a fight. An earlier draft had a Heavy Strike that
-  // dealt extra damage, and it quietly cut a run from 36 questions to 25 -
-  // the exact rule this game exists to protect. Every move is defensive,
-  // economic or informational instead.
-  MOMENTUM_CAP: 6,
-  MO_INSIGHT: 1,             // remove a wrong answer from the next question
-  MO_ROUSE: 2,               // next correct answer pays double shards
-  MO_GUARD: 3,               // stop up to MO_GUARD_BLOCK damage
-  MO_GUARD_BLOCK: 2,
-  MO_RALLY: 3,               // restore a heart
+  // --- stakes (v5.3, replaces Momentum) ---
+  // Momentum was a pool spent through a separate UI, and it was OPTIONAL, so
+  // classes ignored it. The decision now sits on the question itself: before
+  // the options appear, the student on turn picks SAFE or RISKY.
+  //
+  // Stakes move SHARDS EARNED and DAMAGE TAKEN. They never move damage DEALT.
+  // An earlier system had a Heavy Strike that hit harder and it quietly cut a
+  // run from 36 questions to 25 - the exact rule this game exists to protect.
+  STAKES_ENABLED: true,
+  STAKE_RISKY_SHARDS: 2,     // RISKY pays double...
+  STAKE_RISKY_DAMAGE: 2,     // ...and a wrong answer costs double
+  // On a question tagged `open: true` the clue alone tells you what to say, so
+  // RISKY escalates to answering BLIND - nothing on screen to pick from. This
+  // is the old Commit, folded in. It pays more because recall is harder than
+  // recognition. It is never offered on selection-only questions: hiding the
+  // correct answer from a student who knows it is the one thing this game
+  // must never do.
+  STAKE_BLIND_SHARDS: 3,
+  STAKE_MIN_TIER: 2,         // blind is a reward for the harder half of the bank
+  // A landed BLIND call also pays one shield point. Without this, RISKY was a
+  // trap: the shards only cash out at a shop several rooms later, while the
+  // doubled damage lands immediately, so a class that never risked anything
+  // was strictly better off. Paying it on every RISKY overcorrected - a class
+  // that always played SAFE then wiped 17 points more often, which is exactly
+  // the mandatory-mechanic trap Momentum fell into. Blind calls only, capped
+  // per fight, sits between the two. Shields do not shorten fights.
+  STAKE_BLIND_SHIELD: 1,
+  STAKE_SHIELD_CAP: 2,       // per fight
 
-  // --- commit ---
-  // Offered on hard questions only: answer with NO options on screen for
-  // double reward. Recall rather than recognition.
-  COMMIT_ENABLED: true,
-  // Commit is gated on whether a question can be ANSWERED ALOUD (q.open), not
-  // on how hard it is. Tier is only a floor, so it stays a reward for the
-  // harder half of the bank rather than appearing on every definition.
-  COMMIT_MIN_TIER: 2,
-  COMMIT_SHARD_MULT: 2,      // double shards...
-  COMMIT_MOMENTUM: 2,        // ...and Momentum, but NEVER extra damage: a
-                             // shorter fight is fewer questions.
+  // --- focus ---
+  // One per fight. The whole class answers together and a correct answer stuns
+  // the monster's clock. It stuns the CLOCK, not the monster's health - so it
+  // makes a fight longer and adds questions rather than removing them.
+  FOCUS_ENABLED: true,
+  FOCUS_STUN_ANSWERS: 2,     // the monster's clock loses this many ticks
 
   // --- team up ---
   TEAMUPS_PER_RUN: 3,        // was unlimited, which made it a non-decision

@@ -1098,14 +1098,17 @@ function renderIntent(elId, m) {
   const label = intentLabel(m);
   if (!label) { el.innerHTML = ""; el.className = "intent"; return; }
 
+  // The unit is ANSWERS, not "turns". A ten-year-old looking at a class roster
+  // reads "in 2 turns" as "two of MY turns" and gets hit twice as fast as they
+  // expected. Anybody's answer moves this clock, so the label says so.
   let when = "", imminent = false;
   if (!m.stunned) {
-    const turns = Math.max(0, m.turnsUntilAct);
-    imminent = turns <= 1;
+    const left = Math.max(0, m.turnsUntilAct);
+    imminent = left <= 1;
     const dots = Array.from({ length: Math.max(1, Math.min(4, m.cadence)) },
-      (_, i) => `<i class="${i < turns ? "" : "spent"}"></i>`).join("");
+      (_, i) => `<i class="${i < left ? "" : "spent"}"></i>`).join("");
     when = `<span class="intent-when">${
-      imminent ? "NEXT TURN" : `in ${turns} turns`
+      imminent ? "ON THE NEXT ANSWER" : `AFTER ${left} MORE ANSWERS`
     }<span class="intent-dots">${dots}</span></span>`;
   }
   el.innerHTML = `<span class="intent-label">${escapeHtml(label)}</span>${when}`;
@@ -1153,41 +1156,39 @@ function renderStatusRow(elId) {
 }
 
 // ---------------------------------------------------------------------------
-// The Momentum meter and its spend buttons.
+// The stake gate: the one decision a question asks before it is answered.
+//
+// It replaces the Momentum meter, which was a pool spent through a separate UI
+// and therefore optional, and therefore ignored. Two buttons, no currency, and
+// the wording changes to match what RISKY actually means on THIS question -
+// a blind call on an open question, plain double-or-nothing otherwise.
 // ---------------------------------------------------------------------------
-function renderMomentum(prefix) {
-  const run = STATE.run;
-  const pips = document.getElementById(`${prefix}-mo-pips`);
-  const moves = document.getElementById(`${prefix}-mo-moves`);
-  if (!pips || !moves || !run) return;
-
-  const have = momentum(), cap = momentumCap();
-  pips.innerHTML = "";
-  for (let i = 0; i < cap; i++) {
-    const p = document.createElement("i");
-    p.className = "mo-pip" + (i < have ? " lit" : "");
-    pips.appendChild(p);
-  }
-  const count = document.createElement("b");
-  count.textContent = `${have}/${cap}`;
-  pips.appendChild(count);
-
-  moves.innerHTML = "";
-  MOMENTUM_MOVES.forEach(mv => {
-    const cost = mv.cost();
-    const primed = (mv.id === "rouse" && run.moRouse) ||
-                   (mv.id === "guard" && run.moGuard);
-    const btn = document.createElement("button");
-    btn.className = "mo-move" + (primed ? " primed" : "") +
-                    (have < cost && !primed ? " poor" : "");
-    btn.disabled = primed || have < cost;
-    btn.title = mv.blurb;
-    btn.innerHTML = `<span class="mv-cost">${cost}</span>
-                     <span class="mv-name">${mv.name}</span>
-                     <span class="mv-short">${primed ? "READY" : mv.short}</span>`;
-    btn.addEventListener("click", () => window.useMomentum(mv.id, prefix));
-    moves.appendChild(btn);
-  });
+function renderStakeGate(prefix, q) {
+  const el = document.getElementById(`${prefix}-stake-gate`);
+  if (!el) return;
+  const blind = q && q.open === true && (q.tier || 1) >= CONFIG.STAKE_MIN_TIER;
+  // Show the REAL heart cost of each option, not a multiplier. A ten-year-old
+  // deciding under time pressure should not have to do arithmetic on the word
+  // "double" - the gate says "costs 3" and "costs 6", and the clue is already
+  // on screen above it, so the gamble is an informed one.
+  const safeDmg = wrongAnswerDamage(q);
+  const riskDmg = safeDmg * CONFIG.STAKE_RISKY_DAMAGE;
+  const hearts = n => `${n} heart${n === 1 ? "" : "s"}`;
+  el.innerHTML = `
+    <div class="stake-title">How much are you putting on this one?</div>
+    <div class="stake-opts">
+      <button class="pixel-btn sg-safe" data-side="${prefix}">
+        <b>SAFE</b>
+        <span>Normal shards · costs <b>${hearts(safeDmg)}</b> if wrong</span>
+      </button>
+      <button class="pixel-btn danger sg-risky" data-side="${prefix}">
+        <b>RISKY</b>
+        <span>${blind
+          ? `No options — say it out loud · <b>${CONFIG.STAKE_BLIND_SHARDS}× shards + a shield</b>`
+          : `<b>${CONFIG.STAKE_RISKY_SHARDS}× shards</b>`
+        } · costs <b>${hearts(riskDmg)}</b> if wrong</span>
+      </button>
+    </div>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1241,11 +1242,6 @@ function renderFoeStatus(elId, m) {
   if (m.guarding) add("guarding");
   if (m.charging) add("charging");
   if (m.enraged)  add("enraged");
-}
-
-function flashMomentum(prefix) {
-  const el = document.getElementById(`${prefix}-mo-pips`);
-  if (el) runOnce(el, "gained", 620);
 }
 
 // big centre-screen shout for streaks and enrage

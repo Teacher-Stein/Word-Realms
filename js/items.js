@@ -136,7 +136,7 @@ const RELICS = [
     desc:"It has already watched this fight happen once.",
     effect:"Monsters always telegraph one turn earlier" },
 
-  { id:"streak_totem", name:"Momentum Totem",  rarity:"rare",
+  { id:"streak_totem", name:"Streak Totem",  rarity:"rare",
     icon:"assets/items/streak_totem.png",
     desc:"It spins faster the better things are going.",
     effect:"Streak bonuses trigger one answer sooner" },

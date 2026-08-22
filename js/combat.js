@@ -172,11 +172,18 @@ function monsterTakeTurn(m) {
   return { type: "acted", events };
 }
 
-// count down toward the monster's next action; true when it should act now
+// Count down toward the monster's next action.
+// One tick = one answered question, from anybody. Returns {acts, held}:
+//   acts - the monster should take its turn right now
+//   held - the Riposte Ring ate the tick, so the clock did not move. This used
+//          to happen silently, which made the countdown look broken. It is now
+//          reported so main.js can say so out loud.
 function tickMonsterClock(m) {
-  if (hasRelic("riposte_ring") && Math.random() < 0.34) return false; // delayed
+  if (hasRelic("riposte_ring") && Math.random() < 0.34) {
+    return { acts: false, held: true };
+  }
   m.turnsUntilAct--;
-  return m.turnsUntilAct <= 0;
+  return { acts: m.turnsUntilAct <= 0, held: false };
 }
 
 // ---------------------------------------------------------------------------

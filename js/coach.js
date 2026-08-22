@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // COACH MODE
 //
-// The game now has Momentum, Commit, Brace, Team Up, campfires, relics,
+// The game now has Stakes, Focus, Brace, Team Up, campfires, relics,
 // potions, shards, Ember and debuffs. A class meeting all of that cold on a TV
 // is lost, and the teacher ends up spending the first fifteen minutes of the
 // lesson explaining instead of reviewing - every time, for nine realms.
@@ -13,21 +13,30 @@
 // ---------------------------------------------------------------------------
 
 const COACH_LESSONS = {
-  momentum: {
-    banner: "NEW: MOMENTUM",
-    title: "Every right answer builds Momentum",
-    effect: "Spend it on the four moves above the battlefield",
-    desc: "Insight cuts a wrong answer. Rouse doubles your shards. Guard stops " +
-          "2 damage. Rally heals a heart. You can never afford all of them — " +
-          "deciding what to save for is the game.",
+  stakes: {
+    banner: "NEW: STAKES",
+    title: "Decide how much you're putting on it",
+    effect: "SAFE plays normally · RISKY doubles both ways",
+    desc: "RISKY pays double shards and a mistake costs double. On some " +
+          "questions it goes further: the options vanish and you say the " +
+          "answer out loud for triple. Backing yourself when you KNOW is the " +
+          "skill — and knowing when you don't know is the other half of it.",
+  },
+  focus: {
+    banner: "NEW: FOCUS",
+    title: "One per fight — the whole class answers",
+    effect: "Get it right and the monster's clock loses 2 answers",
+    desc: "Hands up, argue about it, agree on one answer. Focus buys TIME, " +
+          "not damage, so the fight runs longer and you get more questions " +
+          "out of it. Save it for when the clock is nearly out.",
   },
   intent: {
     banner: "NEW: THE MONSTER'S PLAN",
     title: "It tells you what it will do, and when",
     effect: "Read the red bar under the monster",
-    desc: "The dots count down to the blow. When it says NEXT TURN you can " +
-          "Brace to block it, spend Guard, or take it on the chin and keep " +
-          "attacking. That choice is yours.",
+    desc: "The countdown is in ANSWERS, from anybody — not just your turn. " +
+          "When it says ON THE NEXT ANSWER you can Brace to block it, spend " +
+          "Focus to push it back, or take it and keep attacking.",
   },
   campfire: {
     banner: "NEW: THE CAMPFIRE",
@@ -36,13 +45,6 @@ const COACH_LESSONS = {
     desc: "Shields never come back on their own, so a campfire spent healing " +
           "is a campfire not spent on armour. Argue it out — there is no " +
           "right answer, only a reason.",
-  },
-  commit: {
-    banner: "NEW: COMMIT",
-    title: "Answer with the options hidden",
-    effect: "Double shards and bonus Momentum if you land it",
-    desc: "Say the answer out loud with nothing on screen to choose from. " +
-          "Harder than picking — which is exactly why it pays more.",
   },
   elite: {
     banner: "AN ELITE",

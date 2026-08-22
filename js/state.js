@@ -52,9 +52,11 @@ function migrateRun(st) {
   if (typeof r.usedLastStand  !== "boolean") r.usedLastStand  = false;
   if (typeof r.usedLastBreath !== "boolean") r.usedLastBreath = false;
   if (typeof r.usedEcho       !== "boolean") r.usedEcho       = false;
-  if (typeof r.momentum       !== "number")  r.momentum       = 0;
-  if (typeof r.moRouse        !== "boolean") r.moRouse        = false;
-  if (typeof r.moGuard        !== "boolean") r.moGuard        = false;
+  // v5.3: Momentum is gone. Old saves carry momentum/moRouse/moGuard - they
+  // are simply ignored rather than migrated, since nothing reads them now.
+  if (typeof r.stake          !== "string")  r.stake          = "safe";
+  if (typeof r.focusUsed      !== "boolean") r.focusUsed      = false;
+  if (typeof r.focusArmed     !== "boolean") r.focusArmed     = false;
   if (typeof r.teamUpsUsed    !== "number")  r.teamUpsUsed    = 0;
   if (!r.stats) r.stats = { correct: 0, wrong: 0, monsters: 0, teamups: 0 };
   // Older maps contain no shop rooms - harmless, they just won't appear
@@ -192,9 +194,9 @@ function startNewRun(realmId, heroId) {
     shields: 0,           // absorbed before hearts
     streak: 0,            // consecutive correct answers
     bestStreak: 0,
-    momentum: 0,          // banked on correct answers, spent on moves
-    moRouse: false,       // a Rouse is primed
-    moGuard: false,       // a Guard is primed
+    stake: "safe",        // this question's stake: "safe" or "risky"
+    focusUsed: false,     // Focus is once per FIGHT, reset by resetFocus()
+    focusArmed: false,
     teamUpsUsed: 0,       // Team Up is limited per RUN now, not per monster
     campfiresUsed: 0,
     shardMultiplier: 1,
