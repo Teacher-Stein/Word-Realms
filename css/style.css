@@ -1029,69 +1029,6 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 .shield-stack { display: inline-flex; align-items: center; gap: 5px; margin-left: 4px; }
 .shield-stack b { font-size: 1rem; font-weight: 900; color: #bfe4ff; text-shadow: 0 2px 4px #000; }
 
-/* ===========================================================================
-   MOMENTUM
-   Banked on every correct answer and spent on a move. The meter sits directly
-   above the answers because that is where the class is already looking.
-   =========================================================================== */
-/* Momentum lives ON the battlefield, top-left, over the dark upper wall. In
-   the question panel its 2x2 grid was eating 110px of sprite height; up here
-   it costs nothing and sits in space that was empty anyway. */
-.mo-row {
-  position: absolute; top: 12px; left: 14px; z-index: 8;
-  display: flex; align-items: stretch; gap: 12px; flex-wrap: nowrap;
-  padding: 9px 13px; border-radius: 12px;
-  background: rgba(10,6,20,.82); border: 2px solid #4a3a7d;
-  box-shadow: 0 6px 22px rgba(0,0,0,.6);
-}
-.mo-meter { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
-.mo-label {
-  font-size: .74rem; font-weight: 900; letter-spacing: 2px;
-  text-transform: uppercase; color: #b9a6ff;
-}
-.mo-pips { display: flex; align-items: center; gap: 5px; }
-.mo-pips .mo-pip {
-  width: 15px; height: 22px; border-radius: 3px; display: block;
-  background: #2b2247; border: 2px solid #453770;
-}
-.mo-pips .mo-pip.lit {
-  background: linear-gradient(#d9c4ff, #8a63e8);
-  border-color: #e6d8ff; box-shadow: 0 0 12px rgba(170,120,255,.85);
-}
-.mo-pips b {
-  font-size: .82rem; font-weight: 900; color: #cbb9ff; margin-left: 4px;
-  font-variant-numeric: tabular-nums;
-}
-
-.mo-moves { display: flex; gap: 8px; flex-wrap: wrap; flex: 1 1 auto; justify-content: flex-end; }
-.mo-move {
-  font-family: inherit; cursor: pointer; text-align: left;
-  display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
-  column-gap: 9px; align-items: center;
-  padding: 6px 12px 6px 8px; border-radius: 8px;
-  background: linear-gradient(#43336f, #2b2049);
-  border: 2px solid #7a63c9; color: var(--text);
-  box-shadow: 0 3px 0 #150e26; transition: filter .1s ease, transform .05s ease;
-}
-.mo-move:hover:not(:disabled) { filter: brightness(1.2); }
-.mo-move:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #150e26; }
-.mo-move .mv-cost {
-  grid-row: 1 / span 2; width: 26px; height: 26px; border-radius: 50%;
-  display: grid; place-items: center; font-weight: 900; font-size: .95rem;
-  background: linear-gradient(#d9c4ff,#8a63e8); color: #1a0f2e;
-  border: 2px solid #e6d8ff;
-}
-.mo-move .mv-name { font-weight: 900; font-size: .88rem; letter-spacing: .5px; }
-.mo-move .mv-blurb { font-size: .68rem; opacity: .8; }
-.mo-move:disabled { cursor: not-allowed; }
-.mo-move.poor { opacity: .38; filter: grayscale(.7); }
-.mo-move.primed {
-  opacity: 1; filter: none; border-color: var(--gold);
-  background: linear-gradient(#6b5320, #3d2f10);
-  box-shadow: 0 3px 0 #150e26, 0 0 18px rgba(255,215,106,.55);
-}
-.mo-move.primed .mv-cost { background: linear-gradient(#ffe9b0,#e0aa32); border-color: #fff3d0; }
-
 /* ---- Commit: answer with the options hidden -------------------------- */
 .commit-gate, .commit-say {
   margin: 0 0 12px; padding: 14px 18px; border-radius: 10px;
@@ -1113,8 +1050,6 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 
 /* the party's answers are hidden while a Commit is live */
 .choices.hidden { display: none; }
-
-.mo-pips.gained .mo-pip.lit { animation: moGain .6s ease; }
 @keyframes moGain {
   0%   { transform: scale(1);   filter: brightness(1); }
   35%  { transform: scale(1.35); filter: brightness(2.2); }
@@ -1162,28 +1097,6 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 }
 .relic-tip b { display: block; color: var(--gold); font-size: .95rem; margin-bottom: 2px; }
 .relic-chip:hover .relic-tip { display: block; }
-
-/* ===========================================================================
-   MOMENTUM — 2x2 grid, sized to be read from the back of the room
-   =========================================================================== */
-
-.mo-label { font-size: .82rem; }
-.mo-meter { flex-direction: column; align-items: flex-start; gap: 6px; }
-.mo-moves {
-  display: grid; grid-template-columns: repeat(2, minmax(196px, 1fr));
-  gap: 7px 9px; flex: 0 0 auto;
-}
-.mo-move {
-  grid-template-rows: auto auto; align-items: center;
-  padding: 6px 14px 6px 8px; column-gap: 11px; row-gap: 0;
-}
-.mo-move .mv-cost { grid-row: 1 / span 2; width: 32px; height: 32px; font-size: 1.1rem; }
-.mo-move .mv-name { font-size: 1.1rem; letter-spacing: .3px; line-height: 1.1; }
-.mo-move .mv-short {
-  font-size: .92rem; font-weight: 700; opacity: .82; line-height: 1.1;
-}
-.mo-move.primed .mv-short { opacity: 1; color: var(--gold); letter-spacing: 1px; }
-.mo-move .mv-blurb { display: none; }
 
 /* ===========================================================================
    FLOATING COMBAT TEXT — what just happened, where it happened
@@ -1252,3 +1165,44 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 .choice.incorrect::after { content: "  ✗"; font-weight: 900; }
 .enc-feedback.good::before { content: "✓ "; }
 .enc-feedback.bad::before  { content: "✗ "; }
+
+
+/* ===========================================================================
+   STAKES  (v5.3 — replaces the Momentum meter)
+
+   The one decision a question asks, sitting directly above the answers because
+   that is where the class is already looking. Two buttons, no currency. Sized
+   to be read from the back of the room.
+   =========================================================================== */
+.stake-gate {
+  margin: 10px 0 4px; padding: 12px 14px; border-radius: 12px;
+  background: rgba(10,6,20,.62); border: 2px solid #4a3a7d;
+}
+.stake-title {
+  font-size: .96rem; font-weight: 900; letter-spacing: .5px;
+  text-transform: uppercase; color: #b9a6ff; margin-bottom: 9px;
+}
+.stake-opts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.stake-opts .pixel-btn {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+  padding: 12px 16px; text-align: left; white-space: normal; line-height: 1.3;
+}
+.stake-opts .pixel-btn b { font-size: 1.35rem; letter-spacing: 2px; }
+.stake-opts .pixel-btn span { font-size: .92rem; font-weight: 600; opacity: .92; }
+.stake-opts .pixel-btn span b { font-size: inherit; letter-spacing: 0; color: var(--gold); }
+.sg-risky { background: linear-gradient(#8a2a2a, #5b1010); border-color: #ff8a8a; }
+.sg-risky:hover { background: linear-gradient(#a83434, #6d1414); }
+@media (max-width: 900px) {
+  .stake-opts { grid-template-columns: 1fr; }
+}
+
+/* Focus: one per fight, so it reads as a resource rather than a verb. */
+.pixel-btn.focus { border-color: #ffd76a; color: #ffe9a8; }
+.pixel-btn.focus.armed {
+  background: linear-gradient(#8a6a18, #5b4409); border-color: var(--gold);
+  animation: focus-pulse 1.1s ease-in-out infinite;
+}
+@keyframes focus-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,215,106,.55); }
+  50%     { box-shadow: 0 0 0 7px rgba(255,215,106,0); }
+}
