@@ -807,7 +807,7 @@ function renderForge() {
   const grid = document.getElementById("forge-grid");
   grid.innerHTML = "";
   FORGE_PERKS.forEach(perk => {
-    const owned = STATE.permanentPerks.includes(perk.id);
+    const owned = perksForRealm(forgeRealmId()).includes(perk.id);
     const poor = !owned && STATE.ember < perk.cost;
     const tile = itemTile(
       { icon: perk.icon, name: perk.name, effect: perk.effect, desc: perk.desc },
@@ -1103,7 +1103,12 @@ function renderIntent(elId, m) {
   // reads "in 2 turns" as "two of MY turns" and gets hit twice as fast as they
   // expected. Anybody's answer moves this clock, so the label says so.
   let when = "", imminent = false;
-  if (!m.stunned) {
+  // A charge has its own fuse, counted in the label above. Printing the
+  // monster's turn clock underneath it made the screen read "3 damage incoming
+  // - ON THE NEXT ANSWER" on a turn that dealt nothing, three times in a row.
+  // While a charge is winding up, the label IS the countdown.
+  const winding = m.charging && m.charging.turnsLeft > 0;
+  if (!m.stunned && !winding) {
     const left = Math.max(0, m.turnsUntilAct);
     imminent = left <= 1;
     const dots = Array.from({ length: Math.max(1, Math.min(4, m.cadence)) },
@@ -1167,7 +1172,10 @@ function renderStatusRow(elId) {
 function renderStakeGate(prefix, q) {
   const el = document.getElementById(`${prefix}-stake-gate`);
   if (!el) return;
-  const blind = q && q.open === true && (q.tier || 1) >= CONFIG.STAKE_MIN_TIER;
+  // ask the same predicate the outcome uses, so the promise cannot drift
+  const blind = typeof stakeIsBlind === "function"
+    ? stakeIsBlind(q, STAKE_RISKY)
+    : (q && q.open === true && (q.tier || 1) >= CONFIG.STAKE_MIN_TIER);
   // Show the REAL heart cost of each option, not a multiplier. A ten-year-old
   // deciding under time pressure should not have to do arithmetic on the word
   // "double" - the gate says "costs 3" and "costs 6", and the clue is already

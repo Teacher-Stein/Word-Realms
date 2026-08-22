@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 5.4 — the score.** Realm 1 (Unit 1, Extreme Weather) is
+class. **Version 5.5 — the audit.** Realm 1 (Unit 1, Extreme Weather) is
 fully playable; Realms 2–9 appear as locked placeholders using the correct
 themes from the school syllabus.
 
@@ -23,7 +23,131 @@ If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
 
-## What's new in v5.4 — the score
+## What's new in v5.5 — the audit
+
+Two full read-only audits were run over the whole codebase — one on economy and
+progression, one on combat correctness and exploits — each driving the real
+game in a browser rather than reasoning about the source. What follows is what
+they found. Most of it was invisible from normal play, which is the point.
+
+### The bug you reported: "it says 3 damage and hits for 1"
+
+Real, and it was a **telegraph** bug rather than a damage bug. Four defects
+were stacked on top of each other:
+
+The charge intent printed `N damage incoming` on **every** turn of its wind-up,
+including the two turns that deal nothing at all. The clock underneath it
+printed `ON THE NEXT ANSWER` — counting to the monster's next *turn*, not to
+the charge's *release*. So the screen promised a big hit three separate times
+and delivered it once. And the 1 damage the class saw in between was the
+**wrong-answer counter-attack**, printed in exactly the same words by the same
+monster, with no way for a child to tell them apart.
+
+Now: the charge label counts its own fuse (`3 damage in 2 more turns` →
+`UNLEASHING — 3 damage NOW`), the turn clock is suppressed while a charge is
+winding up, and a counter-attack is worded differently from a telegraphed one.
+
+Three more telegraphs were lying, all found by measuring what was displayed
+against what was actually delivered:
+
+- **Enrage was double-counted on a charge.** The bonus was baked into the
+  stored damage at telegraph time *and* added again at release, so an enraged
+  charge showed 4 and dealt 5. One that became enraged mid-wind-up showed 3 and
+  dealt 4. Both lied against the player.
+- **Brace did not cancel a charge.** It cleared the charge but left the intent
+  saying "charge", so the monster simply started charging again and landed it
+  in full a turn later — while the feedback line said "the attack is turned
+  aside".
+- **Guard applied one turn late.** The shield icon appeared, the class damaged
+  it normally, and then they were blocked on the turn the *sword* icon was
+  showing. Against a guard/heavy monster this produced three correct answers in
+  a row with the health bar not moving.
+- **Regen at full health** floated a green `+1` and announced a heal with the
+  HP bar visibly unchanged.
+
+### Exploits a class would have found
+
+- **ESC → "Award this answer" had no PIN.** The code comment claimed it lived
+  "behind the pause menu so no child can reach it" — but the pause menu is a
+  hotkey. Three keystrokes and three clicks killed most of a monster with
+  nobody answering. It now asks for the teacher PIN.
+- **One question could be resolved twice.** Behind the stake gate the choices
+  are hidden but still unlocked, so the award override fired a handler on an
+  invisible element and the class then answered the same question again — two
+  monster hits, two shard payouts, two entries in a child's score.
+- **Reloading mid-fight skipped the fight and kept the rewards.** Reloading at
+  0 hearts let the party walk on at 0 hearts with no death. Reloading during
+  the boss **softlocked the run permanently** — stranded on a node with no
+  exits. All three are resolved before the map is drawn now.
+- **Double-clicking the map skipped a room, elites included.** Removing the
+  `.reachable` class did not remove the click listeners.
+- **Reroll marked children absent, permanently.** Ten presses greyed out the
+  whole class with no way back from the game screen. It is now just "pass the
+  turn"; marking a child absent belongs in the Teacher Menu.
+
+### Things that were silently doing nothing
+
+- **Six of the 26 relics had no implementation at all** — Guiding Star, Stone
+  Heart, Haggler's Token, Scout's Chart, Study Notes, Streak Totem. The id
+  appeared in the item list and nowhere else in the codebase. Because drops are
+  uniform, roughly every other run handed a child a card with a written promise
+  on it that the game then ignored. All six are removed; they can come back the
+  day they are built.
+- **Focus was frequently spent for zero effect.** It clamped the monster's
+  clock to its maximum — and the clock sits at maximum at the start of every
+  fight and right after every monster turn, which are exactly the moments a
+  class presses a panic button. The effect was discarded and success announced
+  anyway.
+- **Potion of Clarity and the Echo Shard were eaten invisibly.** The question is
+  rendered once before the stake gate hides it; both effects were consumed on
+  that invisible render.
+- **RISKY lied on 25 questions.** The tier floor lived only in the button's
+  label, so on tier-1 open questions the button promised the options would stay
+  and then took them away. Both promise and outcome now use one predicate.
+- **Team Up gave the asker's turn and credit to their partner**, who was then
+  counted twice while the child who asked for help got nothing.
+- **Half of all wipes paid nothing.** The death screen rolled 50/50 between
+  banking Ember and "keeping a relic" — and the relic branch did nothing at all;
+  there was no field anywhere that could hold it. Worse, because the roll only
+  happened when the party held relics, **carrying relics halved your reward for
+  dying.**
+
+### The economy
+
+- **Losing paid roughly twice as much Ember as winning.** Victory paid
+  `shards / 2`; death paid `shards` undivided. The optimal strategy for a class
+  that wanted Forge perks was to farm the map and throw the boss fight. Death
+  now pays `shards / 3` and always less than a win.
+- **The whole Forge cost 390 Ember and one winning run banked about 268.** The
+  class bought everything in one or two lessons, after which Ember accumulated
+  forever with nothing to spend it on. Costs are roughly tripled, and **perks
+  are now scoped to the realm they were bought in** — the Ember carries across
+  the year, the advantage does not, so every new unit starts its own climb.
+- **77% of shards earned had nothing to buy.** A run earned ~527 and could
+  spend ~123. Shard rewards are halved.
+- **35% of runs never saw a shop** despite three being placed, because a shop
+  sat on one node of a 3–4 node layer and the party walks one node per layer.
+  Every node of a shop layer is now a shop: measured 0.87 → **2.71 shops walked
+  per run, and zero-shop runs from 35% to 0.1%.**
+- **Potions are capped at 4.** A run was picking up 8.5 of them, 6.5 from
+  streak bonuses alone, so the shop's potion row and the Deep Pack perk were
+  both selling something the class was drowning in.
+
+### Music
+
+Ducking is now **per fight, not per question**. It drops once when a fight
+starts and comes straight back up the moment the monster falls — the surge and
+drop between every single question was more distracting than the score simply
+sitting back. Ramps are longer for the same reason: a slow settle reads as
+atmosphere, a fast one reads as a fault.
+
+**A music volume slider now lives on the ESC pause screen**, with its own level
+independent of the sound effects, and a Music On/Off button beside it. The
+score keeps playing while paused, because a slider you cannot hear is useless.
+
+---
+
+## What was new in v5.4 — the score
 
 **A real soundtrack.** The old music picked random notes out of a scale on a
 timer. Random notes are not a melody, which is exactly why it sounded like

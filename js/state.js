@@ -11,7 +11,8 @@ function defaultState() {
     teacherAutoUnlock: false,
     soundOn: true,
     ember: 0,              // meta-currency, survives a party wipe
-    permanentPerks: [],
+    permanentPerks: [],    // legacy; migrated into realmPerks below
+    realmPerks: {},        // realmId -> [perkId] — perks are per REALM now
     roster: null,          // { className, students:[name,...] }
     studentStats: {},      // name -> { correct, wrong, monsters, damage, relics, teamups }
     leaderboard: [],       // completed run records
@@ -30,6 +31,7 @@ function loadState() {
     const raw = localStorage.getItem(CONFIG.SAVE_KEY);
     if (!raw) return defaultState();
     const st = Object.assign(defaultState(), JSON.parse(raw));
+    migratePerks(st);
     migrateRun(st);
     return st;
   } catch (e) {
@@ -40,6 +42,17 @@ function loadState() {
 
 // A run saved by an older version won't have the newer fields. Fill them in
 // rather than wiping a class's progress in the middle of a lesson.
+// v5.5: perks used to be one flat list that applied to every realm forever.
+// Anything a class already bought is honoured, but only in Realm 1 - from
+// Realm 2 on, each unit starts its own climb.
+function migratePerks(st) {
+  st.realmPerks = st.realmPerks || {};
+  if (Array.isArray(st.permanentPerks) && st.permanentPerks.length &&
+      !st.realmPerks[1]) {
+    st.realmPerks[1] = st.permanentPerks.slice();
+  }
+}
+
 function migrateRun(st) {
   const r = st.run;
   if (!r) return;
@@ -149,14 +162,20 @@ function nextStudent(exclude = null) {
   return name;
 }
 
-// Reroll = student is absent. Drop them from this session's queue entirely.
+// Reroll = pass this turn to somebody else.
+//
+// It used to mean "this student is ABSENT" and wrote them out of the run
+// permanently. It is an unguarded, unlimited button sitting next to the answer
+// choices, so it was a perfect "I don't want to answer" escape hatch: ten
+// presses marked the entire class absent, their names greyed out for the rest
+// of the realm, with no way to undo it from the game screen. Marking a child
+// absent is a register decision and belongs in the Teacher Menu; this button
+// now just moves the turn on.
 function rerollStudent() {
   const run = STATE.run;
   if (!run) return null;
   const absent = run.currentStudent;
   if (absent) {
-    run.absent = run.absent || [];
-    if (!run.absent.includes(absent)) run.absent.push(absent);
     run.turnQueue = (run.turnQueue || []).filter(n => n !== absent);
   }
   // rebuild the queue from present students only
@@ -240,6 +259,10 @@ function markCovered(cover) {
 // pass it, so an ordinary Fight stays within reach of the whole class.
 function drawQuestion(realm, elite = false) {
   const run = STATE.run;
+  // A run can end between a turn being scheduled and the question being drawn
+  // - a party wipe mid-animation nulls STATE.run, and currentRealm() then
+  // returns null. Callers pass that null straight in.
+  if (!run || !realm) return null;
   const eliteBank = realm.eliteQuestions || [];
   const all = (elite && eliteBank.length && Math.random() < 0.65)
     ? eliteBank
@@ -416,9 +439,19 @@ function availableRelic(rarities = null) {
 }
 
 // --------------------------- potions ---------------------------------------
+// Capped. A run was picking up 8.5 potions - 6.5 of them from streak bonuses
+// alone - so the party ended every realm holding six unopened bottles, the
+// shop's potion row was worthless and the Deep Pack perk bought nothing.
+// Returns false when the pack is full, so callers can say so instead of
+// silently swallowing the reward.
 function addPotion(id) {
-  STATE.run.potions.push(id);
+  const run = STATE.run;
+  if (!run) return false;
+  const cap = CONFIG.MAX_POTIONS || 99;
+  if (run.potions.length >= cap) return false;
+  run.potions.push(id);
   saveState();
+  return true;
 }
 
 function consumePotion(id) {
@@ -527,19 +560,29 @@ function clearRealm() {
   return { emberGained, score, minutes, nextUnlocked };
 }
 
-// Party wipe. Alternates between banking Ember and keeping one relic so a
-// reset doesn't feel identical every time.
+// Party wipe.
+//
+// This used to roll 50/50 between banking Ember and "keeping one relic". Two
+// things were wrong with that:
+//
+//   1. The relic branch did NOTHING. It returned the relic's name, the results
+//      screen printed it, and STATE.run was nulled two lines later. There was
+//      no field anywhere that could hold it. So HALF of all wipes paid the
+//      class absolutely nothing - and because the roll only happened when the
+//      party was carrying relics, holding relics HALVED your expected reward
+//      for dying.
+//
+//   2. Death paid `run.shards` undivided while victory paid `shards / 2`, so
+//      losing was worth roughly twice as much Ember as winning. A class that
+//      wanted Forge perks was better off farming the map and throwing the boss
+//      fight. Ten-year-olds find that by accident and then on purpose.
+//
+// Dying now always pays, and always pays strictly less than winning.
 function handleRunDeath() {
   const run = STATE.run;
-  const keepRelic = run.relics.length > 0 && Math.random() < 0.5;
-  let outcome;
-  if (keepRelic) {
-    outcome = { type: "relic", relic: pick(run.relics) };
-  } else {
-    const gained = run.shards + run.relics.length * 3 + 2;
-    addEmber(gained);
-    outcome = { type: "ember", amount: gained };
-  }
+  const gained = Math.round(run.shards / 3) + run.relics.length * 2 + 2;
+  addEmber(gained);
+  const outcome = { type: "ember", amount: gained };
   STATE.run = null;
   saveState();
   return outcome;

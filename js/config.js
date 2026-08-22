@@ -36,12 +36,22 @@ const CONFIG = {
   MAX_ELITES_PER_MAP: 4,      // elites are 5-hit commitments; keep them rare
 
   // --- rewards (v4: roughly tripled - the old numbers couldn't fund a shop) ---
-  SHARDS_FIGHT: 7,          // per regular monster felled
-  SHARDS_ELITE: 22,         // per elite felled
-  SHARDS_TREASURE: 14,
+  // v5.5: HALVED. Measured over 4,000 runs, a typical run EARNED 527 shards
+  // and could only SPEND about 123 of them - 77% of all income had nothing to
+  // buy. 210 of those shards were earned during the boss fight, which is after
+  // the last shop by construction, so they were unspendable the moment they
+  // were paid. The v4 comment below is why: the constants were tripled to
+  // "fund a shop" and overshot by roughly 4x.
+  SHARDS_FIGHT: 4,          // per regular monster felled
+  SHARDS_ELITE: 12,         // per elite felled
+  SHARDS_TREASURE: 8,
   SHARDS_BOSS_HIT: 4,
   SHARDS_PER_HIT: 2,        // small trickle for every correct answer in combat
   SHARDS_TIER_BONUS: 2,     // extra per difficulty tier above 1
+  // A run acquired 8.5 potions, 6.5 of them from streak bonuses alone, so the
+  // shop's potion row and the Deep Pack perk were both buying something the
+  // class was already drowning in. Scarcity is what makes them worth anything.
+  MAX_POTIONS: 4,
   POTION_DROP_CHANCE: 0.22, // monsters sometimes drop a potion
   POTION_DROP_ELITE: 0.75,
   START_POTIONS: ["potion_heal"],   // so potions are visible from turn one

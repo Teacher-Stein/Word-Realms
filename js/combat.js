@@ -10,10 +10,24 @@ const INTENT_TEXT = {
   hit:    a => `⚔ ATTACKING — ${a.dmg} damage`,
   heavy:  a => `⚔ HEAVY BLOW — ${a.dmg} damage`,
   flurry: a => `⚡ FLURRY — ${a.hits}× ${a.dmg} damage`,
-  drain:  a => a.dmg ? `💀 DRAINING — ${a.dmg} damage + ${a.shards} shards`
-                     : `💀 DRAINING — steals ${a.shards} shards`,
-  charge: a => `🌀 CHARGING — ${a.dmg} damage incoming`,
-  guard:  () => `🛡 GUARDING — takes no damage this turn`,
+  drain:  a => {
+    // clamp the promise to what is actually there to steal
+    const run = typeof STATE !== "undefined" ? STATE.run : null;
+    const n = Math.min(a.shards || 0, run ? run.shards : (a.shards || 0));
+    return a.dmg ? `💀 DRAINING — ${a.dmg} damage + ${n} shards`
+                 : `💀 DRAINING — steals ${n} shards`;
+  },
+  // This used to read "N damage incoming" on EVERY turn of a multi-turn
+  // wind-up, including the two turns that deal nothing at all. Combined with
+  // the clock underneath it saying "ON THE NEXT ANSWER", the screen promised a
+  // big hit three times and delivered it once - and the 1 damage the class saw
+  // in between was the wrong-answer counter-attack, printed in the same words.
+  // The label now counts its own fuse and only promises damage on the turn it
+  // actually lands.
+  charge: a => (a.turns > 0
+    ? `🌀 CHARGING — ${a.dmg} damage in ${a.turns} more turn${a.turns === 1 ? "" : "s"}`
+    : `🌀 UNLEASHING — ${a.dmg} damage NOW`),
+  guard:  () => `🛡 RAISING GUARD — it will block your next hit`,
   regen:  () => `❤ REGENERATING — heals 1 HP`,
 };
 const INTENT_CLASS = { guard: "guard", regen: "regen", charge: "charge" };
@@ -69,7 +83,15 @@ function makeMonster(base, isElite, isBoss = false) {
 // choose what the monster will do next and show it above their head
 function chooseIntent(m) {
   if (m.charging) {
-    m.intent = { kind: "charge", dmg: m.charging.dmg, turns: m.charging.turnsLeft };
+    // m.charging.dmg is the BASE damage. The enrage bonus is added here, for
+    // display, and again at release - in one place each, from the same base.
+    // Previously the bonus was baked into the stored value at telegraph time
+    // and added a second time on release, so an enraged charge showed 4 and
+    // dealt 5; and a charge that became enraged mid-wind-up showed 3 and dealt
+    // 4. Both are telegraphs that lie in the player's disfavour.
+    m.intent = { kind: "charge",
+                 dmg: m.charging.dmg + (m.enraged ? 1 : 0),
+                 turns: m.charging.turnsLeft };
     return m.intent;
   }
   const pool = m.base.attacks || [{ kind: "hit", dmg: 1 }];
@@ -111,13 +133,22 @@ function monsterTakeTurn(m) {
       break;
 
     case "regen":
-      m.hp = Math.min(m.maxHp, m.hp + 1);
-      events.push({ type: "regen" });
+      // A monster at full health used to float a green "+1" and announce that
+      // it had healed, with its HP bar visibly unchanged. If there is nothing
+      // to heal, say so rather than miming it.
+      if (m.hp >= m.maxHp) {
+        events.push({ type: "regen", full: true });
+      } else {
+        m.hp = Math.min(m.maxHp, m.hp + 1);
+        events.push({ type: "regen" });
+      }
       break;
 
     case "charge":
       if (!m.charging) {
-        m.charging = { dmg: act.dmg, turnsLeft: (act.turns || 2) - 1 };
+        // strip the display bonus back off, so the stored value is the base
+        const base = act.dmg - (m.enraged ? 1 : 0);
+        m.charging = { dmg: Math.max(1, base), turnsLeft: (act.turns || 2) - 1 };
         events.push({ type: "charging", turnsLeft: m.charging.turnsLeft });
       } else if (m.charging.turnsLeft > 0) {
         m.charging.turnsLeft--;

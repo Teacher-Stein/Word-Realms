@@ -450,6 +450,12 @@
       <div class="pause-title">PAUSED</div>
       <div class="pause-sub" id="pause-sub">The storm waits.</div>
       <div class="pause-buttons">
+        <div class="pause-vol">
+          <label for="pause-music-vol">Music volume</label>
+          <input id="pause-music-vol" type="range" min="0" max="100" value="80">
+          <span id="pause-music-val">80%</span>
+          <button id="pause-music-toggle" class="pixel-btn tiny ghost">Music: On</button>
+        </div>
         <button id="pause-resume"  class="pixel-btn">Resume</button>
         <button id="pause-award"   class="pixel-btn" style="display:none;">Award this answer</button>
         <button id="pause-restart" class="pixel-btn ghost">Restart this realm</button>

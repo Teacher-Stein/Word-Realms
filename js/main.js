@@ -9,16 +9,54 @@ function bootstrap() {
   renderMenu();
   if (typeof STATE.musicOn !== "boolean") STATE.musicOn = true;   // music on by default
   if (typeof STATE.volume  !== "number")  STATE.volume  = 0.8;
+  if (typeof STATE.musicVolume !== "number") STATE.musicVolume = 0.8;
   $("btn-sound").textContent = STATE.soundOn ? "SFX: On" : "SFX: Off";
   $("btn-music").textContent = STATE.musicOn ? "Music: On" : "Music: Off";
   $("vol-slider").value = Math.round(STATE.volume * 100);
   SFX.setEnabled(STATE.soundOn);
   SFX.setVolume(STATE.volume);
   MUSIC.setEnabled(STATE.musicOn);
-  MUSIC.setVolume(STATE.volume);
+  MUSIC.setVolume(STATE.musicVolume);
   armStorm();
 
   if (STATE.run && REALMS[STATE.run.realmId] && REALMS[STATE.run.realmId].ready) {
+    const run = STATE.run;
+
+    // A reload used to be a free escape hatch. The old boot always landed on
+    // the map, no matter what the run was in the middle of, which meant:
+    //   * refresh during a losing fight  -> fight skipped, all rewards kept
+    //   * refresh at 0 hearts            -> party walks on at 0 hearts, no death
+    //   * refresh during the boss        -> stranded on a node with no exits,
+    //                                       the realm can never be finished
+    // Children on a shared classroom machine WILL press F5. Each of these is
+    // now resolved before the map is drawn.
+    if (run.hearts <= 0) {
+      // the party fell; the save was written before the death screen ran
+      showScreen("screen-map");
+      renderTopHud("hud");
+      handleDeath();
+      return;
+    }
+    if (run.boss && run.map && run.currentNodeId === run.map.bossId) {
+      showScreen("screen-map");
+      renderTopHud("hud");
+      renderMap();
+      renderStudentChips();
+      MUSIC.setRealm(run.realmId);
+      startBoss();                       // re-enter rather than strand them
+      return;
+    }
+    if (run.encounter) {
+      // Step back to the room they came from so the skipped fight is still
+      // ahead of them, and clear the ghost monster.
+      const prev = run.visitedNodeIds.length > 1
+        ? run.visitedNodeIds[run.visitedNodeIds.length - 2] : run.map.nodes[0].id;
+      run.visitedNodeIds = run.visitedNodeIds.filter(id => id !== run.currentNodeId);
+      run.currentNodeId = prev;
+      run.encounter = null;
+      saveState();
+    }
+
     // resume mid-realm (e.g. next class period on the same computer)
     showScreen("screen-map");
     $("turn-hint").textContent = "Welcome back — resuming where the class left off";
@@ -51,7 +89,32 @@ $("vol-slider").addEventListener("input", e => {
   const v = parseInt(e.target.value, 10) / 100;
   STATE.volume = v;
   SFX.setVolume(v);
+  saveState();
+});
+
+// Music has its own level, separate from the sound effects. A room where the
+// score is too loud does not want the monster cries turned down with it, and
+// the control lives on the pause screen because that is where a teacher
+// already is when they decide the music is in the way.
+function syncMusicControls() {
+  const sl = $("pause-music-vol"), val = $("pause-music-val"), tog = $("pause-music-toggle");
+  if (sl)  sl.value = Math.round((STATE.musicVolume ?? 0.8) * 100);
+  if (val) val.textContent = Math.round((STATE.musicVolume ?? 0.8) * 100) + "%";
+  if (tog) tog.textContent = STATE.musicOn ? "Music: On" : "Music: Off";
+}
+$("pause-music-vol").addEventListener("input", e => {
+  const v = parseInt(e.target.value, 10) / 100;
+  STATE.musicVolume = v;
   MUSIC.setVolume(v);
+  $("pause-music-val").textContent = Math.round(v * 100) + "%";
+  saveState();
+});
+$("pause-music-toggle").addEventListener("click", () => {
+  SFX.click();
+  STATE.musicOn = !STATE.musicOn;
+  MUSIC.setEnabled(STATE.musicOn);
+  $("btn-music").textContent = STATE.musicOn ? "Music: On" : "Music: Off";
+  syncMusicControls();
   saveState();
 });
 
@@ -225,7 +288,7 @@ $("save-import-file").addEventListener("change", e => {
       saveState();
       showPopup({ banner:"SAVE RESTORED", tone:"good",
                   title: STATE.roster ? STATE.roster.className : "Save loaded",
-                  effect: `${STATE.ember} Ember · ${STATE.permanentPerks.length} Forge upgrades`,
+                  effect: `${STATE.ember} Ember · ${perksForRealm(forgeRealmId()).length} Forge upgrades in this realm`,
                   desc:"Everything is back where it was." });
       renderTeacherRealmList(); renderMenu();
     } catch (err) {
@@ -388,12 +451,20 @@ $("btn-end-run").addEventListener("click", () => {
 window.addEventListener("resize", () => { if (STATE.run) centreOnCurrent(false); });
 
 // ===================== TRAVEL =====================
+let _travelling = false;
+
 window.travelToNode = function (nodeId) {
   const run = STATE.run;
+  if (!run || _travelling) return;
+  // Removing the .reachable CLASS did not remove the click LISTENERS, so a
+  // second click during the totem walk started a second room. Children on a
+  // shared machine double-tap constantly, and this let them skip a room
+  // entirely - including a 7-hit Elite, which was then marked visited with a
+  // live monster left stranded in run.encounter.
+  _travelling = true;
   const node = nodeById(run.map, nodeId);
   const fromId = run.currentNodeId;
 
-  // disable further clicks while the totem walks
   document.querySelectorAll(".map-node.reachable")
     .forEach(el => el.classList.remove("reachable"));
   $("turn-hint").textContent = "Moving...";
@@ -404,6 +475,7 @@ window.travelToNode = function (nodeId) {
     saveState();
     centreOnCurrent(true);
     setTimeout(() => {
+      _travelling = false;
       switch (node.type) {
         case "fight":    startFight(false); break;
         case "elite":    startFight(true);  break;
@@ -430,7 +502,16 @@ function questionIsLive() {
              (boss && boss.classList.contains("active"));
   if (!on) return null;
   const side = boss && boss.classList.contains("active") ? "boss" : "enc";
-  const live = $(`${side}-choices`).querySelector(".choice:not(.locked)");
+  const box = $(`${side}-choices`);
+  if (!box) return null;
+  // The choices are still in the DOM behind the stake gate and behind a blind
+  // call - hidden, but unlocked. Treating that as a live question let "Award
+  // this answer" fire a handler on a display:none element, and then the class
+  // answered the SAME question again: two monster hits, two shard payouts and
+  // two entries in a child's correct-answer count, off one question.
+  if (box.classList.contains("hidden")) return null;
+  if (_pendingStake && _pendingStake.side === side) return null;
+  const live = box.querySelector(".choice:not(.locked)");
   return live ? side : null;
 }
 
@@ -442,14 +523,16 @@ function togglePause(force) {
   const layer = $("pause-layer");
   layer.classList.toggle("open", _paused);
   if (_paused) {
-    MUSIC.stop();
+    // The score keeps playing while paused. It used to stop dead, but the
+    // music volume slider now lives on this screen and a slider you cannot
+    // hear is useless. The Music: Off button beside it gives silence in one
+    // click for a teacher who wants the room quiet.
+    syncMusicControls();
     const side = questionIsLive();
     $("pause-award").style.display = side ? "" : "none";
     $("pause-sub").textContent = side
       ? "A question is on screen. You can award it if the class was right."
       : "The storm waits.";
-  } else {
-    MUSIC.play(questionIsLive() ? "fight" : "explore");
   }
 }
 
@@ -492,6 +575,18 @@ $("pause-restart").addEventListener("click", () => {
 $("pause-award").addEventListener("click", () => {
   const side = questionIsLive();
   if (!side) return;
+  // This was described in the code as living "behind the pause menu so no
+  // child can reach it" - but the pause menu is the ESC key with no PIN. Three
+  // keystrokes and three clicks killed most of a monster with nobody
+  // answering, and a Grade 5 class finds that in one lesson. It is a teacher
+  // override, so it asks for the teacher's PIN.
+  const given = window.prompt("Teacher PIN to award this answer:");
+  if (given === null) return;
+  if (String(given).trim() !== String(CONFIG.TEACHER_PIN)) {
+    SFX.wrong();
+    $("pause-sub").textContent = "That PIN is not right.";
+    return;
+  }
   SFX.unlockChime();
   togglePause(false);
   const correct = $(`${side}-choices`).querySelector(".choice");
@@ -512,6 +607,10 @@ $("pause-award").addEventListener("click", () => {
 // is the point: it turns a silent multiple-choice tap into the whole class
 // listening to one person back themselves out loud.
 let _pendingStake = null;
+// Set BEFORE the first render of a question that is about to be hidden behind
+// the stake gate. _pendingStake itself is assigned after that render, so it is
+// always null at the moment renderQuestion needs to know.
+let _gatingSide = null;
 
 function stakeEls(side) {
   return {
@@ -523,6 +622,7 @@ function stakeEls(side) {
 
 function clearStakeUI(side) {
   if (_pendingStake && _pendingStake.side === side) _pendingStake = null;
+  if (_gatingSide === side) _gatingSide = null;
   const e = stakeEls(side);
   if (e.gate) e.gate.style.display = "none";
   if (e.say) e.say.style.display = "none";
@@ -583,8 +683,6 @@ document.addEventListener("click", ev => {
 
   // a blind call, adjudicated by the room
   const correct = btn.classList.contains("cs-yes");
-  MUSIC.duck(false);
-  if (correct) MUSIC.swell(1.3, 0.9);
   const fb = $(side === "boss" ? "boss-feedback" : "enc-feedback");
   fb.textContent = correct
     ? `Called it blind — the answer was "${P.q.answer}". Triple shards!`
@@ -620,12 +718,9 @@ function renderQuestion(q, ids, onAnswer) {
   // and a Last Stand or a Treasure chest that fired straight afterwards used
   // to inherit the hidden state and leave the class staring at nothing.
   const side = String(ids.question).startsWith("boss") ? "boss" : "enc";
+  // Capture this BEFORE clearCommitUI, which clears the flag.
+  const gated = _gatingSide === side;
   clearCommitUI(side);
-  // The teacher is talking over the score and a child is reading this off a
-  // television. Drop the music back while the question is live; it comes back
-  // up the moment an answer lands. renderQuestion is the one funnel every
-  // question passes through, so it is the only place this belongs.
-  MUSIC.duck(true);
   $(ids.question).innerHTML =
     `<span class="q-type">${q.type}</span>${escapeHtml(q.clue)}`;
   const choicesEl = $(ids.choices);
@@ -637,8 +732,15 @@ function renderQuestion(q, ids, onAnswer) {
   // the Potion of Clarity, and the Echo Shard relic, which fires itself once
   // per run on the first grammar question. Neither ever touches the correct
   // answer - removing a wrong option helps, it never punishes knowing.
+  // These are consumed HERE, at render time - and askFightQuestion renders the
+  // question once before the stake gate hides it, then again when the class
+  // picks SAFE. That first render is invisible, so a Potion of Clarity and the
+  // once-per-run Echo Shard were both being eaten with nothing on screen.
+  // Skip the consumption entirely while the choices are about to be hidden.
   let trimmed = null, trimSource = "";
-  if (STATE.run && STATE.run.clarityActive) {
+  if (gated) {
+    // fall through with no trim; the real render will do it
+  } else if (STATE.run && STATE.run.clarityActive) {
     const wrongs = q.choices.filter(c => c !== q.answer);
     if (wrongs.length) trimmed = pick(wrongs);
     STATE.run.clarityActive = false;
@@ -671,8 +773,6 @@ function renderQuestion(q, ids, onAnswer) {
       const fb = $(ids.feedback);
       fb.textContent = correct ? "Correct!" : `Not quite — the answer was "${q.answer}".`;
       fb.className = "enc-feedback " + (correct ? "good" : "bad");
-      MUSIC.duck(false);
-      if (correct) MUSIC.swell(1.25, 0.8);
       onAnswer(correct);
     });
     choicesEl.appendChild(div);
@@ -721,6 +821,7 @@ function startFight(isElite) {
   renderStudentChips();
   showScreen("screen-encounter");
   MUSIC.play(isElite ? "elite" : "fight");
+  MUSIC.duck(true);            // stays back for the WHOLE fight, not per question
   animateSprite("monster-sprite", "arriving", 560);
   SFX.doorOpen();
   // every monster announces itself with its own voice
@@ -741,6 +842,7 @@ function askFightQuestion() {
   // without this the whole screen throws on the next draw.
   if (!run || !m) return;
   const q = drawQuestion(realm, !!m.isElite);
+  if (!q) return;                     // the run ended underneath us
   m.currentQ = q;
   saveState();
 
@@ -753,6 +855,7 @@ function askFightQuestion() {
   const defending = frozen || run.bracing;
   clearStakeUI("enc");
   clearStake();
+  _gatingSide = stakesAvailable(q, defending) ? "enc" : null;
   // NB: the answer handlers call isDefendingNow() rather than closing over
   // `defending`. Brace is clicked AFTER the question is on screen, so a
   // captured value is always the state from before the student decided.
@@ -761,7 +864,8 @@ function askFightQuestion() {
   if (stakesAvailable(q, defending)) {
     offerStake("enc", q, (stake, blindResult) => {
       if (blindResult === undefined) {
-        // options are on screen; renderQuestion's handler resolves it
+        // options are on screen now, so the real render may consume a Clarity
+        _gatingSide = null;
         renderQuestion(q, ids, correct => resolveFightAnswer(correct, q, isDefendingNow()));
         return;
       }
@@ -805,7 +909,7 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
     markCovered(q.cover);
     run.stats.correct++;
     bumpStat(student, "correct");
-    m.helpers.forEach(h => bumpStat(h, "correct"));
+    m.helpers.filter(h => h !== student).forEach(h => bumpStat(h, "correct"));
     const streak = bumpStreak();
 
     if (defending) {
@@ -819,14 +923,22 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
       // cadence+1 means the tick lands on a full fresh clock.
       clearDebuff();
       m.turnsUntilAct = Math.max(1, m.cadence) + 1;
+      // Clearing m.charging alone was not enough: m.intent still said "charge",
+      // so the monster simply STARTED THE CHARGE AGAIN on its next turn and
+      // landed it in full a turn later, while the feedback line claimed the
+      // attack had been turned aside. Re-roll the intent so a broken charge is
+      // genuinely broken.
+      const wasCharging = !!m.charging;
       m.charging = null;
+      if (wasCharging) { m.intent = null; chooseIntent(m); }
       run.bracing = false;
       clearStake();
       saveState();
       SFX.heal();
       animateSprite(P.hero, "bracing", 620);
-      $(P.feedback).textContent =
-        `Braced! The attack is turned aside — its clock resets to ${Math.max(1, m.cadence)} answers.`;
+      $(P.feedback).textContent = wasCharging
+        ? `Braced! The charge is broken — ${m.name} has to start again.`
+        : `Braced! The attack is turned aside — its clock resets to ${Math.max(1, m.cadence)} answers.`;
       $(P.feedback).className = "enc-feedback good";
       renderIntent(P.intent, m);
       renderTopHud(P.hud);
@@ -860,7 +972,13 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
     const stun = consumeFocus(true);
     let focusNote = "";
     if (stun) {
-      m.turnsUntilAct = Math.min(m.cadence, m.turnsUntilAct + stun);
+      // Do NOT clamp to cadence. The clock sits AT cadence at the start of
+      // every fight and immediately after every monster turn - the two moments
+      // a class is most likely to press the panic button - so Math.min threw
+      // the whole effect away and then announced success anyway. Focus is
+      // meant to lengthen a fight, so the clock is allowed to run past its
+      // normal maximum.
+      m.turnsUntilAct += stun;
       focusNote = ` FOCUS — ${stun} answers struck off its clock!`;
     }
 
@@ -968,6 +1086,7 @@ function applyHit(rawDmg, m, P) {
     $(P.feedback).textContent = res.absorbed
       ? `Shields broke — ${res.dealt} damage through!`
       : `${m.name} strikes for ${res.dealt}!`;
+    // (the counter-attack path relabels this below)
     $(P.feedback).className = "enc-feedback bad";
   }
   renderTopHud(P.hud);
@@ -1080,10 +1199,15 @@ function nextCombatTurn(ctx) {
       $(P.feedback).textContent = `${m.name} raises its guard.`;
       $(P.feedback).className = "enc-feedback";
     } else if (ev.type === "regen") {
-      SFX.heal();
-      floatText(P.foeStage, "+1", "heal");
-      $(P.feedback).textContent = `${m.name} heals itself!`;
-      $(P.feedback).className = "enc-feedback bad";
+      if (ev.full) {
+        $(P.feedback).textContent = `${m.name} tries to heal — it is already at full strength.`;
+        $(P.feedback).className = "enc-feedback";
+      } else {
+        SFX.heal();
+        floatText(P.foeStage, "+1", "heal");
+        $(P.feedback).textContent = `${m.name} heals itself!`;
+        $(P.feedback).className = "enc-feedback bad";
+      }
     } else if (ev.type === "charging") {
       SFX.bossRoar();
       $(P.feedback).textContent = `${m.name} is charging a devastating blow!`;
@@ -1124,6 +1248,7 @@ function monsterDefeated(ctx) {
   const run = STATE.run;
   const m = ctx.monster;
   const student = run.currentStudent;
+  MUSIC.duck(false);          // as soon as the monster falls, not after the popups
   SFX.monsterDown();
   setTimeout(() => SFX.monsterCry(monsterVoice(m), true), 160);
   animateSprite(m.isBoss ? "boss-sprite" : "monster-sprite", "dying", 820);
@@ -1132,7 +1257,7 @@ function monsterDefeated(ctx) {
   const gained = gain ? addShards(gain) : 0;
   run.stats.monsters++;
   bumpStat(student, "monsters");
-  m.helpers.forEach(h => bumpStat(h, "monsters"));
+  m.helpers.filter(h => h !== student).forEach(h => bumpStat(h, "monsters"));
   clearDebuff();
   renderTopHud(m.isBoss ? "boss" : "enc");
 
@@ -1176,6 +1301,7 @@ function monsterDefeated(ctx) {
   }
 
   run.encounter = null;
+  MUSIC.duck(false);          // the fight is over - bring the score straight back
   _pendingStake = null;       // nothing left to stake on
   clearStake();
   saveState();
@@ -1276,6 +1402,7 @@ function tryLastStand(ctx, onSurvive) {
       showStreakBanner("LAST STAND — ANSWER OR FALL");
       $("app").classList.add("last-stand");
       const q = drawQuestion(currentRealm());
+      if (!q) return;
       $(whoId).textContent = "LAST STAND — everything rides on this answer.";
       renderQuestion(q, ids, correct => {
         $("app").classList.remove("last-stand");
@@ -1323,7 +1450,13 @@ function doTeamUp(btnId, hpElId, feedbackId) {
   if (!ctx || (run.teamUpsUsed || 0) >= perRun) return;
   run.teamUpsUsed = (run.teamUpsUsed || 0) + 1;
 
+  // nextStudent() REASSIGNS run.currentStudent, so asking for help handed the
+  // turn to the partner: the partner then answered, was credited twice (once
+  // as the answering student, once as a helper), and the child who actually
+  // asked for help got nothing at all.
+  const asker = run.currentStudent;
   const partner = nextStudent(run.currentStudent);
+  run.currentStudent = asker;
   ctx.teamUpUsed = true;
   ctx.teamUpCount = (ctx.teamUpCount || 0) + 1;
   ctx.helpers = ctx.helpers || [];
@@ -1334,7 +1467,7 @@ function doTeamUp(btnId, hpElId, feedbackId) {
   ctx.maxHp += hpCost;
   ctx.hp    += hpCost;
   run.stats.teamups++;
-  bumpStat(run.currentStudent, "teamups");
+  bumpStat(asker, "teamups");
   saveState();
 
   SFX.teamup();
@@ -1859,6 +1992,7 @@ function enterTreasure() {
 function startBoss() {
   const realm = currentRealm();
   const run = STATE.run;
+  if (!realm || !run) return;
   clearCorridorFx("boss-corridor", "boss-hit-flash", "boss-slash-fx");
   clearScenery();
   updateStageScale("boss-corridor");
@@ -1894,6 +2028,7 @@ function startBoss() {
   renderStudentChips();
   showScreen("screen-boss");
   MUSIC.play("boss");
+  MUSIC.duck(true);
   animateSprite("boss-sprite", "arriving", 560);
   SFX.bossRoar();
   setTimeout(() => SFX.monsterCry(monsterVoice(m)), 340);
@@ -1904,6 +2039,7 @@ function startBoss() {
 
 function askBossQuestion() {
   const run = STATE.run, realm = currentRealm();
+  if (!run || !realm) return;
   const m = run.boss;
   if (!m) return;
   const cover = m.queue[m.index % m.queue.length];
@@ -1923,6 +2059,7 @@ function askBossQuestion() {
   const defending = frozen || run.bracing;
   clearStakeUI("boss");
   clearStake();
+  _gatingSide = stakesAvailable(q, defending) ? "boss" : null;
   // Live-read, same as the fight path - see isDefendingNow().
   renderQuestion(q, ids,
     correct => resolveCombatAnswer(bossCtx(), correct, q, isDefendingNow()));
@@ -1930,6 +2067,7 @@ function askBossQuestion() {
   if (stakesAvailable(q, defending)) {
     offerStake("boss", q, (stake, blindResult) => {
       if (blindResult === undefined) {
+        _gatingSide = null;
         renderQuestion(q, ids,
           correct => resolveCombatAnswer(bossCtx(), correct, q, isDefendingNow()));
         return;
@@ -1942,14 +2080,16 @@ function askBossQuestion() {
 
 function bossCtx() {
   return {
-    monster: STATE.run.boss,
+    // bossCtx() is handed to callbacks that can fire after a wipe has already
+    // nulled the run, so neither the run nor the realm can be assumed here.
+    monster: STATE.run ? STATE.run.boss : null,
     ask: askBossQuestion,
     onDefeat: () => {
       showPopup({
         banner: "BOSS DEFEATED", tone: "good",
-        title: currentRealm().boss.name + " is beaten!",
+        title: ((currentRealm() || {}).boss || { name: "The boss" }).name + " is beaten!",
         effect: "The realm is yours",
-        extra: `Final blow by ${STATE.run.currentStudent}`,
+        extra: `Final blow by ${STATE.run ? STATE.run.currentStudent : "the party"}`,
       });
       afterPopups(handleVictory);
     },
@@ -2000,12 +2140,7 @@ function handleDeath() {
   $("result-title").textContent = "THE PARTY HAS FALLEN";
   let body = `<p>The storm overwhelms you. The run resets with a brand-new map
               layout — but the journey wasn't wasted.</p>`;
-  if (outcome.type === "relic") {
-    body += `<p>The party held onto a relic: <b>${escapeHtml(outcome.relic.name)}</b><br>
-             <span style="opacity:.8">${escapeHtml(outcome.relic.desc)}</span></p>`;
-  } else {
-    body += `<p>Their shards were banked as Ember: <b>+${outcome.amount} Ember</b></p>`;
-  }
+  body += `<p>Their shards were banked as Ember: <b>+${outcome.amount} Ember</b></p>`;
   $("result-body").innerHTML = body;
   showScreen("screen-result");
 }

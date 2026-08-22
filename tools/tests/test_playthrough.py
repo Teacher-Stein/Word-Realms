@@ -178,7 +178,7 @@ def play(page, accuracy, budget, log):
                 except Exception:
                     pass
             for sel in ('#btn-move-on', '#rest-mend', '#shop-leave', '#event-a',
-                        '#btn-continue', '#treasure-open'):
+                        '#btn-continue', '#treasure-open', '#pause-resume'):
                 if visible(page, sel):
                     try:
                         page.click(sel, timeout=800); page.wait_for_timeout(500)
@@ -186,7 +186,7 @@ def play(page, accuracy, budget, log):
                         pass
                     break
             else:
-                page.wait_for_timeout(250)
+                page.wait_for_timeout(600)   # totem walk; travel is guarded now
 
         if visible(page, '#screen-gameover') or visible(page, '#screen-victory'):
             break

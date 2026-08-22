@@ -45,7 +45,12 @@ function stakeDamageMult(stake) {
 // qualify — "Choose the correct sentence" is unanswerable blind, and offering
 // it that way was the bug Stein caught in v5.1.
 function stakeIsBlind(q, stake) {
-  return stake === STAKE_RISKY && !!q && q.open === true;
+  // The tier floor MUST be here and not only in the button's label. It lived
+  // in renderStakeGate alone, so on the 25 tier-1 open questions the button
+  // promised "2x shards, options stay" and then took the options away anyway.
+  // One predicate, used by both the promise and the outcome.
+  return stake === STAKE_RISKY && !!q && q.open === true &&
+         (q.tier || 1) >= CONFIG.STAKE_MIN_TIER;
 }
 
 // Stakes are offered on every question in a fight EXCEPT while Bracing (the

@@ -42,7 +42,7 @@ def answer_correct(p):
             except Exception: return False
     return False
 
-def reach_fight(p, tries=40):
+def reach_fight(p, tries=80):
     for _ in range(tries):
         drain(p)
         if vis(p, '#btn-move-on'):
@@ -53,6 +53,17 @@ def reach_fight(p, tries=40):
             except Exception: pass
         if p.evaluate("!!(STATE.run && STATE.run.encounter)") and vis(p, '#enc-choices'):
             return True
+        # A Treasure room borrows the encounter screen but leaves run.encounter
+        # null, so it looks like a fight and is not one. Answer through it, or
+        # the loop parks here until it runs out of tries.
+        if not p.evaluate("!!(STATE.run && STATE.run.encounter)"):
+            box = p.query_selector('#enc-choices')
+            if box and box.is_visible() and box.query_selector('.choice'):
+                try:
+                    box.query_selector_all('.choice')[0].click(timeout=1200)
+                    p.wait_for_timeout(900); continue
+                except Exception:
+                    pass
         n = p.query_selector('.map-node.reachable')
         if n:
             try: n.click(timeout=1200); p.wait_for_timeout(800); continue
@@ -63,7 +74,9 @@ def reach_fight(p, tries=40):
                 except Exception: pass
                 break
         else:
-            p.wait_for_timeout(200)
+            # the totem walk takes ~1s and travelToNode now refuses clicks
+            # while it is in progress, so idling briefly is normal
+            p.wait_for_timeout(500)
     return False
 
 with sync_playwright() as pw:

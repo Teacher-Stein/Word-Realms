@@ -652,13 +652,20 @@ const MUSIC = (() => {
     // question off a television. The score drops well back while a question
     // is live and comes up between them, so it breathes with the lesson.
     // ---------------------------------------------------------------------
-    duck(on) {
+    // v5.5: this is now a PER-FIGHT state, not a per-question one. Ducking on
+    // every question and lifting on every answer made the score surge and drop
+    // every few seconds, which is far more distracting than music simply
+    // sitting back. It goes down once when a fight starts, and comes straight
+    // back up the moment the fight is over. The ramps are long for the same
+    // reason - a slow settle reads as atmosphere, a fast one reads as a fault.
+    duck(on, secs) {
       if (!ctx || !duckGain || ducked === !!on) return;
       ducked = !!on;
       const t = ctx.currentTime;
+      const ramp = typeof secs === "number" ? secs : (on ? 1.2 : 0.9);
       duckGain.gain.cancelScheduledValues(t);
       duckGain.gain.setValueAtTime(duckGain.gain.value, t);
-      duckGain.gain.linearRampToValueAtTime(on ? 0.30 : 1.0, t + (on ? 0.25 : 0.5));
+      duckGain.gain.linearRampToValueAtTime(on ? 0.30 : 1.0, t + ramp);
     },
 
     // A short lift for a victory or a big hit — the score leans in for a

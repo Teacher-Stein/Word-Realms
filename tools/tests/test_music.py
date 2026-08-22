@@ -131,16 +131,22 @@ with sync_playwright() as pw:
         check(p.evaluate('MUSIC.isDucked()'),
               'the score un-ducked while the question was still on screen')
 
-        # answering must release the duck
+        # v5.5: ducking is per-FIGHT, not per-question. Surging back to full
+        # volume between every question and dropping again a second later was
+        # far more distracting than the score simply sitting back for the
+        # whole fight, so answering must NOT lift the duck.
         box = p.query_selector('#enc-choices')
         if box and box.is_visible():
             ans = p.evaluate("STATE.run.encounter&&STATE.run.encounter.currentQ?STATE.run.encounter.currentQ.answer:null")
             for c in box.query_selector_all('.choice'):
                 if c.inner_text().strip() == ans:
                     c.click(); break
-            p.wait_for_timeout(900)
-            check(not p.evaluate('MUSIC.isDucked()'),
-                  'the score stayed ducked after the answer landed')
+            p.wait_for_timeout(1200)
+            still_fighting = p.evaluate("!!(STATE.run && STATE.run.encounter)")
+            if still_fighting:
+                check(p.evaluate('MUSIC.isDucked()'),
+                      'the score lifted between questions - ducking should hold '
+                      'for the whole fight')
 
     # --- is it actually making a sound? --------------------------------------
     # `currentPiece` being set proves only that a name was assigned. A score
@@ -162,7 +168,7 @@ with sync_playwright() as pw:
     # nothing - a measurement bug that looked exactly like an engine bug.
     def unduck():
         p.evaluate('MUSIC.duck(false)')
-        p.wait_for_timeout(600)
+        p.wait_for_timeout(1400)      # the release ramp is 0.9s
         lvl = p.evaluate('MUSIC.duckLevel()')
         check(lvl is not None and lvl > 0.95,
               f'could not release the duck before measuring (duckGain={lvl})')

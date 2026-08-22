@@ -1,3 +1,11 @@
+// v5.5: six relics were removed here - Guiding Star, Stone Heart, Haggler's
+// Token, Scout's Chart, Study Notes and Streak Totem. Every one of them was
+// dead: the id appeared in this list and NOWHERE else in the codebase, so the
+// game handed a child a card with a written promise on it and then did nothing.
+// Because drops are uniform, roughly every other run awarded one. The child who
+// "found" Study Notes genuinely believed the question type was being shown to
+// them and could not say why it wasn't. Twenty relics that work beat twenty-six
+// with landmines - and any of these can come back the day it is implemented.
 // ---------------------------------------------------------------------------
 // Relics (permanent for the run) and Potions (one-use consumables).
 // `effect` keys are read by the game logic; nothing here runs on its own.
@@ -49,11 +57,6 @@ const RELICS = [
     desc:"Elite monsters flinch at the sight of it.",
     effect:"Elites have 1 less HP" },
 
-  { id:"guiding_star", name:"Guiding Star",    rarity:"rare",
-    icon:"assets/items/guiding_star.png",
-    desc:"It lights the rooms beyond the next turning.",
-    effect:"See 2 layers ahead on the map" },
-// ---- combat ----
   { id:"keen_edge",    name:"Keen Edge",       rarity:"common",
     icon:"assets/items/keen_edge.png",
     desc:"A whetstone that hums when a storm is near.",
@@ -74,11 +77,6 @@ const RELICS = [
     effect:"Deal 2 damage to Elites (not the Boss)" },
 
   // ---- survival ----
-  { id:"stone_heart",  name:"Stone Heart",     rarity:"uncommon",
-    icon:"assets/items/stone_heart.png",
-    desc:"Slow, steady, and very hard to stop.",
-    effect:"+2 max hearts, healed now" },
-
   { id:"aegis_charm",  name:"Aegis Charm",     rarity:"uncommon",
     icon:"assets/items/aegis_charm.png",
     desc:"A shell of still air that reforms itself.",
@@ -100,27 +98,12 @@ const RELICS = [
     desc:"Somehow there is always a little more inside.",
     effect:"+25% shards from all sources" },
 
-  { id:"haggle_token", name:"Haggler's Token", rarity:"uncommon",
-    icon:"assets/items/haggle_token.png",
-    desc:"The pedlar sighs, but he takes it.",
-    effect:"Shop prices reduced by a third" },
-
   { id:"magpie_eye",   name:"Magpie's Eye",    rarity:"uncommon",
     icon:"assets/items/magpie_eye.png",
     desc:"It spots the glint of something useful.",
     effect:"Monsters sometimes drop potions" },
 
   // ---- utility ----
-  { id:"scouts_chart", name:"Scout's Chart",   rarity:"common",
-    icon:"assets/items/scouts_chart.png",
-    desc:"Someone mapped this floor before you. Bravely.",
-    effect:"Reveals room types further ahead" },
-
-  { id:"study_notes",  name:"Study Notes",     rarity:"common",
-    icon:"assets/items/study_notes.png",
-    desc:"Scrawled in a hurry, but the answers are right.",
-    effect:"Question type shown before you choose" },
-
   { id:"team_banner",  name:"Rally Banner",    rarity:"uncommon",
     icon:"assets/items/team_banner.png",
     desc:"Two heads. One roar.",
@@ -135,11 +118,6 @@ const RELICS = [
     icon:"assets/items/oracle_eye.png",
     desc:"It has already watched this fight happen once.",
     effect:"Monsters always telegraph one turn earlier" },
-
-  { id:"streak_totem", name:"Streak Totem",  rarity:"rare",
-    icon:"assets/items/streak_totem.png",
-    desc:"It spins faster the better things are going.",
-    effect:"Streak bonuses trigger one answer sooner" },
 
 ];
 
