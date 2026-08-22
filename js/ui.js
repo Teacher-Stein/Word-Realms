@@ -100,6 +100,7 @@ function renderHearts(elId, hearts, maxHearts, losingIndex = -1) {
 
 // ------------------------------- menu --------------------------------------
 function renderMenu() {
+  if (typeof MUSIC !== "undefined") { MUSIC.duck(false); MUSIC.play("title"); }
   const strip = document.getElementById("class-strip");
   strip.textContent = STATE.roster
     ? `Class: ${STATE.roster.className}  ·  ${STATE.roster.students.length} warriors`

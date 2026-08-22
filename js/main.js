@@ -26,7 +26,8 @@ function bootstrap() {
     renderTopHud("hud");
     renderMap();
     renderStudentChips();
-    MUSIC.play("explore");
+    MUSIC.setRealm(STATE.run ? STATE.run.realmId : 1);
+  MUSIC.play("explore");
   } else {
     showScreen("screen-menu");
   }
@@ -285,6 +286,7 @@ function resumeRun() {
   renderTopHud("hud");
   renderMap();
   renderStudentChips();
+  MUSIC.setRealm(STATE.run ? STATE.run.realmId : 1);
   MUSIC.play("explore");
 }
 
@@ -316,6 +318,7 @@ $("hero-confirm").addEventListener("click", () => {
   renderTopHud("hud");
   renderMap();
   renderStudentChips();
+  MUSIC.setRealm(STATE.run ? STATE.run.realmId : 1);
   MUSIC.play("explore");
 
   showPopup({
@@ -341,7 +344,9 @@ function afterPopups(fn) {
 }
 
 function backToMap(advanceTurn = true) {
+  MUSIC.duck(false);
   if (!STATE.run) return;
+  MUSIC.setRealm(STATE.run ? STATE.run.realmId : 1);
   MUSIC.play("explore");
   if (advanceTurn) { nextStudent(); showTurnCallout(STATE.run.currentStudent); }
   renderTopHud("hud");
@@ -578,6 +583,8 @@ document.addEventListener("click", ev => {
 
   // a blind call, adjudicated by the room
   const correct = btn.classList.contains("cs-yes");
+  MUSIC.duck(false);
+  if (correct) MUSIC.swell(1.3, 0.9);
   const fb = $(side === "boss" ? "boss-feedback" : "enc-feedback");
   fb.textContent = correct
     ? `Called it blind — the answer was "${P.q.answer}". Triple shards!`
@@ -614,6 +621,11 @@ function renderQuestion(q, ids, onAnswer) {
   // to inherit the hidden state and leave the class staring at nothing.
   const side = String(ids.question).startsWith("boss") ? "boss" : "enc";
   clearCommitUI(side);
+  // The teacher is talking over the score and a child is reading this off a
+  // television. Drop the music back while the question is live; it comes back
+  // up the moment an answer lands. renderQuestion is the one funnel every
+  // question passes through, so it is the only place this belongs.
+  MUSIC.duck(true);
   $(ids.question).innerHTML =
     `<span class="q-type">${q.type}</span>${escapeHtml(q.clue)}`;
   const choicesEl = $(ids.choices);
@@ -659,6 +671,8 @@ function renderQuestion(q, ids, onAnswer) {
       const fb = $(ids.feedback);
       fb.textContent = correct ? "Correct!" : `Not quite — the answer was "${q.answer}".`;
       fb.className = "enc-feedback " + (correct ? "good" : "bad");
+      MUSIC.duck(false);
+      if (correct) MUSIC.swell(1.25, 0.8);
       onAnswer(correct);
     });
     choicesEl.appendChild(div);
@@ -1519,6 +1533,8 @@ function enterEvent() {
 // which meant the damage a fight had done never actually cost anything. Now
 // there is time for exactly one thing, and choosing is the point.
 function enterRest() {
+  MUSIC.setRealm(STATE.run ? STATE.run.realmId : 1);
+  MUSIC.play("campfire");
   clearCorridorFx("corridor", "hit-flash", "slash-fx");
   clearFoeStage();
   showScenery("safe");            // the campfire itself

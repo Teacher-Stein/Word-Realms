@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 5.3.1 — the clock and the wager.** Realm 1 (Unit 1, Extreme Weather) is
+class. **Version 5.4 — the score.** Realm 1 (Unit 1, Extreme Weather) is
 fully playable; Realms 2–9 appear as locked placeholders using the correct
 themes from the school syllabus.
 
@@ -20,6 +20,48 @@ once the page has loaded.
 5. Wait about a minute, then reload your `https://…github.io/word-realms/` link.
 
 If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
+
+---
+
+## What's new in v5.4 — the score
+
+**A real soundtrack.** The old music picked random notes out of a scale on a
+timer. Random notes are not a melody, which is exactly why it sounded like
+wallpaper. This is a written score: chord progressions, bass lines, drum
+patterns and song sections that repeat, so a class hears the same themes every
+lesson and starts to know them.
+
+Six pieces — **title, map, fight, elite, boss, campfire** — played by five
+synthesized instruments: Karplus-Strong plucked strings, bowed pads, frame
+drums and taiko, FM bells, and a restrained bass. Everything is generated in
+the browser. Nothing is sampled and nothing is borrowed, so there is nothing
+to license.
+
+**It is mixed for a classroom television, not for headphones.** The master
+chain high-passes at 85Hz because a TV speaker cannot move air below that,
+lifts the mids around 2.3kHz where small speakers are efficient and where the
+score has to cut through twenty-five children, and compresses gently so quiet
+passages still carry. Two bugs came out of building that and both are worth
+recording: the bass line was written two octaves below the root, which put it
+*underneath the high-pass I had just added* — the score had no low end at all
+and the Boss measured quieter than the title screen. And the ducking gain sat
+*before* the compressor, so the compressor handed back most of the level the
+duck had just taken away; a 10dB duck measured as 1dB. Ducking now rides the
+finished mix.
+
+**It ducks for the lesson.** The moment a question is on screen the score drops
+to 30% and comes back up when the answer lands, with a short swell on a correct
+one. Verified by measurement, not by trusting the flag: 0.43 peak un-ducked,
+0.13 ducked, a ratio of exactly 0.30.
+
+**Realm tinting.** One core score. Each realm shifts its root note, its musical
+mode and its instrument balance — Realm 1 is D Aeolian, cold and bell-forward;
+Realm 4 is Phrygian and drum-heavy. All nine are already declared, so a new
+realm's music is a data edit rather than a composition job.
+
+**`tools/tests/test_music.py`** drives all of it: every piece must produce
+sound, none may clip, the Boss must be the loudest thing in the game, and
+ducking must measurably drop the level rather than merely flip a flag.
 
 ---
 

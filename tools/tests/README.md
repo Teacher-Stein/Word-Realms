@@ -9,6 +9,7 @@ Then:
 
     python3 tools/tests/test_playthrough.py   # four accuracy levels, end to end
     python3 tools/tests/test_brace.py         # Brace blocks a blow
+    python3 tools/tests/test_music.py         # the score plays, ducks, doesn't clip
     node    tools/tests/balance_sim.js        # wipe rates, questions per run
 
 ## What each one is guarding
@@ -40,3 +41,19 @@ believing the change is an improvement.
 Note that it excludes relics, potions and shop purchases, so it reads harsher
 than the real game. Use it for comparing configurations, not for predicting
 what one class will do.
+
+**test_music.py** measures the actual audio output rather than trusting the
+engine's own flags. Every piece must make a sound, none may clip, the Boss must
+be the loudest thing in the game, and ducking must measurably drop the level.
+
+It exists because two real bugs hid behind healthy-looking state: the bass line
+was written below the master high-pass (so the score had no low end and the
+Boss was the *quietest* piece), and the ducking gain sat before the compressor,
+which handed back most of the level the duck removed. Both would have passed
+any test that only asked "is a piece selected?".
+
+A note on measuring audio: `MUSIC.level()` reads one analyser frame, so calling
+it fifteen times in a tight loop reads the same frame fifteen times. Sample
+with real waits between reads, and assert the precondition — an earlier draft
+of this test measured its "un-ducked" baseline while the score was still
+ducked, and reported a working duck as broken.
