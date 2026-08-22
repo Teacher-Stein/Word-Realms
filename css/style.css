@@ -394,10 +394,13 @@ textarea { resize: vertical; line-height: 1.5; }
 
 .monster-sprite {
   max-height: 300px; max-width: 42vw; display: block;
+  /* Never distort. sizeSprite() in ui.js keeps the width in proportion, and
+     this is the backstop if any code path sets a width directly. */
+  object-fit: contain; height: auto;
   filter: drop-shadow(0 12px 24px rgba(0,0,0,.55));
   animation: idleBob 2.4s ease-in-out infinite;
 }
-.monster-sprite.boss-sprite { max-height: 380px; max-width: 52vw; }
+.monster-sprite.boss-sprite { max-height: 420px; max-width: 38vw; }
 .monster-sprite:not([src]), .monster-sprite[src=""] { display: none; }
 @keyframes idleBob {
   0%,100% { transform: translateY(0)    scale(1); }
@@ -521,7 +524,15 @@ textarea { resize: vertical; line-height: 1.5; }
   background: linear-gradient(#803949,#591626);
 }
 .panel-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 8px; flex-wrap: wrap; }
-.enc-feedback { min-height: 1.3em; font-weight: 800; font-size: 1.35rem; }
+/* v5.6: the narration moved into the arena (see js/announce.js). This node
+   still exists and is still written to by all 46 call sites - the announcer
+   observes it - but it is no longer what the room reads from. Kept in the
+   layout flow at zero height so the panel does not jump between questions. */
+.enc-feedback {
+  position: absolute; width: 1px; height: 1px; margin: -1px;
+  padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  border: 0;
+}
 .enc-feedback.good { color: var(--good); }
 .enc-feedback.bad  { color: var(--bad); }
 
@@ -756,7 +767,7 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 }
 .combatant img { display: block; filter: drop-shadow(0 12px 22px rgba(0,0,0,.6)); }
 
-.hero-sprite { image-rendering: pixelated; }
+.hero-sprite { image-rendering: pixelated; object-fit: contain; height: auto; }
 .hero-sprite:not([src]), .hero-sprite[src=""] { display: none; }
 .hero-sprite.attacking { animation: heroLunge .55s cubic-bezier(.3,-0.4,.4,1.5); }
 @keyframes heroLunge {
@@ -1221,4 +1232,56 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 .pause-vol input[type=range] { flex: 1 1 200px; min-width: 160px; }
 .pause-vol #pause-music-val {
   font-weight: 900; min-width: 3.4em; text-align: right; color: var(--gold);
+}
+
+
+/* ===========================================================================
+   THE ARENA ANNOUNCER
+
+   Centre of the battlefield, sized to be read from the back of a classroom on
+   a TV several metres away. It sits over the scene rather than under the
+   question panel, because the class is looking at the monster.
+   =========================================================================== */
+.arena-announce {
+  position: absolute;
+  left: 50%; top: 26%;
+  transform: translate(-50%, -50%) scale(.9);
+  z-index: 9;
+  max-width: 76%;
+  padding: 14px 30px;
+  border-radius: 14px;
+  text-align: center;
+  font-size: clamp(1.5rem, 2.6vw, 2.5rem);
+  font-weight: 900;
+  letter-spacing: .5px;
+  line-height: 1.2;
+  color: #fff;
+  background: rgba(8, 5, 16, .86);
+  border: 3px solid #6a58b0;
+  /* a heavy shadow is what keeps it legible over a bright backdrop */
+  text-shadow: 0 3px 0 #000, 0 0 18px rgba(0,0,0,.9);
+  box-shadow: 0 10px 34px rgba(0,0,0,.65);
+  opacity: 0;
+  pointer-events: none;              /* never eats a click meant for a button */
+  transition: opacity .16s ease, transform .16s ease;
+}
+.arena-announce.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.arena-announce.good {
+  border-color: #63e6a0;
+  color: #d8ffe9;
+  background: rgba(6, 26, 18, .88);
+}
+.arena-announce.bad {
+  border-color: #ff5470;
+  color: #ffdde3;
+  background: rgba(30, 6, 12, .88);
+}
+
+/* On a short screen the banner would sit on top of the monster's nameplate,
+   so lift it into the empty upper wall instead. */
+@media (max-height: 780px) {
+  .arena-announce { top: 18%; font-size: clamp(1.25rem, 2.2vw, 1.9rem); padding: 10px 22px; }
 }
