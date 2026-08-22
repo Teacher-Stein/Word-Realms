@@ -408,6 +408,7 @@ function afterPopups(fn) {
 
 function backToMap(advanceTurn = true) {
   MUSIC.duck(false);
+  if (typeof ANNOUNCER !== "undefined") ANNOUNCER.clear();
   if (!STATE.run) return;
   MUSIC.setRealm(STATE.run ? STATE.run.realmId : 1);
   MUSIC.play("explore");
@@ -796,6 +797,7 @@ function startFight(isElite) {
   clearScenery();
   updateStageScale("corridor");
   showCombatButtons(true);
+  if (typeof ANNOUNCER !== "undefined") ANNOUNCER.clear();
   resetFocus();                 // one Focus per FIGHT, not per run
   clearStake();
   STATE.run.potionUsedThisTurn = false;
@@ -812,6 +814,7 @@ function startFight(isElite) {
   paintHero("hero-sprite", "hero-shields");
   $("monster-sprite").src = m.sprite;
   $("monster-sprite").style.width = spriteWidth(m.sprite) + "px";
+  sizeSprite($("monster-sprite"), STAGE_SCALE);
   applyVariantTint("monster-sprite", m.variant);
   $("monster-name").textContent = (isElite ? "ELITE · " : "") + m.name;
   $("enc-who").textContent = base.taunt;
@@ -1173,10 +1176,18 @@ function nextCombatTurn(ctx) {
     }
     const ev = events[i++];
     if (ev.type === "damage") {
+      // The monster's event loop runs on timers, so a wipe can null the run
+      // between two hits of a flurry.
+      if (!STATE.run) return;
       if (STATE.run.streakGuard) {
         STATE.run.streakGuard = false; saveState();
         SFX.heal();
-        $(P.feedback).textContent = "Your winning streak turns the blow aside!";
+        // This consumes on the first damage EVENT, so on a 3-hit flurry it
+        // blocks one hit and the other two land - while the old wording
+        // claimed the whole attack had been turned aside.
+        $(P.feedback).textContent = events.length > 1
+          ? "Your winning streak blocks one hit — the rest still land!"
+          : "Your winning streak turns the blow aside!";
         $(P.feedback).className = "enc-feedback good";
         setTimeout(step, 1000);
         return;
@@ -1246,9 +1257,19 @@ function advanceStudentAndAsk(ctx) {
 
 function monsterDefeated(ctx) {
   const run = STATE.run;
-  const m = ctx.monster;
+  const m = ctx && ctx.monster;
+  // Same family as the guards in resolveCombatAnswer and askFightQuestion: a
+  // run can end between the killing blow being scheduled and this firing, and
+  // bossCtx() correctly hands back a null monster when it does. Without this
+  // the victory popup throws on m.name and the reward is never awarded.
+  if (!run || !m) return;
   const student = run.currentStudent;
   MUSIC.duck(false);          // as soon as the monster falls, not after the popups
+  // The fight is over, so the fight buttons stop responding. They used to stay
+  // enabled behind the reward cards, and a child clicking Brace on a dead
+  // monster got nothing with no explanation.
+  document.querySelectorAll(".pixel-btn.brace, .pixel-btn.teamup, .pixel-btn.focus")
+    .forEach(b => { b.disabled = true; });
   SFX.monsterDown();
   setTimeout(() => SFX.monsterCry(monsterVoice(m), true), 160);
   animateSprite(m.isBoss ? "boss-sprite" : "monster-sprite", "dying", 820);
@@ -1569,7 +1590,10 @@ function updateCombatButtons(prefix) {
 
   const frozen = isFrozen();
   braceBtn.disabled = frozen || run.bracing;
-  braceBtn.textContent = frozen ? "FROZEN — must Brace"
+  // "FROZEN - must Brace" instructed the class to press a button that was
+  // disabled at the same moment. Freezing already forces the defend, so say
+  // what is happening rather than issuing an impossible order.
+  braceBtn.textContent = frozen ? "BRACING — frozen in place"
                        : run.bracing ? "Bracing…" : "Brace (defend)";
 
   // Team Up used to be unlimited and its only cost was one more question -
@@ -1596,6 +1620,7 @@ function enterEvent() {
   paintHero("hero-sprite", "hero-shields");
   $("monster-sprite").src = realm.npc.sprite;
   $("monster-sprite").style.width = spriteWidth(realm.npc.sprite) + "px";
+  sizeSprite($("monster-sprite"), STAGE_SCALE);
   $("monster-name").textContent = realm.npc.name;
   $("enc-who").textContent = ev.who;
   $("enc-question").textContent = ev.text;
@@ -2021,6 +2046,7 @@ function startBoss() {
   paintHero("boss-hero-sprite", "boss-hero-shields");
   $("boss-sprite").src = m.sprite;
   $("boss-sprite").style.width = spriteWidth(m.sprite) + "px";
+  sizeSprite($("boss-sprite"), STAGE_SCALE);
   $("boss-name").textContent = "BOSS · " + m.name;
   renderMonsterHp("boss-hp", m.hp, m.maxHp);
   renderIntent("boss-intent", m);

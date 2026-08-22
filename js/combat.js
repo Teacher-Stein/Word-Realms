@@ -103,7 +103,15 @@ function chooseIntent(m) {
 
 function intentLabel(m) {
   if (!m.intent) return "";
-  if (m.stunned) return "✦ STUNNED — loses its turn";
+  // Show what it will do NEXT as well as the fact that it is stunned. Hiding
+  // the plan while stunned took the information away at exactly the moment the
+  // class had a free turn to plan with it.
+  if (m.stunned) {
+    const fn = INTENT_TEXT[m.intent.kind];
+    const next = fn ? fn(m.intent) : "";
+    return next ? `✦ STUNNED — loses its turn · then ${next}`
+                : "✦ STUNNED — loses its turn";
+  }
   const fn = INTENT_TEXT[m.intent.kind];
   return fn ? fn(m.intent) : "";
 }

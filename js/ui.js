@@ -906,10 +906,42 @@ function spriteWidth(src) {
 
 // Once images finish loading, correct any width we had to guess.
 const _SCALED_IMGS = ["hero-sprite", "monster-sprite", "boss-sprite", "boss-hero-sprite"];
+
+// Heroes read a little small next to the monsters they are fighting. This is
+// purely cosmetic - it changes nothing about reach, damage or hitboxes,
+// because there are none.
+const HERO_SCALE_BOOST = 1.18;
+
+// Set an image's width from the shared pixel scale, WITHOUT ever distorting it.
+//
+// The bug this fixes: width was set inline from naturalWidth * STAGE_SCALE,
+// while the CSS clamped the boss with `max-height: 380px`. With an explicit
+// width and height:auto, the browser computes the height from the aspect ratio,
+// clamps it to 380 - and does NOT reduce the width to match. The Hurricane
+// Titan's art is 145x150, very nearly square, and it was being rendered into a
+// 580x380 box: an aspect of 1.53 against a true 0.97. It looked stretched
+// because it WAS stretched, by more than half again.
+//
+// Clamping the width against the same max-height keeps the sprite in
+// proportion and, for the boss, narrower - which is what Stein asked for.
+function sizeSprite(el, scale) {
+  if (!el || !el.naturalWidth || !el.naturalHeight) return;
+  let w = el.naturalWidth * scale;
+  const maxH = parseFloat(getComputedStyle(el).maxHeight);
+  if (maxH && isFinite(maxH)) {
+    const hAtW = w * (el.naturalHeight / el.naturalWidth);
+    if (hAtW > maxH) w = maxH * (el.naturalWidth / el.naturalHeight);
+  }
+  el.style.width = Math.round(w) + "px";
+  el.style.height = "auto";
+}
+
 function fixSpriteWidths() {
   _SCALED_IMGS.forEach(id => {
     const el = document.getElementById(id);
-    if (el && el.naturalWidth) el.style.width = (el.naturalWidth * STAGE_SCALE) + "px";
+    if (!el) return;
+    const isHero = id === "hero-sprite" || id === "boss-hero-sprite";
+    sizeSprite(el, STAGE_SCALE * (isHero ? HERO_SCALE_BOOST : 1));
   });
 }
 window.addEventListener("load", fixSpriteWidths);
@@ -917,7 +949,8 @@ _SCALED_IMGS.forEach(id => {
   document.addEventListener("DOMContentLoaded", () => {
     const el = document.getElementById(id);
     if (el) el.addEventListener("load", () => {
-      if (el.naturalWidth) el.style.width = (el.naturalWidth * STAGE_SCALE) + "px";
+      const isHero = id === "hero-sprite" || id === "boss-hero-sprite";
+      sizeSprite(el, STAGE_SCALE * (isHero ? HERO_SCALE_BOOST : 1));
       refitCurrentStage();
     });
   });

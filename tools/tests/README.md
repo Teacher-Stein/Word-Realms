@@ -10,6 +10,7 @@ Then:
     python3 tools/tests/test_playthrough.py   # four accuracy levels, end to end
     python3 tools/tests/test_brace.py         # Brace blocks a blow
     python3 tools/tests/test_music.py         # the score plays, ducks, doesn't clip
+    python3 tools/tests/test_announce.py      # the arena banner is readable
     node    tools/tests/balance_sim.js        # wipe rates, questions per run
 
 ## What each one is guarding
@@ -57,3 +58,15 @@ it fifteen times in a tight loop reads the same frame fifteen times. Sample
 with real waits between reads, and assert the precondition — an earlier draft
 of this test measured its "un-ducked" baseline while the score was still
 ducked, and reported a working duck as broken.
+
+**test_announce.py** measures whether the combat narration can actually be read
+from the back of a classroom: the banner must be at least 22px, within 4% of the
+arena's centre line, inside the corridor, and still on screen two seconds after
+it appears. It also fires a burst of four messages and requires that they queue
+rather than overwrite each other, and asserts the old bottom-left line is no
+longer rendered.
+
+The dwell assertion is the point of the test. The first version of the banner
+was large and perfectly centred and still failed the brief, because it vanished
+after 2.2 seconds — "I can barely read it in time" is a timing complaint, not a
+size one, and only a timed check catches it.

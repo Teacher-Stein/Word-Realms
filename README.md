@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 5.5 — the audit.** Realm 1 (Unit 1, Extreme Weather) is
+class. **Version 5.6 — the room can read it.** Realm 1 (Unit 1, Extreme Weather) is
 fully playable; Realms 2–9 appear as locked placeholders using the correct
 themes from the school syllabus.
 
@@ -23,7 +23,68 @@ If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
 
-## What's new in v5.5 — the audit
+## What's new in v5.6 — the room can read it
+
+**The combat narration moved into the middle of the arena.** It used to be a
+small line at the bottom left of the question panel — projected onto a TV
+several metres from thirty children, in the one corner nobody is looking at,
+and gone before it could be read. It is now a large banner in the centre of the
+battlefield, held for nearly three seconds, colour-coded good or bad.
+
+Two things about it are worth recording:
+
+It is a **queue**, not a replacement. One turn can produce four messages in
+quick succession — a hit, then an enrage, then a debuff — and the old line
+simply overwrote itself, so the class saw the last one and never learned the
+other three had happened. Each message now waits its turn, and the dwell halves
+automatically when several stack up so the banner never drifts a full turn
+behind the fight.
+
+Nothing calls it directly. There are **46 places** that write to the old
+feedback element, so instead of editing every one by hand — and inevitably
+missing some — a MutationObserver mirrors every write into the banner. Any
+message added anywhere in the game is announced automatically from now on.
+
+**The Hurricane Titan was being stretched by 58%.** Its art is 145×150, very
+nearly square, but the sprite's width was set from the pixel scale while the CSS
+clamped its height with `max-height`. With an explicit width the browser clamps
+the height and does *not* reduce the width to match, so the boss was rendered
+into a 580×380 box — an aspect of 1.53 against a true 0.97. Widths are now
+clamped against the same limit, so the proportions hold at any scale. Measured
+after the fix: rendered aspect 0.97 against a natural 0.97.
+
+**Heroes are 18% larger.** Purely cosmetic — they read small next to the
+monsters they were fighting.
+
+Four more things that were misleading the room:
+
+- **"FROZEN — must Brace"** told the class to press a button that was disabled
+  at that exact moment. Freezing already forces the defend, so it now reads
+  **"BRACING — frozen in place"**.
+- **Brace, Team Up and Focus stayed live** behind the victory popups. A child
+  clicking Brace on a dead monster got nothing, with no explanation.
+- **The streak guard blocks one damage *event*, not one attack.** On a 3-hit
+  flurry it blocked one hit while claiming the whole blow had been turned
+  aside. It now says so when there is more than one hit coming.
+- **Stunned monsters hid their next intent** — taking the information away at
+  exactly the moment the class had a free turn to plan with it. The label now
+  shows the stun *and* what is coming after it.
+
+**On the Wordsmith and the Lucky Charm:** investigated and could not reproduce a
+bug. Over 3,000 rolls the grant is uniform across the 14-relic common/uncommon
+pool (Lucky Charm 6.7%, expected 7.1%), the relic strip displayed the granted
+relic correctly in 25 of 25 browser runs, and `damage()` gates the effect on
+actually owning it. The most likely explanation is that the "Started with X"
+line was announced in the old unreadable feedback text — which is exactly what
+this build fixes.
+
+Two null-run crashes were also fixed on the way through: the victory popup and
+the multi-hit damage loop could both fire after a party wipe had already ended
+the run.
+
+---
+
+## What was new in v5.5 — the audit
 
 Two full read-only audits were run over the whole codebase — one on economy and
 progression, one on combat correctness and exploits — each driving the real

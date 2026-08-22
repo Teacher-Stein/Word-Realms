@@ -205,7 +205,7 @@ with sync_playwright() as pw:
         page = browser.new_page(viewport={'width': 1600, 'height': 900})
         errors = []
         page.on('console', lambda m: errors.append(m.text) if m.type == 'error' else None)
-        page.on('pageerror', lambda e: errors.append(f'PAGEERROR {e}'))
+        page.on('pageerror', lambda e: errors.append('PAGEERROR ' + str(e) + ' || STACK: ' + str(getattr(e,'stack','')) ))
         log = []
         setup(page)
         r = play(page, acc, budget, log)
