@@ -1206,3 +1206,19 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
   0%,100% { box-shadow: 0 0 0 0 rgba(255,215,106,.55); }
   50%     { box-shadow: 0 0 0 7px rgba(255,215,106,0); }
 }
+
+/* Music volume, on the pause screen. A teacher settling a room needs the
+   control where they already are, not back on the title screen. */
+.pause-vol {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 14px; margin-bottom: 6px; border-radius: 12px;
+  background: rgba(10,6,20,.55); border: 2px solid #4a3a7d;
+}
+.pause-vol label {
+  font-size: .82rem; font-weight: 900; letter-spacing: 1.5px;
+  text-transform: uppercase; color: #b9a6ff;
+}
+.pause-vol input[type=range] { flex: 1 1 200px; min-width: 160px; }
+.pause-vol #pause-music-val {
+  font-weight: 900; min-width: 3.4em; text-align: right; color: var(--gold);
+}
