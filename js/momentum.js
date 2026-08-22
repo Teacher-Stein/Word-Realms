@@ -73,6 +73,11 @@ function spendMomentum(id) {
     const before = run.hearts;
     heal(1);
     note = run.hearts > before ? "+1 heart" : "Already at full health";
+    if (run.hearts > before && typeof floatText === "function") {
+      const boss = document.getElementById("screen-boss");
+      floatText(boss && boss.classList.contains("active")
+        ? "boss-hero-stage" : "hero-stage", "+1", "heal");
+    }
   } else if (id === "insight") {
     run.clarityActive = true;
   }

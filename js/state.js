@@ -16,6 +16,9 @@ function defaultState() {
     studentStats: {},      // name -> { correct, wrong, monsters, damage, relics, teamups }
     leaderboard: [],       // completed run records
     perksEnabled: true,    // teacher can switch the Forge off for a class
+    coachOn: true,         // in-game explanations, first time only
+    coachSeen: {},
+    shortRealm: false,     // a 9-layer map for a single period
     run: null,
   };
 }

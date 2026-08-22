@@ -184,6 +184,58 @@ $("btn-reset-run").addEventListener("click", () => {
     showScreen("screen-menu"); renderMenu();
   });
 });
+$("coach-toggle").addEventListener("change", e => {
+  STATE.coachOn = e.target.checked; saveState();
+});
+$("short-toggle").addEventListener("change", e => {
+  STATE.shortRealm = e.target.checked; saveState();
+});
+$("btn-coach-reset").addEventListener("click", () => {
+  SFX.click(); resetCoach();
+  $("pin-error").textContent = "";
+  showPopup({ banner:"COACH RESET", tone:"good", title:"Explanations will show again",
+              desc:"The next class to play will be walked through each mechanic once." });
+});
+
+// The whole term lives in one browser on one school computer. If that machine
+// gets reimaged, everything goes with it - so it has to be exportable.
+$("btn-save-export").addEventListener("click", () => {
+  SFX.click();
+  const blob = new Blob([JSON.stringify(STATE, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  const cls = STATE.roster ? STATE.roster.className.replace(/\W+/g, "-") : "word-realms";
+  a.download = `${cls}-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+});
+$("save-import-file").addEventListener("change", e => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!data || typeof data !== "object" || !("unlockedRealms" in data)) {
+        throw new Error("not a Word Realms save");
+      }
+      STATE = Object.assign(defaultState(), data);
+      migrateRun(STATE);
+      saveState();
+      showPopup({ banner:"SAVE RESTORED", tone:"good",
+                  title: STATE.roster ? STATE.roster.className : "Save loaded",
+                  effect: `${STATE.ember} Ember · ${STATE.permanentPerks.length} Forge upgrades`,
+                  desc:"Everything is back where it was." });
+      renderTeacherRealmList(); renderMenu();
+    } catch (err) {
+      SFX.wrong();
+      $("pin-error").textContent = "That file isn't a Word Realms save.";
+    }
+    e.target.value = "";
+  };
+  reader.readAsText(file);
+});
+
 $("perks-toggle").addEventListener("change", e => {
   STATE.perksEnabled = e.target.checked; saveState();
 });
@@ -361,6 +413,89 @@ window.travelToNode = function (nodeId) {
     }, 380);
   });
 };
+
+// ===================== PAUSE =====================
+// The bell will go mid-boss. ESC freezes everything, stops the music and puts
+// the teacher's options in one place.
+let _paused = false;
+
+function questionIsLive() {
+  const enc = $("screen-encounter"), boss = $("screen-boss");
+  const on = (enc && enc.classList.contains("active")) ||
+             (boss && boss.classList.contains("active"));
+  if (!on) return null;
+  const side = boss && boss.classList.contains("active") ? "boss" : "enc";
+  const live = $(`${side}-choices`).querySelector(".choice:not(.locked)");
+  return live ? side : null;
+}
+
+function togglePause(force) {
+  const want = force === undefined ? !_paused : force;
+  if (want === _paused) return;
+  if (want && !STATE.run) return;               // nothing to pause
+  _paused = want;
+  const layer = $("pause-layer");
+  layer.classList.toggle("open", _paused);
+  if (_paused) {
+    MUSIC.stop();
+    const side = questionIsLive();
+    $("pause-award").style.display = side ? "" : "none";
+    $("pause-sub").textContent = side
+      ? "A question is on screen. You can award it if the class was right."
+      : "The storm waits.";
+  } else {
+    MUSIC.play(questionIsLive() ? "fight" : "explore");
+  }
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  const tag = (document.activeElement && document.activeElement.tagName) || "";
+  if (tag === "INPUT" || tag === "TEXTAREA") return;
+  if (popupsPending()) return;                  // let a reward card be read
+  e.preventDefault();
+  togglePause();
+});
+
+$("pause-resume").addEventListener("click", () => { SFX.click(); togglePause(false); });
+$("pause-exit").addEventListener("click", () => {
+  SFX.click(); togglePause(false); MUSIC.stop();
+  showScreen("screen-menu"); renderMenu();
+});
+$("pause-teacher").addEventListener("click", () => {
+  SFX.click(); togglePause(false); openTeacher();
+});
+$("pause-restart").addEventListener("click", () => {
+  SFX.click(); togglePause(false);
+  showPopup({
+    banner: "RESTART THE REALM?", tone: "bad",
+    title: "Start this realm again",
+    effect: "A brand new map, and this run's relics and shards are lost",
+    desc: "Banked Ember and Forge upgrades are kept.",
+    button: "Yes, restart",
+    cancel: "Keep playing",
+    onClose: () => {
+      const id = STATE.run ? STATE.run.realmId : (STATE.lastRealmPlayed || 1);
+      STATE.run = null; saveState();
+      window.enterRealm(id);
+    },
+  });
+});
+// Teacher override: award the question currently on screen. Deliberately
+// living behind the pause menu rather than on a hotkey, so no child can reach
+// it and no key can be pressed by accident.
+$("pause-award").addEventListener("click", () => {
+  const side = questionIsLive();
+  if (!side) return;
+  SFX.unlockChime();
+  togglePause(false);
+  const correct = $(`${side}-choices`).querySelector(".choice");
+  const answer = (side === "boss" ? STATE.run.boss : STATE.run.encounter);
+  const q = answer && answer.currentQ;
+  if (!q) return;
+  const nodes = $(`${side}-choices`).querySelectorAll(".choice");
+  nodes.forEach(c => { if (c.textContent === q.answer) c.click(); });
+});
 
 // ===================== MOMENTUM =====================
 window.useMomentum = function (id, prefix) {
@@ -582,6 +717,10 @@ function askFightQuestion() {
   }
   renderMomentum("enc");
   updateCombatButtons("enc");
+  if (m.isElite) coach("elite");
+  if (momentum() > 0) coach("momentum");
+  if (m.intent && !m.stunned) coach("intent");
+  if (commitAvailable(q, defending)) coach("commit");
 }
 
 // The shared resolution used by fights and the boss.
@@ -600,11 +739,11 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
     ? { hpEl:"boss-hp", sprite:"boss-sprite", hero:"boss-hero-sprite",
         slash:"boss-slash-fx", flash:"boss-hit-flash", corridor:"boss-corridor",
         feedback:"boss-feedback", intent:"boss-intent", shields:"boss-hero-shields",
-        hud:"boss" }
+        heroStage:"boss-hero-stage", foeStage:"boss-stage", hud:"boss" }
     : { hpEl:"monster-hp", sprite:"monster-sprite", hero:"hero-sprite",
         slash:"slash-fx", flash:"hit-flash", corridor:"corridor",
         feedback:"enc-feedback", intent:"monster-intent", shields:"hero-shields",
-        hud:"enc" };
+        heroStage:"hero-stage", foeStage:"monster-stage", hud:"enc" };
 
   document.querySelectorAll(".pixel-btn.brace, .pixel-btn.teamup")
     .forEach(b => b.disabled = true);
@@ -668,6 +807,7 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
       $(P.feedback).className = "enc-feedback bad";
     } else {
       m.hp = Math.max(0, m.hp - dmg);
+      floatText(P.foeStage, `-${dmg}`, "damage");
       const { amount, crit } = hitShards(q, m);
       let payout = amount * momentumShardMultiplier();      // a primed Rouse
       if (committed) payout *= CONFIG.COMMIT_SHARD_MULT;
@@ -727,6 +867,7 @@ function applyHit(rawDmg, m, P) {
   }
   if (guarded && incoming <= 0) {
     SFX.heal();
+    floatText(P.heroStage, "GUARDED", "block");
     animateSprite(P.hero, "bracing", 620);
     $(P.feedback).textContent = "GUARDED — the blow is turned aside!";
     $(P.feedback).className = "enc-feedback good";
@@ -740,14 +881,18 @@ function applyHit(rawDmg, m, P) {
   animateSprite(P.hero, "flinching", 520);
   if (res.blocked && res.blockedBy && res.blockedBy !== "Shields") {
     SFX.heal();
+    floatText(P.heroStage, res.blockedBy.toUpperCase(), "block");
     $(P.feedback).textContent = `${res.blockedBy} absorbed the hit!`;
     $(P.feedback).className = "enc-feedback good";
   } else if (res.absorbed > 0 && res.dealt === 0) {
     SFX.heal();
+    floatText(P.heroStage, `-${res.absorbed} shield`, "shield");
     $(P.feedback).textContent = `Shields held! (${res.absorbed} absorbed)`;
     $(P.feedback).className = "enc-feedback good";
   } else {
     SFX.heartLost();
+    if (res.absorbed) floatText(P.heroStage, `-${res.absorbed} shield`, "shield");
+    floatText(P.heroStage, `-${res.dealt}`, "damage");
     bumpStat(STATE.run.currentStudent, "damage", Math.max(1, res.dealt));
     $(P.feedback).textContent = guarded
       ? `Guard held ${guarded} — ${res.dealt} still got through!`
@@ -792,10 +937,12 @@ function nextCombatTurn(ctx) {
   const P = m.isBoss
     ? { sprite:"boss-sprite", hero:"boss-hero-sprite", flash:"boss-hit-flash",
         corridor:"boss-corridor", feedback:"boss-feedback", intent:"boss-intent",
-        hpEl:"boss-hp", shields:"boss-hero-shields", hud:"boss" }
+        hpEl:"boss-hp", shields:"boss-hero-shields",
+        heroStage:"boss-hero-stage", foeStage:"boss-stage", hud:"boss" }
     : { sprite:"monster-sprite", hero:"hero-sprite", flash:"hit-flash",
         corridor:"corridor", feedback:"enc-feedback", intent:"monster-intent",
-        hpEl:"monster-hp", shields:"hero-shields", hud:"enc" };
+        hpEl:"monster-hp", shields:"hero-shields",
+        heroStage:"hero-stage", foeStage:"monster-stage", hud:"enc" };
 
   const acts = tickMonsterClock(m);
   if (!acts) { advanceStudentAndAsk(ctx); return; }
@@ -849,6 +996,7 @@ function nextCombatTurn(ctx) {
       $(P.feedback).className = "enc-feedback";
     } else if (ev.type === "regen") {
       SFX.heal();
+      floatText(P.foeStage, "+1", "heal");
       $(P.feedback).textContent = `${m.name} heals itself!`;
       $(P.feedback).className = "enc-feedback bad";
     } else if (ev.type === "charging") {
@@ -862,6 +1010,7 @@ function nextCombatTurn(ctx) {
       $(P.feedback).className = "enc-feedback bad";
     } else if (ev.type === "debuff") {
       SFX.wrong();
+      coach("debuff");
       $(P.feedback).textContent = DEBUFF_TEXT[ev.debuff] || "";
       $(P.feedback).className = "enc-feedback bad";
       renderTopHud(P.hud);
@@ -1281,6 +1430,7 @@ function enterRest() {
   paintHero("hero-sprite", "hero-shields");
   SFX.doorOpen();
 
+  coach("campfire");
   $("enc-who").textContent = "A campfire. There is time for one thing only.";
   $("enc-question").textContent =
     "Mend the wounded, repair the armour, or sharpen up for what is coming?";
@@ -1406,6 +1556,7 @@ function enterSafe() {
 // ===================== SHOP =====================
 function enterShop(nodeId) {
   SFX.doorOpen();
+  coach("shop");
   STATE.run.activeShopNode = nodeId;
   saveState();
   renderShop(nodeId);
@@ -1668,9 +1819,12 @@ function askBossQuestion() {
   updateCombatButtons("boss");
 }
 
+// A question can only be committed to if the clue alone tells you what to say.
+// "Choose the correct sentence:" cannot - the options ARE the question - and
+// offering the gamble on one asks a child to answer something nobody asked.
 function commitAvailable(q, defending) {
   return CONFIG.COMMIT_ENABLED && !defending && !isFrozen() &&
-         (q.tier || 1) >= CONFIG.COMMIT_MIN_TIER;
+         q.open === true && (q.tier || 1) >= CONFIG.COMMIT_MIN_TIER;
 }
 
 function bossCtx() {

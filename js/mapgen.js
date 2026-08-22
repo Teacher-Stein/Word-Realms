@@ -27,8 +27,16 @@ function weightedNodeType() {
   return pick(pool);
 }
 
+// A short realm fits a single period rather than a double. The teacher picks
+// it; everything else about the map is unchanged.
+function realmLayers() {
+  return (typeof STATE !== "undefined" && STATE.shortRealm)
+    ? Math.max(6, Math.round(CONFIG.LAYERS_PER_REALM * 0.6))
+    : CONFIG.LAYERS_PER_REALM;
+}
+
 function generateMap(realm) {
-  const layers = CONFIG.LAYERS_PER_REALM;
+  const layers = realmLayers();
   const nodes = [];
   const layerNodeIds = [];
   let id = 0;

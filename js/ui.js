@@ -149,6 +149,10 @@ function renderTeacherRealmList() {
   document.getElementById("auto-unlock-toggle").checked = STATE.teacherAutoUnlock;
   const pt = document.getElementById("perks-toggle");
   if (pt) pt.checked = STATE.perksEnabled !== false;
+  const ct = document.getElementById("coach-toggle");
+  if (ct) ct.checked = STATE.coachOn !== false;
+  const st = document.getElementById("short-toggle");
+  if (st) st.checked = !!STATE.shortRealm;
   renderTeacherStudents();
 }
 
@@ -478,7 +482,11 @@ function renderRelicStrip(prefix) {
 }
 
 function renderStudentChips() {
-  const name = STATE.run && STATE.run.currentStudent ? STATE.run.currentStudent : "—";
+  // No roster set (a teacher playtesting alone, or a first run before the
+  // class list exists) used to render a bare dash. Say something useful.
+  const noRoster = !STATE.roster || !STATE.roster.students.length;
+  const name = STATE.run && STATE.run.currentStudent ? STATE.run.currentStudent
+             : noRoster ? "ANYONE!" : "—";
   ["map-student", "enc-student", "boss-student"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = name;
@@ -1081,7 +1089,11 @@ function clearScenery() {
 function renderIntent(elId, m) {
   const el = document.getElementById(elId);
   if (!el) return;
-  if (!m) { el.innerHTML = ""; el.className = "intent"; return; }
+  if (!m) {
+    el.innerHTML = ""; el.className = "intent";
+    renderFoeStatus(elId === "boss-intent" ? "boss-status" : "monster-status", null);
+    return;
+  }
 
   const label = intentLabel(m);
   if (!label) { el.innerHTML = ""; el.className = "intent"; return; }
@@ -1099,6 +1111,7 @@ function renderIntent(elId, m) {
   el.innerHTML = `<span class="intent-label">${escapeHtml(label)}</span>${when}`;
   el.className = "intent " + (INTENT_CLASS[m.intent && m.intent.kind] || "") +
                  (imminent ? " imminent" : "");
+  renderFoeStatus(elId === "boss-intent" ? "boss-status" : "monster-status", m);
 }
 
 // ---------------------------------------------------------------------------
@@ -1175,6 +1188,59 @@ function renderMomentum(prefix) {
     btn.addEventListener("click", () => window.useMomentum(mv.id, prefix));
     moves.appendChild(btn);
   });
+}
+
+// ---------------------------------------------------------------------------
+// Floating combat text.
+//
+// What happened in a fight used to be narrated in a small line at the bottom
+// left of the panel - the last place thirty children look. Numbers now rise
+// off whoever it happened to: red for damage, green for healing, blue for a
+// block. No ambiguity about who just got hurt.
+// ---------------------------------------------------------------------------
+function floatText(stageId, text, kind = "damage") {
+  const stage = document.getElementById(stageId);
+  if (!stage) return;
+  const corridor = stage.parentElement;
+  if (!corridor) return;
+  const el = document.createElement("div");
+  el.className = "float-text " + kind;
+  el.textContent = text;
+  // .combatant is positioned by its left edge and then shifted by a transform,
+  // so offsetLeft already lands on the character's centre line.
+  el.style.left = stage.offsetLeft + "px";
+  el.style.top  = (stage.offsetTop + stage.offsetHeight * 0.22) + "px";
+  // stagger simultaneous numbers so a flurry doesn't stack into one blob
+  const live = corridor.querySelectorAll(".float-text").length;
+  el.style.marginTop = (live % 3) * -26 + "px";
+  corridor.appendChild(el);
+  setTimeout(() => el.remove(), 1500);
+}
+
+// The monster's own states, mirrored from the hero's chips.
+const FOE_CHIPS = {
+  guarding: { label: "GUARDING", cls: "ward",   hint: "takes no damage" },
+  enraged:  { label: "ENRAGED",  cls: "expose", hint: "attacks hit harder" },
+  stunned:  { label: "STUNNED",  cls: "brace",  hint: "loses its next turn" },
+  charging: { label: "CHARGING", cls: "expose", hint: "a big blow is coming" },
+};
+
+function renderFoeStatus(elId, m) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = "";
+  if (!m) return;
+  const add = key => {
+    const c = FOE_CHIPS[key];
+    const d = document.createElement("div");
+    d.className = "status-chip " + c.cls;
+    d.innerHTML = `<b>${c.label}</b><span>${c.hint}</span>`;
+    el.appendChild(d);
+  };
+  if (m.stunned)  add("stunned");
+  if (m.guarding) add("guarding");
+  if (m.charging) add("charging");
+  if (m.enraged)  add("enraged");
 }
 
 function flashMomentum(prefix) {

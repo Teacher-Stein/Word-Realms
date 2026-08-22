@@ -96,7 +96,10 @@ const CONFIG = {
   // Offered on hard questions only: answer with NO options on screen for
   // double reward. Recall rather than recognition.
   COMMIT_ENABLED: true,
-  COMMIT_MIN_TIER: 3,
+  // Commit is gated on whether a question can be ANSWERED ALOUD (q.open), not
+  // on how hard it is. Tier is only a floor, so it stays a reward for the
+  // harder half of the bank rather than appearing on every definition.
+  COMMIT_MIN_TIER: 2,
   COMMIT_SHARD_MULT: 2,      // double shards...
   COMMIT_MOMENTUM: 2,        // ...and Momentum, but NEVER extra damage: a
                              // shorter fight is fewer questions.

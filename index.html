@@ -107,6 +107,24 @@
           Ember Forge perks active for this class
         </label>
 
+        <label class="teacher-row">
+          <input type="checkbox" id="coach-toggle">
+          Explain each mechanic the first time it appears
+        </label>
+        <label class="teacher-row">
+          <input type="checkbox" id="short-toggle">
+          Short realm — a 9-room map for a single period
+        </label>
+
+        <h3 class="inv-head">Save file <span class="inv-note">— this is the only copy</span></h3>
+        <div class="row-buttons" style="margin-top:6px;">
+          <button id="btn-save-export" class="pixel-btn small">Download save</button>
+          <label class="pixel-btn small" style="cursor:pointer;">Restore from file
+            <input id="save-import-file" type="file" accept="application/json" style="display:none;">
+          </label>
+          <button id="btn-coach-reset" class="pixel-btn small ghost">Reset explanations</button>
+        </div>
+
         <h3 class="inv-head">Class list <span class="inv-note">— remove a student who has left</span></h3>
         <div id="teacher-students" class="teacher-student-list"></div>
 
@@ -285,6 +303,7 @@
       <!-- The monster's nameplate, HP and intent sit BELOW the sprite. Above
            it they were clipped off the top of the corridor on a 16:9 TV. -->
       <div class="combatant foe-side" id="monster-stage">
+        <div class="foe-status" id="monster-status"></div>
         <img id="monster-sprite" class="monster-sprite" alt="">
         <div class="foe-info">
           <div class="foe-info-row">
@@ -375,6 +394,7 @@
         <div class="shield-row" id="boss-hero-shields"></div>
       </div>
       <div class="combatant foe-side huge" id="boss-stage">
+        <div class="foe-status" id="boss-status"></div>
         <img id="boss-sprite" class="monster-sprite boss-sprite" alt="">
         <div class="foe-info">
           <div class="foe-info-row">
@@ -444,6 +464,22 @@
   </section>
 
 
+  <!-- ===================== PAUSE ===================== -->
+  <div id="pause-layer" class="pause-layer">
+    <div class="pause-card">
+      <div class="pause-title">PAUSED</div>
+      <div class="pause-sub" id="pause-sub">The storm waits.</div>
+      <div class="pause-buttons">
+        <button id="pause-resume"  class="pixel-btn">Resume</button>
+        <button id="pause-award"   class="pixel-btn" style="display:none;">Award this answer</button>
+        <button id="pause-restart" class="pixel-btn ghost">Restart this realm</button>
+        <button id="pause-teacher" class="pixel-btn ghost">Teacher Menu</button>
+        <button id="pause-exit"    class="pixel-btn danger">Exit to Menu</button>
+      </div>
+      <div class="pause-hint">Press <b>ESC</b> to resume</div>
+    </div>
+  </div>
+
   <!-- ===================== REWARD / INFO POPUP ===================== -->
   <div id="popup-layer" class="popup-layer">
     <div class="popup-card" id="popup-card">
@@ -500,6 +536,7 @@
 <script src="js/heroes.js"></script>
 <script src="js/forge.js"></script>
 <script src="js/momentum.js"></script>
+<script src="js/coach.js"></script>
 <script src="js/content.js"></script>
 <script src="js/mapgen.js"></script>
 <script src="js/combat.js"></script>

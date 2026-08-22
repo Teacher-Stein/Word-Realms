@@ -8,177 +8,183 @@
 // keys to guarantee the whole unit gets tested before the realm is cleared.
 //
 // type: vocab | phonics | grammar   (shown as a small tag in the UI)
+//
+// `open` marks a question that can be ANSWERED ALOUD from the clue alone.
+// This is what gates Commit, not difficulty. "Complete it: 'The ___ was so
+// loud...'" works with the options hidden; "Choose the correct sentence:" is
+// the options themselves, and offering a Commit on it asks a child to answer
+// a question that has not been asked yet.
 // ---------------------------------------------------------------------------
 
 const REALM1_QUESTIONS = [
   // ===================== VOCABULARY 1: extreme weather =====================
-  { cover:"thunder", tier:1, type:"vocab", clue:"You often hear this loud rumbling sound right after you see lightning.",
+  { cover:"thunder", tier:1, type:"vocab", open:true, clue:"You often hear this loud rumbling sound right after you see lightning.",
     answer:"thunder", choices:["thunder","a drought","a heat wave"] },
-  { cover:"thunder", tier:2, type:"vocab", clue:"Complete it: 'The ___ was so loud that it woke the whole family up.'",
+  { cover:"thunder", tier:2, type:"vocab", open:true, clue:"Complete it: 'The ___ was so loud that it woke the whole family up.'",
     answer:"thunder", choices:["thunder","speed","a shelter"] },
 
-  { cover:"lightning", tier:1, type:"vocab", clue:"A bright flash of electricity that lights up the sky during a storm.",
+  { cover:"lightning", tier:1, type:"vocab", open:true, clue:"A bright flash of electricity that lights up the sky during a storm.",
     answer:"lightning", choices:["lightning","a blizzard","a range"] },
-  { cover:"lightning", tier:2, type:"vocab", clue:"Complete it: 'If you see ___, you should go inside immediately.'",
+  { cover:"lightning", tier:2, type:"vocab", open:true, clue:"Complete it: 'If you see ___, you should go inside immediately.'",
     answer:"lightning", choices:["lightning","supplies","a plan"] },
 
-  { cover:"flood", tier:1, type:"vocab", clue:"When a huge amount of rain makes rivers overflow and water covers the streets.",
+  { cover:"flood", tier:1, type:"vocab", open:true, clue:"When a huge amount of rain makes rivers overflow and water covers the streets.",
     answer:"a flood", choices:["a flood","a sandstorm","an ice storm"] },
-  { cover:"flood", tier:2, type:"vocab", clue:"Complete it: 'After three days of heavy rain, there was a ___ in the village.'",
+  { cover:"flood", tier:2, type:"vocab", open:true, clue:"Complete it: 'After three days of heavy rain, there was a ___ in the village.'",
     answer:"flood", choices:["flood","drought","heat wave"] },
 
-  { cover:"drought", tier:1, type:"vocab", clue:"A very long period with no rain at all, so the ground gets dry and cracked.",
+  { cover:"drought", tier:1, type:"vocab", open:true, clue:"A very long period with no rain at all, so the ground gets dry and cracked.",
     answer:"a drought", choices:["a drought","a tropical storm","a tornado"] },
-  { cover:"drought", tier:2, type:"vocab", clue:"Complete it: 'The farmers lost their crops because of the long ___.'",
+  { cover:"drought", tier:2, type:"vocab", open:true, clue:"Complete it: 'The farmers lost their crops because of the long ___.'",
     answer:"drought", choices:["drought","flood","blizzard"] },
 
-  { cover:"ice storm", tier:1, type:"vocab", clue:"Freezing rain that coats everything - trees, cars, roads - in a layer of ice.",
+  { cover:"ice storm", tier:1, type:"vocab", open:true, clue:"Freezing rain that coats everything - trees, cars, roads - in a layer of ice.",
     answer:"an ice storm", choices:["an ice storm","a heat wave","a hurricane"] },
-  { cover:"ice storm", tier:2, type:"vocab", clue:"Complete it: 'The ___ covered every branch in shining ice.'",
+  { cover:"ice storm", tier:2, type:"vocab", open:true, clue:"Complete it: 'The ___ covered every branch in shining ice.'",
     answer:"ice storm", choices:["ice storm","sandstorm","heat wave"] },
 
-  { cover:"blizzard", tier:1, type:"vocab", clue:"A dangerous snowstorm with strong winds where you can barely see anything.",
+  { cover:"blizzard", tier:1, type:"vocab", open:true, clue:"A dangerous snowstorm with strong winds where you can barely see anything.",
     answer:"a blizzard", choices:["a blizzard","a drought","a flood"] },
-  { cover:"blizzard", tier:2, type:"vocab", clue:"Complete it: 'Schools closed because a ___ buried the roads in snow.'",
+  { cover:"blizzard", tier:2, type:"vocab", open:true, clue:"Complete it: 'Schools closed because a ___ buried the roads in snow.'",
     answer:"blizzard", choices:["blizzard","drought","tornado"] },
 
-  { cover:"tropical storm", tier:1, type:"vocab", clue:"A big swirling storm with strong wind and heavy rain that forms over warm ocean water.",
+  { cover:"tropical storm", tier:1, type:"vocab", open:true, clue:"A big swirling storm with strong wind and heavy rain that forms over warm ocean water.",
     answer:"a tropical storm", choices:["a tropical storm","an ice storm","a heat wave"] },
-  { cover:"tropical storm", tier:2, type:"vocab", clue:"Complete it: 'A ___ formed over the warm sea and moved toward the coast.'",
+  { cover:"tropical storm", tier:2, type:"vocab", open:true, clue:"Complete it: 'A ___ formed over the warm sea and moved toward the coast.'",
     answer:"tropical storm", choices:["tropical storm","ice storm","drought"] },
 
-  { cover:"speed", tier:1, type:"vocab", clue:"How fast something moves - scientists measure the wind's ___ to see how dangerous a storm is.",
+  { cover:"speed", tier:1, type:"vocab", open:true, clue:"How fast something moves - scientists measure the wind's ___ to see how dangerous a storm is.",
     answer:"speed", choices:["speed","a range","a shelter"] },
-  { cover:"speed", tier:2, type:"vocab", clue:"Complete it: 'The wind ___ reached 200 kilometres per hour.'",
+  { cover:"speed", tier:2, type:"vocab", open:true, clue:"Complete it: 'The wind ___ reached 200 kilometres per hour.'",
     answer:"speed", choices:["speed","range","drop"] },
 
-  { cover:"hurricane", tier:1, type:"vocab", clue:"A massive spinning ocean storm with a calm 'eye' at its centre.",
+  { cover:"hurricane", tier:1, type:"vocab", open:true, clue:"A massive spinning ocean storm with a calm 'eye' at its centre.",
     answer:"a hurricane", choices:["a hurricane","a sandstorm","a drought"] },
-  { cover:"hurricane", tier:1, type:"vocab", clue:"Which storm has an 'eye' in the middle where the weather is suddenly calm?",
+  { cover:"hurricane", tier:1, type:"vocab", open:false, clue:"Which storm has an 'eye' in the middle where the weather is suddenly calm?",
     answer:"a hurricane", choices:["a hurricane","a blizzard","an ice storm"] },
 
-  { cover:"tornado", tier:1, type:"vocab", clue:"It spins in a tight twisting funnel shape and can flatten a town in seconds.",
+  { cover:"tornado", tier:1, type:"vocab", open:true, clue:"It spins in a tight twisting funnel shape and can flatten a town in seconds.",
     answer:"a tornado", choices:["a tornado","a heat wave","a flood"] },
-  { cover:"tornado", tier:2, type:"vocab", clue:"Complete it: 'A ___ tore through the fields and lifted the roof off the barn.'",
+  { cover:"tornado", tier:2, type:"vocab", open:true, clue:"Complete it: 'A ___ tore through the fields and lifted the roof off the barn.'",
     answer:"tornado", choices:["tornado","drought","heat wave"] },
 
-  { cover:"sandstorm", tier:1, type:"vocab", clue:"Strong winds pick up sand and dust, making it hard to see or breathe outdoors.",
+  { cover:"sandstorm", tier:1, type:"vocab", open:true, clue:"Strong winds pick up sand and dust, making it hard to see or breathe outdoors.",
     answer:"a sandstorm", choices:["a sandstorm","a blizzard","an ice storm"] },
-  { cover:"sandstorm", tier:2, type:"vocab", clue:"Complete it: 'If a ___ comes, close all the windows and stay inside.'",
+  { cover:"sandstorm", tier:2, type:"vocab", open:true, clue:"Complete it: 'If a ___ comes, close all the windows and stay inside.'",
     answer:"sandstorm", choices:["sandstorm","flood","heat wave"] },
 
-  { cover:"range", tier:1, type:"vocab", clue:"The difference between the lowest and the highest amount, like temperatures in one day.",
+  { cover:"range", tier:1, type:"vocab", open:true, clue:"The difference between the lowest and the highest amount, like temperatures in one day.",
     answer:"a range", choices:["a range","speed","a drop"] },
-  { cover:"range", tier:2, type:"vocab", clue:"Complete it: 'Today the temperature ___ was from 18 to 32 degrees.'",
+  { cover:"range", tier:2, type:"vocab", open:true, clue:"Complete it: 'Today the temperature ___ was from 18 to 32 degrees.'",
     answer:"range", choices:["range","speed","shelter"] },
 
-  { cover:"rise", tier:1, type:"vocab", clue:"When a number, like the temperature, goes UP.",
+  { cover:"rise", tier:1, type:"vocab", open:true, clue:"When a number, like the temperature, goes UP.",
     answer:"rise", choices:["rise","drop","range"] },
-  { cover:"rise", tier:2, type:"vocab", clue:"Complete it: 'Temperatures will ___ to 40 degrees this weekend.'",
+  { cover:"rise", tier:2, type:"vocab", open:true, clue:"Complete it: 'Temperatures will ___ to 40 degrees this weekend.'",
     answer:"rise", choices:["rise","drop","warn"] },
 
-  { cover:"drop", tier:1, type:"vocab", clue:"When a number, like the temperature, goes DOWN suddenly.",
+  { cover:"drop", tier:1, type:"vocab", open:true, clue:"When a number, like the temperature, goes DOWN suddenly.",
     answer:"drop", choices:["drop","rise","speed"] },
-  { cover:"drop", tier:2, type:"vocab", clue:"Complete it: 'The temperature will ___ below zero tonight, so wear a coat.'",
+  { cover:"drop", tier:2, type:"vocab", open:true, clue:"Complete it: 'The temperature will ___ below zero tonight, so wear a coat.'",
     answer:"drop", choices:["drop","rise","range"] },
 
-  { cover:"heat wave", tier:1, type:"vocab", clue:"Several days in a row of unusually hot weather.",
+  { cover:"heat wave", tier:1, type:"vocab", open:true, clue:"Several days in a row of unusually hot weather.",
     answer:"a heat wave", choices:["a heat wave","a blizzard","a flood"] },
-  { cover:"heat wave", tier:2, type:"vocab", clue:"Complete it: 'During the ___, the city opened cool rooms for elderly people.'",
+  { cover:"heat wave", tier:2, type:"vocab", open:true, clue:"Complete it: 'During the ___, the city opened cool rooms for elderly people.'",
     answer:"heat wave", choices:["heat wave","ice storm","blizzard"] },
 
   // ===================== VOCABULARY 2: emergencies =====================
-  { cover:"emergency", tier:1, type:"vocab", clue:"A sudden dangerous situation that needs quick action.",
+  { cover:"emergency", tier:1, type:"vocab", open:true, clue:"A sudden dangerous situation that needs quick action.",
     answer:"an emergency", choices:["an emergency","a shelter","supplies"] },
-  { cover:"emergency", tier:2, type:"vocab", clue:"Complete it: 'In an ___, call for help straight away.'",
+  { cover:"emergency", tier:2, type:"vocab", open:true, clue:"Complete it: 'In an ___, call for help straight away.'",
     answer:"emergency", choices:["emergency","instrument","range"] },
 
-  { cover:"plan", tier:1, type:"vocab", clue:"Steps you decide on ahead of time so you know what to do if something goes wrong.",
+  { cover:"plan", tier:1, type:"vocab", open:true, clue:"Steps you decide on ahead of time so you know what to do if something goes wrong.",
     answer:"a plan", choices:["a plan","a flashlight","an emergency"] },
-  { cover:"plan", tier:2, type:"vocab", clue:"Complete it: 'Every family should make a storm ___ before the season starts.'",
+  { cover:"plan", tier:2, type:"vocab", open:true, clue:"Complete it: 'Every family should make a storm ___ before the season starts.'",
     answer:"plan", choices:["plan","funnel","speed"] },
 
-  { cover:"flashlight", tier:1, type:"vocab", clue:"A small handheld light - very useful when the power goes out.",
+  { cover:"flashlight", tier:1, type:"vocab", open:true, clue:"A small handheld light - very useful when the power goes out.",
     answer:"a flashlight", choices:["a flashlight","a shelter","supplies"] },
-  { cover:"flashlight", tier:2, type:"vocab", clue:"Complete it: 'When the lights went out, she grabbed a ___.'",
+  { cover:"flashlight", tier:2, type:"vocab", open:true, clue:"Complete it: 'When the lights went out, she grabbed a ___.'",
     answer:"flashlight", choices:["flashlight","shelter","range"] },
 
-  { cover:"supplies", tier:1, type:"vocab", clue:"Food, water and other items you gather and keep ready in case of an emergency.",
+  { cover:"supplies", tier:1, type:"vocab", open:true, clue:"Food, water and other items you gather and keep ready in case of an emergency.",
     answer:"supplies", choices:["supplies","a plan","a shelter"] },
-  { cover:"supplies", tier:2, type:"vocab", clue:"Complete it: 'They packed ___ like water, food and batteries.'",
+  { cover:"supplies", tier:2, type:"vocab", open:true, clue:"Complete it: 'They packed ___ like water, food and batteries.'",
     answer:"supplies", choices:["supplies","instruments","speed"] },
 
-  { cover:"shelter", tier:1, type:"vocab", clue:"A safe place that protects you from dangerous weather.",
+  { cover:"shelter", tier:1, type:"vocab", open:true, clue:"A safe place that protects you from dangerous weather.",
     answer:"a shelter", choices:["a shelter","a flashlight","a plan"] },
-  { cover:"shelter", tier:2, type:"vocab", clue:"Complete it: 'The families waited in a storm ___ until the wind stopped.'",
+  { cover:"shelter", tier:2, type:"vocab", open:true, clue:"Complete it: 'The families waited in a storm ___ until the wind stopped.'",
     answer:"shelter", choices:["shelter","supplies","emergency"] },
 
   // ===================== READING: Tornado Trouble =====================
-  { cover:"instruments", tier:1, type:"vocab", clue:"Scientists use these tools to measure things like wind speed and temperature.",
+  { cover:"instruments", tier:1, type:"vocab", open:true, clue:"Scientists use these tools to measure things like wind speed and temperature.",
     answer:"instruments", choices:["instruments","funnel","warn"] },
-  { cover:"instruments", tier:2, type:"vocab", clue:"Complete it: 'The weather ___ recorded the storm all night.'",
+  { cover:"instruments", tier:2, type:"vocab", open:true, clue:"Complete it: 'The weather ___ recorded the storm all night.'",
     answer:"instruments", choices:["instruments","supplies","shelters"] },
 
-  { cover:"twisted", tier:1, type:"vocab", clue:"Bent or spun out of its normal shape.",
+  { cover:"twisted", tier:1, type:"vocab", open:true, clue:"Bent or spun out of its normal shape.",
     answer:"twisted", choices:["twisted","warned","dropped"] },
-  { cover:"twisted", tier:2, type:"vocab", clue:"Complete it: 'The strong wind ___ the metal sign into a strange shape.'",
+  { cover:"twisted", tier:2, type:"vocab", open:true, clue:"Complete it: 'The strong wind ___ the metal sign into a strange shape.'",
     answer:"twisted", choices:["twisted","warned","rose"] },
 
-  { cover:"funnel", tier:1, type:"vocab", clue:"A cone shape, wide at the top and narrow at the bottom - the shape of a tornado.",
+  { cover:"funnel", tier:1, type:"vocab", open:true, clue:"A cone shape, wide at the top and narrow at the bottom - the shape of a tornado.",
     answer:"a funnel", choices:["a funnel","an instrument","a range"] },
-  { cover:"funnel", tier:2, type:"vocab", clue:"Complete it: 'A dark ___ dropped down from the storm cloud.'",
+  { cover:"funnel", tier:2, type:"vocab", open:true, clue:"Complete it: 'A dark ___ dropped down from the storm cloud.'",
     answer:"funnel", choices:["funnel","shelter","drought"] },
 
-  { cover:"warn", tier:1, type:"vocab", clue:"To tell people about danger BEFORE it happens.",
+  { cover:"warn", tier:1, type:"vocab", open:true, clue:"To tell people about danger BEFORE it happens.",
     answer:"warn", choices:["warn","twist","rise"] },
-  { cover:"warn", tier:2, type:"vocab", clue:"Complete it: 'Sirens ___ the town that a tornado was coming.'",
+  { cover:"warn", tier:2, type:"vocab", open:true, clue:"Complete it: 'Sirens ___ the town that a tornado was coming.'",
     answer:"warned", choices:["warned","twisted","dropped"] },
 
   // ===================== PHONICS: /θ/ and /ð/ =====================
-  { cover:"phonics-theta", tier:2, type:"phonics", clue:"Which word has the SAME soft, breathy 'th' sound as 'thanks' and 'thunder'?",
+  { cover:"phonics-theta", tier:2, type:"phonics", open:false, clue:"Which word has the SAME soft, breathy 'th' sound as 'thanks' and 'thunder'?",
     answer:"think", choices:["think","this","those"] },
-  { cover:"phonics-theta", tier:2, type:"phonics", clue:"Which word uses the /θ/ sound (like in 'thought')?",
+  { cover:"phonics-theta", tier:2, type:"phonics", open:false, clue:"Which word uses the /θ/ sound (like in 'thought')?",
     answer:"birthday", choices:["birthday","weather","therefore"] },
-  { cover:"phonics-theta", tier:2, type:"phonics", clue:"Which one does NOT have the /θ/ sound?",
+  { cover:"phonics-theta", tier:2, type:"phonics", open:false, clue:"Which one does NOT have the /θ/ sound?",
     answer:"those", choices:["those","thermometer","thanks"] },
 
-  { cover:"phonics-eth", tier:2, type:"phonics", clue:"Which word has the buzzy /ð/ sound, like 'this' and 'weather'?",
+  { cover:"phonics-eth", tier:2, type:"phonics", open:false, clue:"Which word has the buzzy /ð/ sound, like 'this' and 'weather'?",
     answer:"though", choices:["though","thanks","birthday"] },
-  { cover:"phonics-eth", tier:2, type:"phonics", clue:"Which word uses the /ð/ sound (your voice buzzes)?",
+  { cover:"phonics-eth", tier:2, type:"phonics", open:false, clue:"Which word uses the /ð/ sound (your voice buzzes)?",
     answer:"therefore", choices:["therefore","think","thunder"] },
-  { cover:"phonics-eth", tier:2, type:"phonics", clue:"Which one does NOT have the buzzy /ð/ sound?",
+  { cover:"phonics-eth", tier:2, type:"phonics", open:false, clue:"Which one does NOT have the buzzy /ð/ sound?",
     answer:"thermometer", choices:["thermometer","those","weather"] },
 
   // ===================== GRAMMAR 1: be going to =====================
-  { cover:"g1-question", tier:3, type:"grammar", clue:"Choose the correctly formed question:",
+  { cover:"g1-question", tier:3, type:"grammar", open:false, clue:"Choose the correctly formed question:",
     answer:"Is it going to rain tomorrow?", choices:["Is it going to rain tomorrow?","Is it go to rain tomorrow?","Is it going rain tomorrow?"] },
-  { cover:"g1-question", tier:3, type:"grammar", clue:"Choose the correct question about the future:",
+  { cover:"g1-question", tier:3, type:"grammar", open:false, clue:"Choose the correct question about the future:",
     answer:"Are they going to check the shelter?", choices:["Are they going to check the shelter?","Are they going check the shelter?","Do they going to check the shelter?"] },
 
-  { cover:"g1-statement", tier:3, type:"grammar", clue:"Complete it: 'I ___ listen to the weather forecast at eight o'clock.'",
+  { cover:"g1-statement", tier:3, type:"grammar", open:true, clue:"Complete it: 'I ___ listen to the weather forecast at eight o'clock.'",
     answer:"am going to", choices:["am going to","is going to","going to be"] },
-  { cover:"g1-statement", tier:3, type:"grammar", clue:"Choose the correct sentence:",
+  { cover:"g1-statement", tier:3, type:"grammar", open:false, clue:"Choose the correct sentence:",
     answer:"They are going to check the storm shelter.", choices:["They are going to check the storm shelter.","They going to check the storm shelter.","They are go to check the storm shelter."] },
 
-  { cover:"g1-negative", tier:3, type:"grammar", clue:"Complete it: 'It ___ snow tomorrow - it's going to rain.'",
+  { cover:"g1-negative", tier:3, type:"grammar", open:true, clue:"Complete it: 'It ___ snow tomorrow - it's going to rain.'",
     answer:"isn't going to", choices:["isn't going to","aren't going to","doesn't going to"] },
-  { cover:"g1-negative", tier:3, type:"grammar", clue:"Choose the correct negative prediction:",
+  { cover:"g1-negative", tier:3, type:"grammar", open:false, clue:"Choose the correct negative prediction:",
     answer:"We aren't going to travel in this storm.", choices:["We aren't going to travel in this storm.","We aren't go to travel in this storm.","We don't going to travel in this storm."] },
 
   // ===================== GRAMMAR 2: zero conditional =====================
-  { cover:"g2-form", tier:3, type:"grammar", clue:"Choose the correct zero conditional sentence:",
+  { cover:"g2-form", tier:3, type:"grammar", open:false, clue:"Choose the correct zero conditional sentence:",
     answer:"If I see lightning, I go inside.", choices:["If I see lightning, I go inside.","If I saw lightning, I go inside.","If I will see lightning, I go inside."] },
-  { cover:"g2-form", tier:3, type:"grammar", clue:"Choose the correct sentence:",
+  { cover:"g2-form", tier:3, type:"grammar", open:false, clue:"Choose the correct sentence:",
     answer:"I put on my coat if the weather is cold.", choices:["I put on my coat if the weather is cold.","I put on my coat if the weather was cold.","I will put on my coat if the weather is cold."] },
 
-  { cover:"g2-verb", tier:3, type:"grammar", clue:"Complete it: 'If a sandstorm ___, I close all the windows.'",
+  { cover:"g2-verb", tier:3, type:"grammar", open:true, clue:"Complete it: 'If a sandstorm ___, I close all the windows.'",
     answer:"comes", choices:["comes","come","will come"] },
-  { cover:"g2-verb", tier:3, type:"grammar", clue:"Complete it: 'If the temperature ___ below zero, water freezes.'",
+  { cover:"g2-verb", tier:3, type:"grammar", open:true, clue:"Complete it: 'If the temperature ___ below zero, water freezes.'",
     answer:"drops", choices:["drops","drop","will drop"] },
 
-  { cover:"g2-meaning", tier:3, type:"grammar", clue:"Which sentence describes something that is ALWAYS true?",
+  { cover:"g2-meaning", tier:3, type:"grammar", open:false, clue:"Which sentence describes something that is ALWAYS true?",
     answer:"If you heat ice, it melts.", choices:["If you heat ice, it melts.","If you heat ice, it melted.","If you heated ice, it will melt."] },
-  { cover:"g2-meaning", tier:3, type:"grammar", clue:"Complete it: 'If the sirens ___, everyone goes to the shelter.'",
+  { cover:"g2-meaning", tier:3, type:"grammar", open:true, clue:"Complete it: 'If the sirens ___, everyone goes to the shelter.'",
     answer:"sound", choices:["sound","sounded","will sound"] },
 ];
 
@@ -196,115 +202,142 @@ const REALM1_QUESTIONS = [
 // ---------------------------------------------------------------------------
 const REALM1_ELITE_QUESTIONS = [
   // ---------------- correct the mistake ----------------
-  { cover:"g2-form", tier:4, type:"fix it", clue:"One part is wrong: 'If it will rain tomorrow, we stay inside.'",
+  { cover:"g2-form", tier:4, type:"fix it", open:false, clue:"One part is wrong: 'If it will rain tomorrow, we stay inside.'",
     answer:"'will rain' should be 'rains'", choices:["'will rain' should be 'rains'","'stay' should be 'will stay'","'If' should be 'When'"] },
 
-  { cover:"g1-negative", tier:4, type:"fix it", clue:"One part is wrong: 'They aren't go to check the shelter.'",
+  { cover:"g1-negative", tier:4, type:"fix it", open:false, clue:"One part is wrong: 'They aren't go to check the shelter.'",
     answer:"'go' should be 'going'", choices:["'go' should be 'going'","'aren't' should be 'don't'","'check' should be 'checking'"] },
 
-  { cover:"g2-verb", tier:4, type:"fix it", clue:"One part is wrong: 'If the temperature drop below zero, water freezes.'",
+  { cover:"g2-verb", tier:4, type:"fix it", open:false, clue:"One part is wrong: 'If the temperature drop below zero, water freezes.'",
     answer:"'drop' should be 'drops'", choices:["'drop' should be 'drops'","'freezes' should be 'freeze'","'If' should be 'Because'"] },
 
-  { cover:"g1-question", tier:4, type:"fix it", clue:"One part is wrong: 'Is they going to warn the town?'",
+  { cover:"g1-question", tier:4, type:"fix it", open:false, clue:"One part is wrong: 'Is they going to warn the town?'",
     answer:"'Is' should be 'Are'", choices:["'Is' should be 'Are'","'going' should be 'go'","'warn' should be 'warning'"] },
 
-  { cover:"g1-statement", tier:4, type:"fix it", clue:"One word is missing: 'We ___ going to pack supplies tonight.'",
+  { cover:"g1-statement", tier:4, type:"fix it", open:true, clue:"One word is missing: 'We ___ going to pack supplies tonight.'",
     answer:"are", choices:["are","will","do"] },
 
   // ---------------- two-step reasoning ----------------
-  { cover:"ice storm", tier:4, type:"reason", clue:"It rains all evening, then the temperature falls below zero overnight. What will cover the roads by morning?",
+  { cover:"ice storm", tier:4, type:"reason", open:true, clue:"It rains all evening, then the temperature falls below zero overnight. What will cover the roads by morning?",
     answer:"a layer of ice", choices:["a layer of ice","deep sand","thick smoke"] },
 
-  { cover:"flood", tier:4, type:"reason", clue:"Four days of heavy rain, and then the river bursts its banks into the town. What is the town facing?",
+  { cover:"flood", tier:4, type:"reason", open:true, clue:"Four days of heavy rain, and then the river bursts its banks into the town. What is the town facing?",
     answer:"a flood", choices:["a flood","a drought","a heat wave"] },
 
-  { cover:"drought", tier:4, type:"reason", clue:"No rain has fallen for three months and the crops have died in the fields. What is the farmer facing?",
+  { cover:"drought", tier:4, type:"reason", open:true, clue:"No rain has fallen for three months and the crops have died in the fields. What is the farmer facing?",
     answer:"a drought", choices:["a drought","a blizzard","a flood"] },
 
-  { cover:"range", tier:4, type:"reason", clue:"The coldest hour today was 12 degrees and the warmest was 30. What was the temperature range?",
+  { cover:"range", tier:4, type:"reason", open:true, clue:"The coldest hour today was 12 degrees and the warmest was 30. What was the temperature range?",
     answer:"18 degrees", choices:["18 degrees","30 degrees","42 degrees"] },
 
-  { cover:"drop", tier:4, type:"reason", clue:"At six o'clock it was 4 degrees. By midnight it was minus two. What did the temperature do?",
+  { cover:"drop", tier:4, type:"reason", open:true, clue:"At six o'clock it was 4 degrees. By midnight it was minus two. What did the temperature do?",
     answer:"it dropped", choices:["it dropped","it rose","it stayed the same"] },
 
-  { cover:"rise", tier:4, type:"reason", clue:"At dawn it was 22 degrees. By noon it was 38. What did the temperature do?",
+  { cover:"rise", tier:4, type:"reason", open:true, clue:"At dawn it was 22 degrees. By noon it was 38. What did the temperature do?",
     answer:"it rose", choices:["it rose","it dropped","it froze"] },
 
-  { cover:"speed", tier:4, type:"reason", clue:"An instrument measures how fast the air is moving past it. What is it measuring?",
+  { cover:"speed", tier:4, type:"reason", open:true, clue:"An instrument measures how fast the air is moving past it. What is it measuring?",
     answer:"wind speed", choices:["wind speed","the temperature range","the rainfall"] },
 
-  { cover:"shelter", tier:4, type:"reason", clue:"The sirens sound and a funnel cloud is coming. Where should the family go FIRST?",
+  { cover:"shelter", tier:4, type:"reason", open:true, clue:"The sirens sound and a funnel cloud is coming. Where should the family go FIRST?",
     answer:"to the storm shelter", choices:["to the storm shelter","up onto the roof","out to the car"] },
 
   // ---------------- odd one out ----------------
-  { cover:"heat wave", tier:4, type:"apply", clue:"Which of these would NOT happen during a heat wave?",
+  { cover:"heat wave", tier:4, type:"apply", open:false, clue:"Which of these would NOT happen during a heat wave?",
     answer:"the roads freeze over", choices:["the roads freeze over","people stay indoors","the city opens cool rooms"] },
 
-  { cover:"blizzard", tier:4, type:"apply", clue:"Which of these would you NOT need in a blizzard?",
+  { cover:"blizzard", tier:4, type:"apply", open:false, clue:"Which of these would you NOT need in a blizzard?",
     answer:"a sun hat", choices:["a sun hat","a warm coat","a flashlight"] },
 
-  { cover:"supplies", tier:4, type:"apply", clue:"Which of these is NOT emergency supplies?",
+  { cover:"supplies", tier:4, type:"apply", open:false, clue:"Which of these is NOT emergency supplies?",
     answer:"a birthday cake", choices:["a birthday cake","bottled water","spare batteries"] },
 
-  { cover:"emergency", tier:4, type:"apply", clue:"Which of these is NOT an emergency?",
+  { cover:"emergency", tier:4, type:"apply", open:false, clue:"Which of these is NOT an emergency?",
     answer:"choosing what to wear", choices:["choosing what to wear","a fire in the kitchen","a flood in the street"] },
 
-  { cover:"instruments", tier:4, type:"apply", clue:"Which one does NOT measure the weather?",
+  { cover:"instruments", tier:4, type:"apply", open:false, clue:"Which one does NOT measure the weather?",
     answer:"a compass", choices:["a compass","a thermometer","a wind gauge"] },
 
   // ---------------- transformation ----------------
-  { cover:"g1-statement", tier:4, type:"apply", clue:"Say this as a plan for the future: 'We check the shelter.'",
+  { cover:"g1-statement", tier:4, type:"apply", open:true, clue:"Say this as a plan for the future: 'We check the shelter.'",
     answer:"We are going to check the shelter.", choices:["We are going to check the shelter.","We checked the shelter.","We are checking the shelter now."] },
 
-  { cover:"g1-question", tier:4, type:"apply", clue:"Turn this into a question: 'They are going to warn the town.'",
+  { cover:"g1-question", tier:4, type:"apply", open:true, clue:"Turn this into a question: 'They are going to warn the town.'",
     answer:"Are they going to warn the town?", choices:["Are they going to warn the town?","Do they going to warn the town?","They are going to warn the town?"] },
 
-  { cover:"g1-negative", tier:4, type:"apply", clue:"Make this negative: 'It is going to snow tonight.'",
+  { cover:"g1-negative", tier:4, type:"apply", open:true, clue:"Make this negative: 'It is going to snow tonight.'",
     answer:"It isn't going to snow tonight.", choices:["It isn't going to snow tonight.","It doesn't going to snow tonight.","It is going to not snow tonight."] },
 
-  { cover:"g2-meaning", tier:4, type:"apply", clue:"Which sentence means the same as 'Ice melts whenever you heat it'?",
+  { cover:"g2-meaning", tier:4, type:"apply", open:false, clue:"Which sentence means the same as 'Ice melts whenever you heat it'?",
     answer:"If you heat ice, it melts.", choices:["If you heat ice, it melts.","If you heated ice, it melted.","If you will heat ice, it will melt."] },
 
   // ---------------- inference from a scene ----------------
-  { cover:"tornado", tier:4, type:"reason", clue:"The sky turned green, the wind fell silent, and a dark spinning column dropped from the cloud toward the fields. What did they see?",
+  { cover:"tornado", tier:4, type:"reason", open:true, clue:"The sky turned green, the wind fell silent, and a dark spinning column dropped from the cloud toward the fields. What did they see?",
     answer:"a tornado", choices:["a tornado","a heat wave","an ice storm"] },
 
-  { cover:"hurricane", tier:4, type:"reason", clue:"The wind screamed for hours, then everything went calm and the sun came out — twenty minutes later the wind returned from the opposite direction. What passed over them?",
+  { cover:"hurricane", tier:4, type:"reason", open:true, clue:"The wind screamed for hours, then everything went calm and the sun came out — twenty minutes later the wind returned from the opposite direction. What passed over them?",
     answer:"the eye of a hurricane", choices:["the eye of a hurricane","a sandstorm","a drought"] },
 
-  { cover:"sandstorm", tier:4, type:"reason", clue:"Ali could not see the end of his street, grit stung his eyes, and he shut every window in the house. What was happening outside?",
+  { cover:"sandstorm", tier:4, type:"reason", open:true, clue:"Ali could not see the end of his street, grit stung his eyes, and he shut every window in the house. What was happening outside?",
     answer:"a sandstorm", choices:["a sandstorm","a flood","a blizzard"] },
 
-  { cover:"twisted", tier:4, type:"reason", clue:"After the storm, the metal gate was found bent round into a spiral. Which word describes the gate?",
+  { cover:"twisted", tier:4, type:"reason", open:true, clue:"After the storm, the metal gate was found bent round into a spiral. Which word describes the gate?",
     answer:"twisted", choices:["twisted","warned","dropped"] },
 
-  { cover:"funnel", tier:4, type:"reason", clue:"A cloud reached down toward the ground, wide at the top and narrow at the bottom. What shape was it?",
+  { cover:"funnel", tier:4, type:"reason", open:true, clue:"A cloud reached down toward the ground, wide at the top and narrow at the bottom. What shape was it?",
     answer:"a funnel", choices:["a funnel","a range","a shelter"] },
 
-  { cover:"flashlight", tier:4, type:"reason", clue:"The power is out, the phone battery is dead, and the stairs are pitch dark. Which item from the kit helps most?",
+  { cover:"flashlight", tier:4, type:"reason", open:true, clue:"The power is out, the phone battery is dead, and the stairs are pitch dark. Which item from the kit helps most?",
     answer:"a flashlight", choices:["a flashlight","a thermometer","a map"] },
 
-  { cover:"thunder", tier:4, type:"reason", clue:"You see the flash first and hear the noise several seconds later. Why does the sound arrive after the light?",
+  { cover:"thunder", tier:4, type:"reason", open:true, clue:"You see the flash first and hear the noise several seconds later. Why does the sound arrive after the light?",
     answer:"sound travels more slowly than light", choices:["sound travels more slowly than light","the thunder happens afterwards","the lightning is much closer"] },
 
   // ---------------- word work ----------------
-  { cover:"warn", tier:4, type:"apply", clue:"'Warn' is the verb. What do you call the message that does the warning?",
+  { cover:"warn", tier:4, type:"apply", open:true, clue:"'Warn' is the verb. What do you call the message that does the warning?",
     answer:"a warning", choices:["a warning","a warner","a warned"] },
 
-  { cover:"plan", tier:4, type:"apply", clue:"In the sentence 'We plan to leave early', the word 'plan' is being used as a...",
+  { cover:"plan", tier:4, type:"apply", open:true, clue:"In the sentence 'We plan to leave early', the word 'plan' is being used as a...",
     answer:"verb", choices:["verb","noun","adjective"] },
 
-  { cover:"phonics-theta", tier:4, type:"phonics", clue:"Which pair BOTH use the breathy /θ/ sound?",
+  { cover:"phonics-theta", tier:4, type:"phonics", open:false, clue:"Which pair BOTH use the breathy /θ/ sound?",
     answer:"thunder and thirsty", choices:["thunder and thirsty","these and those","weather and mother"] },
 
-  { cover:"phonics-eth", tier:4, type:"phonics", clue:"Which pair BOTH use the buzzy /ð/ sound?",
+  { cover:"phonics-eth", tier:4, type:"phonics", open:false, clue:"Which pair BOTH use the buzzy /ð/ sound?",
     answer:"weather and those", choices:["weather and those","thanks and think","birthday and thermometer"] },
 
-  { cover:"lightning", tier:4, type:"reason", clue:"Why is standing under the tallest tree in an open field dangerous in a storm?",
+  { cover:"lightning", tier:4, type:"reason", open:true, clue:"Why is standing under the tallest tree in an open field dangerous in a storm?",
     answer:"lightning strikes the tallest thing nearby", choices:["lightning strikes the tallest thing nearby","the tree blocks the warning sirens","trees make thunder louder"] },
 
-  { cover:"tropical storm", tier:4, type:"reason", clue:"A storm forms over warm ocean water, grows as it crosses the sea, and weakens once it reaches land. Which storm is it?",
+  { cover:"tropical storm", tier:4, type:"reason", open:true, clue:"A storm forms over warm ocean water, grows as it crosses the sea, and weakens once it reaches land. Which storm is it?",
     answer:"a tropical storm", choices:["a tropical storm","a sandstorm","a heat wave"] },
+
+  // ---- open-response grammar, written so Commit has something to offer ----
+  // Selection questions ("Choose the correct sentence") can't be answered with
+  // the options hidden, so the hardest tier needed items that can.
+  { cover:"g1-statement", tier:3, type:"grammar", open:true, clue:"Complete it as a plan for tonight: 'We ___ pack the emergency supplies.'",
+    answer:"are going to", choices:["are going to","is going to","was going to"] },
+
+  { cover:"g1-question", tier:3, type:"grammar", open:true, clue:"Complete the question: '___ they going to warn the town?'",
+    answer:"Are", choices:["Are","Is","Do"] },
+
+  { cover:"g1-negative", tier:3, type:"grammar", open:true, clue:"Complete it so it means NO: 'We ___ going to travel in this storm.'",
+    answer:"aren't", choices:["aren't","don't","isn't"] },
+
+  { cover:"g2-form", tier:3, type:"grammar", open:true, clue:"Complete it: 'If you ___ ice, it melts.'",
+    answer:"heat", choices:["heat","heated","will heat"] },
+
+  { cover:"g2-verb", tier:3, type:"grammar", open:true, clue:"Complete it: 'If the wind ___ stronger, we close the shutters.'",
+    answer:"gets", choices:["gets","get","will get"] },
+
+  { cover:"g2-meaning", tier:3, type:"grammar", open:true, clue:"Complete it with something always true: 'If you drop a stone in water, it ___.'",
+    answer:"sinks", choices:["sinks","sank","will sink"] },
+
+  { cover:"phonics-theta", tier:3, type:"phonics", open:true, clue:"Say the weather word that means the loud rumble after lightning. It starts with the breathy /\u03b8/ sound.",
+    answer:"thunder", choices:["thunder","weather","those"] },
+
+  { cover:"phonics-eth", tier:3, type:"phonics", open:true, clue:"Say the word for what the sky is doing today. It uses the buzzy /\u00f0/ sound in the middle.",
+    answer:"weather", choices:["weather","thunder","thermometer"] },
 ];
 
 // distinct curriculum items this realm must cover before it can be cleared

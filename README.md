@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 5.0 — classroom edition.** Realm 1 (Unit 1, Extreme Weather) is
+class. **Version 5.2 — classroom edition.** Realm 1 (Unit 1, Extreme Weather) is
 fully playable; Realms 2–9 appear as locked placeholders using the correct
 themes from the school syllabus.
 
@@ -22,6 +22,51 @@ once the page has loaded.
 If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
+
+## What's new in v5.2 — legibility
+
+**Fixed: Commit was offered on questions that cannot be answered aloud.** It
+was gated on how *hard* a question was, when the property that matters is
+whether the clue alone tells you what to say. "Choose the correct sentence:"
+is meaningless with the options hidden — the options *are* the question. That
+was 19 of the 47 questions it appeared on. Every question in the bank is now
+tagged open-response or selection-only, Commit is gated on that, and eight new
+open-form grammar and phonics questions were written to widen the pool. It now
+appears on 59 questions, all of which work.
+
+**Floating damage numbers.** Red for damage, green for healing, blue for a
+block — rising off whoever it happened to. What happens in a fight was
+previously narrated in a small line at the bottom-left of the panel, which is
+the last place thirty children look.
+
+**Status chips moved out beside the fighters.** The hero's conditions sit to
+the left of the hero, the monster's to the right of the monster, in the empty
+space either side. The monster now has chips at all — Guarding, Enraged,
+Stunned and Charging were only ever a line of text.
+
+**Coach mode.** The first time each mechanic actually appears, the game stops
+and explains that one thing, then never mentions it again — Momentum, the
+intent countdown, campfires, Commit, Elites, debuffs and the shop. Marks are
+per class, resettable in the Teacher Menu, and the whole thing can be switched
+off for a class that already knows.
+
+**Press ESC to pause.** Resume, restart the realm, jump to the Teacher Menu, or
+exit — and the music stops while you settle the room. When a question is on
+screen the pause menu also offers **Award this answer**, so a child who was
+right for a reason the game didn't anticipate isn't marked wrong in front of
+everyone. It lives behind the pause menu rather than on a hotkey so no student
+can reach it.
+
+**Download your save.** The whole term lives in one browser on one school
+computer. The Teacher Menu now exports a save file and restores from one.
+
+**Short realm.** A Teacher Menu toggle drops the map to nine rooms for a single
+period instead of a double.
+
+**Colour is never the only signal.** Correct and wrong answers carry a tick or
+a cross as well as green and red.
+
+**No roster set** now reads "ANYONE!" rather than a bare dash.
 
 ## What's new in v5.0 — the fights matter
 
@@ -423,6 +468,7 @@ js/items.js           Relics, potions, weapons, armour, enchantments
 js/heroes.js          Playable hero definitions
 js/forge.js           Ember Forge perks and their run-start effects
 js/momentum.js        The Momentum pool and the moves it buys
+js/coach.js           First-time explanations for each mechanic
 js/combat.js          Monster instances, intents, attacks, debuffs
 js/ui.js              Rendering (map, HUD, popups, tiles, shop)
 js/main.js            Game flow, combat, animation sequencing
