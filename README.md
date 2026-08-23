@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 5.8 — events worth stopping for.** Realm 1 (Unit 1, Extreme Weather) is
+class. **Version 5.9 — Realm 2.** Two realms playable. Realm 1 (Unit 1, Extreme Weather) is
 fully playable; Realms 2–9 appear as locked placeholders using the correct
 themes from the school syllabus.
 
@@ -23,7 +23,68 @@ If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
 
-## What's new in v5.8 — events worth stopping for
+## What's new in v5.9 — The Wildlands
+
+**Realm 2 is playable.** Unit 2, *Copycat Animals* — 112 original questions
+across all 32 curriculum items, a cast of 17 camouflage creatures, and a boss
+that is an entire patch of forest.
+
+**The vocabulary and the monsters are the same idea.** A Stick Moth *resembles*
+a twig, a Mimic Jay *imitates*, the Hollow Fox is barely there at all — so the
+creature a class is fighting is a worked example of the word they are being
+asked. Mechanically the Wildlands lean on GUARD and CHARGE where the Stormlands
+leaned on flurries and drains: the storm hits you, the forest waits for you.
+
+**112 questions:** 69 standard across tiers 1–3, and 43 tier-4 elite questions
+that ask students to *use* the language rather than recognise it — apply the
+`as … as` rule, choose between *resemble* and *imitate*, work out why a
+harmless fly wears a wasp's colours. Every one of the 32 curriculum keys has
+both a standard and an elite version, so the Boss can sweep the whole unit.
+
+**Artwork is still to come.** All 17 sprites currently point at their Realm 1
+counterparts as stand-ins, so the realm is fully playable and testable today —
+and the realm card says so plainly rather than pretending. Swapping in the real
+art is 17 paths and one flag.
+
+### The per-realm difficulty ramp
+
+Nothing in the game read `realmId` for difficulty, so Realm 9 was exactly as
+hard as Realm 1 while the class got steadily better at it. v5.5 scoped the
+Forge perks per realm, which flattened the worst of that; this is the other
+half, and it is deliberately gentle because the language itself gets harder
+every unit:
+
+| Realms | Monster HP | Elite HP | Starting hearts | Clock |
+|---|---|---|---|---|
+| 1–3 | 4 | 7 | 9 | every 3 answers |
+| 4–6 | 5 | 8 | 9 → 8 | every 3 answers |
+| 7–9 | 6 | 9 | 8 → 7 | every 2 answers |
+
+Monster HP is the main fight-*length* dial, so a later realm also asks more
+questions per fight — which is the direction we want anyway.
+
+### The content checker
+
+`tools/tests/check_content.js` validates any realm's bank before a class sees
+it: answers missing from their own choices, distractors that are the answer
+with an article stripped, missing `open` flags, tiers out of range, curriculum
+items with only one question, keys with no elite version, duplicate questions,
+and a thin blind-call pool.
+
+It found three faults in Realm 2 the moment it was pointed at it — all three
+were false positives from an over-eager rule of mine, which is its own lesson:
+the first version flagged any clue containing "which one", condemning
+*"'Resemble' and 'imitate' are close. Which one means only to LOOK like
+something?"* — a question that is perfectly answerable aloud because the clue
+names both candidates. The rule is now "points at the options **and** does not
+contain the answer", and it was re-verified by planting a genuinely
+unanswerable question and confirming it is still caught.
+
+Both realms pass clean.
+
+---
+
+## What was new in v5.8 — events worth stopping for
 
 **The old events were a slot machine.** "Help search the rubble?" — a 62%
 chance of 4 shards against a 38% chance of losing a heart, with the odds

@@ -135,6 +135,28 @@ const CONFIG = {
   STREAK_GUARD: 3,          // correct answers in a row -> next attack blocked
   STREAK_BONUS: 5,          // -> shards + a potion
 
+  // --- per-realm difficulty ramp (v5.9) ---
+  //
+  // Nothing in the game read `realmId` for difficulty, so Realm 9 was exactly
+  // as hard as Realm 1 while the class got steadily better at it and the Forge
+  // handed out permanent upgrades. v5.5 scoped those perks per realm, which
+  // flattened the worst of the ratchet; this is the other half.
+  //
+  // Deliberately gentle. Over nine realms these compound, and the language
+  // itself gets harder every unit - the mechanics only need to stop the curve
+  // sagging, not fight the class.
+  REALM_RAMP: {
+    // +1 monster HP every third realm: R1-3 = 4, R4-6 = 5, R7-9 = 6.
+    // Monster HP is the main fight-LENGTH dial, so this also means more
+    // questions per fight later in the year, which is the direction we want.
+    monsterHpPer: 3,
+    eliteHpPer: 3,
+    // -1 starting heart every fourth realm: R1-4 = 9, R5-8 = 8, R9 = 7.
+    heartsPer: 4,
+    // the monster clock speeds up once, late: R1-6 cadence 3, R7-9 cadence 2
+    cadenceFrom: 7,
+  },
+
   // --- misc ---
   SAVE_KEY: "wordrealms_save_v2",
   DEFAULT_UNLOCKED: [1],

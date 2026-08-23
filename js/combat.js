@@ -46,15 +46,32 @@ function rollVariant() {
   return pick(MONSTER_VARIANTS);
 }
 
+// How far into the year is this realm? Returns the extra HP and the cadence
+// shift the ramp calls for. Kept in one place so a future realm cannot
+// accidentally miss it.
+function realmRamp() {
+  const r = (STATE.run && STATE.run.realmId) || 1;
+  const R = CONFIG.REALM_RAMP || {};
+  return {
+    monsterHp: Math.floor((r - 1) / (R.monsterHpPer || 99)),
+    eliteHp:   Math.floor((r - 1) / (R.eliteHpPer || 99)),
+    hearts:    Math.floor((r - 1) / (R.heartsPer || 99)),
+    cadence:   (R.cadenceFrom && r >= R.cadenceFrom) ? -1 : 0,
+  };
+}
+
 function makeMonster(base, isElite, isBoss = false) {
   const run = STATE.run;
-  let hp = isBoss ? 0 : (isElite ? CONFIG.ELITE_HP : CONFIG.MONSTER_HP);
+  const ramp = realmRamp();
+  let hp = isBoss ? 0
+         : (isElite ? CONFIG.ELITE_HP + ramp.eliteHp
+                    : CONFIG.MONSTER_HP + ramp.monsterHp);
   const variant = (!isElite && !isBoss) ? rollVariant() : null;
 
   if (variant) hp = Math.max(1, hp + variant.hpBonus);
   if (isElite && hasRelic("thunder_sigil")) hp = Math.max(2, hp - 1);
 
-  let cadence = base.cadence || 3;
+  let cadence = (base.cadence || 3) + ramp.cadence;
   if (variant) cadence = Math.max(1, cadence + variant.cadenceBonus);
   if (hasRelic("oracle_eye")) cadence += 1;     // more warning, same number of questions
 

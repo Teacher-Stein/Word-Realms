@@ -206,7 +206,10 @@ function rerollStudent() {
 function startNewRun(realmId, heroId) {
   const realm = REALMS[realmId];
   const map = generateMap(realm);
-  let hearts = CONFIG.START_HEARTS;
+  // the per-realm ramp: one fewer starting heart every fourth realm
+  const rampHearts = Math.floor((realmId - 1) /
+    ((CONFIG.REALM_RAMP && CONFIG.REALM_RAMP.heartsPer) || 99));
+  let hearts = Math.max(5, CONFIG.START_HEARTS - rampHearts);
   if (typeof hasPerk === "function" && hasPerk("second_wind")) hearts += 1;
 
   STATE.run = {

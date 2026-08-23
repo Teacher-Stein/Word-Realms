@@ -471,6 +471,486 @@ const MONSTER_VARIANTS = [
   { id:"lesser",   prefix:"Lesser",   hue:15,  sat:0.5, cadenceBonus:1,  hpBonus:-1, shardBonus:-1 },
 ];
 
+// ---------------------------------------------------------------------------
+// REALM 2 — THE WILDLANDS
+// Our World 5, Unit 2: "Copycat Animals" (Science)
+//
+// Unit outcomes this realm is built to review:
+//   * describe animals
+//   * compare different animals
+//   * talk about how animals imitate others
+//   * use classification writing
+//
+// Vocabulary set 1 (strategy: using a dictionary):
+//   camouflage, characteristic, copy, frighten, hide, hunt, imitate, insect,
+//   poisonous, predator, prey, resemble, species, spot, stripe
+// Vocabulary set 2 (strategy: action verbs):
+//   attack, avoid, confuse, defend, escape
+// Grammar: comparisons with as ... as  ·  tag questions
+// Reading strategy: scan text for information
+//
+// EVERY question here is original. The unit's aims and word list decide WHAT is
+// tested; none of the book's own sentences, exercises or texts are reproduced.
+// ---------------------------------------------------------------------------
+
+const REALM2_QUESTIONS = [
+  // ===================== VOCABULARY 1: describing & hiding =================
+  { cover:"camouflage", tier:1, type:"vocab", open:true, clue:"Colours or patterns on an animal that make it very hard to see against its background.",
+    answer:"camouflage", choices:["camouflage","a characteristic","a species"] },
+  { cover:"camouflage", tier:2, type:"vocab", open:true, clue:"Complete it: 'The moth's ___ is so good that it looks exactly like a dead leaf.'",
+    answer:"camouflage", choices:["camouflage","stripe","prey"] },
+
+  { cover:"characteristic", tier:1, type:"vocab", open:true, clue:"A feature or quality that an animal has, which helps you tell what it is.",
+    answer:"a characteristic", choices:["a characteristic","a predator","camouflage"] },
+  { cover:"characteristic", tier:3, type:"grammar", open:false, clue:"Choose the correct sentence:",
+    answer:"A long neck is one characteristic of a giraffe.",
+    choices:["A long neck is one characteristic of a giraffe.","A long neck is one characteristic for a giraffe.","A long neck is one characteristic to a giraffe."] },
+
+  { cover:"copy", tier:1, type:"vocab", open:true, clue:"To do exactly the same thing as somebody or something else.",
+    answer:"copy", choices:["copy","hunt","escape"] },
+  { cover:"copy", tier:2, type:"vocab", open:true, clue:"Complete it: 'Baby birds learn their song by ___ing the adults around them.'",
+    answer:"copy", choices:["copy","frighten","defend"] },
+
+  { cover:"frighten", tier:1, type:"vocab", open:true, clue:"To make another creature feel afraid.",
+    answer:"frighten", choices:["frighten","resemble","avoid"] },
+  { cover:"frighten", tier:2, type:"vocab", open:true, clue:"Complete it: 'The caterpillar shows two huge fake eyes to ___ birds away.'",
+    answer:"frighten", choices:["frighten","imitate","hide"] },
+
+  { cover:"hide", tier:1, type:"vocab", open:true, clue:"To go somewhere you cannot be seen, or to put something where nobody will find it.",
+    answer:"hide", choices:["hide","hunt","attack"] },
+  { cover:"hide", tier:2, type:"vocab", open:true, clue:"Complete it: 'When the eagle appears, the small lizards ___ under the rocks.'",
+    answer:"hide", choices:["hide","copy","confuse"] },
+
+  { cover:"hunt", tier:1, type:"vocab", open:true, clue:"To chase and catch other animals for food.",
+    answer:"hunt", choices:["hunt","hide","resemble"] },
+  { cover:"hunt", tier:2, type:"vocab", open:true, clue:"Complete it: 'Owls ___ at night, when their prey cannot see them coming.'",
+    answer:"hunt", choices:["hunt","escape","imitate"] },
+
+  { cover:"imitate", tier:1, type:"vocab", open:true, clue:"To copy the way something else looks, sounds or behaves.",
+    answer:"imitate", choices:["imitate","frighten","defend"] },
+  { cover:"imitate", tier:2, type:"vocab", open:true, clue:"Complete it: 'Some harmless snakes ___ the bright colours of poisonous ones.'",
+    answer:"imitate", choices:["imitate","avoid","hunt"] },
+  { cover:"imitate", tier:3, type:"grammar", open:false, clue:"Choose the correct sentence:",
+    answer:"The bird imitates the sound of a car alarm.",
+    choices:["The bird imitates the sound of a car alarm.","The bird imitates to the sound of a car alarm.","The bird imitate the sound of a car alarm."] },
+
+  { cover:"insect", tier:1, type:"vocab", open:true, clue:"A small creature with six legs and usually two pairs of wings.",
+    answer:"an insect", choices:["an insect","a species","a predator"] },
+  { cover:"insect", tier:2, type:"vocab", open:true, clue:"Complete it: 'A beetle is an ___, but a spider is not one.'",
+    answer:"insect", choices:["insect","prey","imitate"] },
+
+  { cover:"poisonous", tier:1, type:"vocab", open:true, clue:"Describes an animal or plant that can make you very ill if you touch or eat it.",
+    answer:"poisonous", choices:["poisonous","striped","spotted"] },
+  { cover:"poisonous", tier:2, type:"vocab", open:true, clue:"Complete it: 'Bright colours often warn other animals that a frog is ___.'",
+    answer:"poisonous", choices:["poisonous","hidden","gentle"] },
+
+  { cover:"predator", tier:1, type:"vocab", open:true, clue:"An animal that hunts and eats other animals.",
+    answer:"a predator", choices:["a predator","prey","an insect"] },
+  { cover:"predator", tier:2, type:"vocab", open:true, clue:"Complete it: 'A tiger is a ___, and a deer is usually its prey.'",
+    answer:"predator", choices:["predator","species","characteristic"] },
+
+  { cover:"prey", tier:1, type:"vocab", open:true, clue:"An animal that is hunted and eaten by another animal.",
+    answer:"prey", choices:["prey","a predator","a species"] },
+  { cover:"prey", tier:2, type:"vocab", open:true, clue:"Complete it: 'The rabbit is ___ for foxes, owls and eagles.'",
+    answer:"prey", choices:["prey","a predator","camouflage"] },
+
+  { cover:"resemble", tier:1, type:"vocab", open:true, clue:"To look like something else.",
+    answer:"resemble", choices:["resemble","frighten","escape"] },
+  { cover:"resemble", tier:2, type:"vocab", open:true, clue:"Complete it: 'The stick insect's body ___s a thin brown twig.'",
+    answer:"resemble", choices:["resemble","attack","avoid"] },
+  { cover:"resemble", tier:3, type:"grammar", open:false, clue:"Choose the correct sentence:",
+    answer:"This caterpillar resembles a small green snake.",
+    choices:["This caterpillar resembles a small green snake.","This caterpillar resembles to a small green snake.","This caterpillar resembles like a small green snake."] },
+
+  { cover:"species", tier:1, type:"vocab", open:true, clue:"A group of animals or plants of the same kind that can have young together.",
+    answer:"a species", choices:["a species","a characteristic","a predator"] },
+  { cover:"species", tier:2, type:"vocab", open:true, clue:"Complete it: 'Scientists have found more than one ___ of butterfly in this forest.'",
+    answer:"species", choices:["species","stripe","insect"] },
+
+  { cover:"spot", tier:1, type:"vocab", open:true, clue:"A small round mark of a different colour on an animal's skin or fur.",
+    answer:"a spot", choices:["a spot","a stripe","a species"] },
+  { cover:"spot", tier:2, type:"vocab", open:true, clue:"Complete it: 'A leopard has ___s, and a zebra has stripes.'",
+    answer:"spot", choices:["spot","stripe","prey"] },
+
+  { cover:"stripe", tier:1, type:"vocab", open:true, clue:"A long band of colour, like the black lines on a zebra.",
+    answer:"a stripe", choices:["a stripe","a spot","a characteristic"] },
+  { cover:"stripe", tier:2, type:"vocab", open:true, clue:"Complete it: 'The tiger's orange and black ___s help it hide in long grass.'",
+    answer:"stripe", choices:["stripe","spot","species"] },
+
+  // ===================== VOCABULARY 2: action verbs ========================
+  { cover:"attack", tier:1, type:"vocab", open:true, clue:"To start fighting or trying to hurt something.",
+    answer:"attack", choices:["attack","defend","avoid"] },
+  { cover:"attack", tier:2, type:"vocab", open:true, clue:"Complete it: 'Most snakes will only ___ if they feel trapped.'",
+    answer:"attack", choices:["attack","escape","resemble"] },
+
+  { cover:"avoid", tier:1, type:"vocab", open:true, clue:"To stay away from something, or to keep something from happening.",
+    answer:"avoid", choices:["avoid","attack","hunt"] },
+  { cover:"avoid", tier:2, type:"vocab", open:true, clue:"Complete it: 'Birds learn to ___ this butterfly because it tastes terrible.'",
+    answer:"avoid", choices:["avoid","imitate","frighten"] },
+
+  { cover:"confuse", tier:1, type:"vocab", open:true, clue:"To make somebody unable to think clearly or understand what is happening.",
+    answer:"confuse", choices:["confuse","defend","hide"] },
+  { cover:"confuse", tier:2, type:"vocab", open:true, clue:"Complete it: 'A zebra herd runs together to ___ the lion chasing them.'",
+    answer:"confuse", choices:["confuse","copy","hunt"] },
+
+  { cover:"defend", tier:1, type:"vocab", open:true, clue:"To protect somebody or something from attack.",
+    answer:"defend", choices:["defend","attack","escape"] },
+  { cover:"defend", tier:2, type:"vocab", open:true, clue:"Complete it: 'The mother elephant will ___ her calf against anything.'",
+    answer:"defend", choices:["defend","avoid","imitate"] },
+
+  { cover:"escape", tier:1, type:"vocab", open:true, clue:"To get away from a place or a dangerous situation.",
+    answer:"escape", choices:["escape","attack","resemble"] },
+  { cover:"escape", tier:2, type:"vocab", open:true, clue:"Complete it: 'The lizard drops its tail so it can ___ from the bird.'",
+    answer:"escape", choices:["escape","defend","confuse"] },
+];
+
+// --- grammar, skills and functions, same bank ---
+const REALM2_GRAMMAR = [
+  // ===================== GRAMMAR: comparisons with as ... as ================
+  // The structure is as + adjective + as. The commonest Grade 5 errors are
+  // dropping the second `as`, using `so` for the first one, and reaching for a
+  // comparative form (`as bigger as`), so the distractors are exactly those.
+  { cover:"as_as_equal", tier:2, type:"grammar", open:false, clue:"Choose the correct sentence:",
+    answer:"This moth is as small as your thumbnail.",
+    choices:["This moth is as small as your thumbnail.","This moth is as smaller as your thumbnail.","This moth is as small than your thumbnail."] },
+  { cover:"as_as_equal", tier:2, type:"grammar", open:true, clue:"Finish it with as ... as: 'A cheetah is ___ ___ ___ a racing car over short distances.'",
+    answer:"as fast as", choices:["as fast as","as faster as","so fast as"] },
+  { cover:"as_as_equal", tier:3, type:"grammar", open:false, clue:"Choose the correct sentence:",
+    answer:"Her camouflage is as good as his.",
+    choices:["Her camouflage is as good as his.","Her camouflage is as well as his.","Her camouflage is as good than his."] },
+
+  { cover:"as_as_negative", tier:2, type:"grammar", open:false, clue:"Choose the correct sentence:",
+    answer:"A rabbit is not as heavy as a deer.",
+    choices:["A rabbit is not as heavy as a deer.","A rabbit is not as heavier as a deer.","A rabbit is not so heavy than a deer."] },
+  { cover:"as_as_negative", tier:3, type:"grammar", open:true, clue:"Say it the other way round. 'A python is longer than a viper.' So a viper is NOT ___ ___ ___ a python.",
+    answer:"as long as", choices:["as long as","as longer as","so longer as"] },
+
+  { cover:"as_as_meaning", tier:2, type:"grammar", open:true, clue:"'The fake snake is as poisonous as the real one.' Is the fake one MORE poisonous, LESS poisonous, or THE SAME?",
+    answer:"the same", choices:["the same","more poisonous","less poisonous"] },
+  { cover:"as_as_meaning", tier:3, type:"grammar", open:true, clue:"'This beetle is not as fast as that one.' Which beetle is faster — this one or that one?",
+    answer:"that one", choices:["that one","this one","they are the same"] },
+
+  // ===================== GRAMMAR: tag questions =============================
+  // The rule the unit teaches: positive statement takes a negative tag, and a
+  // negative statement takes a positive tag. The auxiliary in the tag has to
+  // match the verb in the statement.
+  { cover:"tag_positive", tier:2, type:"grammar", open:true, clue:"Add the tag: 'That insect is poisonous, ___ ___?'",
+    answer:"isn't it", choices:["isn't it","is it","doesn't it"] },
+  { cover:"tag_positive", tier:2, type:"grammar", open:false, clue:"Choose the correct sentence:",
+    answer:"Owls hunt at night, don't they?",
+    choices:["Owls hunt at night, don't they?","Owls hunt at night, do they?","Owls hunt at night, aren't they?"] },
+  { cover:"tag_positive", tier:3, type:"grammar", open:true, clue:"Add the tag: 'The stick insect resembles a twig, ___ ___?'",
+    answer:"doesn't it", choices:["doesn't it","isn't it","don't it"] },
+
+  { cover:"tag_negative", tier:2, type:"grammar", open:true, clue:"Add the tag: 'Zebras aren't predators, ___ ___?'",
+    answer:"are they", choices:["are they","aren't they","do they"] },
+  { cover:"tag_negative", tier:2, type:"grammar", open:false, clue:"Choose the correct sentence:",
+    answer:"You didn't see the camouflage, did you?",
+    choices:["You didn't see the camouflage, did you?","You didn't see the camouflage, didn't you?","You didn't see the camouflage, do you?"] },
+  { cover:"tag_negative", tier:3, type:"grammar", open:true, clue:"Add the tag: 'These frogs can't escape, ___ ___?'",
+    answer:"can they", choices:["can they","can't they","do they"] },
+
+  { cover:"tag_rule", tier:3, type:"grammar", open:true, clue:"If the sentence is POSITIVE, is the tag question at the end positive or negative?",
+    answer:"negative", choices:["negative","positive","either one"] },
+  { cover:"tag_rule", tier:3, type:"grammar", open:false, clue:"Which one has the WRONG tag?",
+    answer:"The leopard has spots, hasn't the leopard?",
+    choices:["The leopard has spots, hasn't the leopard?","The leopard has spots, doesn't it?","The leopard doesn't have stripes, does it?"] },
+
+  // ===================== SKILLS & FUNCTIONS ================================
+  { cover:"describe_animals", tier:2, type:"function", open:true, clue:"You want to describe a tiger's markings. Which word do you need — spots or stripes?",
+    answer:"stripes", choices:["stripes","spots","species"] },
+  { cover:"describe_animals", tier:3, type:"function", open:false, clue:"Choose the best description of a ladybird:",
+    answer:"It is a small red insect with black spots.",
+    choices:["It is a small red insect with black spots.","It is a small red insect with black stripes.","It is a small red predator with black spots."] },
+
+  { cover:"compare_animals", tier:2, type:"function", open:true, clue:"You want to say two animals are EQUALLY good at hiding. Which structure do you use?",
+    answer:"as good as", choices:["as good as","better than","the best"] },
+  { cover:"compare_animals", tier:3, type:"function", open:false, clue:"Choose the sentence that compares two animals correctly:",
+    answer:"A gecko is as quiet as a moth.",
+    choices:["A gecko is as quiet as a moth.","A gecko is as quieter as a moth.","A gecko is quiet as a moth than."] },
+
+  { cover:"imitation_talk", tier:2, type:"function", open:true, clue:"A harmless fly has the same yellow and black bands as a wasp. Which verb describes what the fly is doing?",
+    answer:"imitating", choices:["imitating","hunting","escaping"] },
+  { cover:"imitation_talk", tier:3, type:"function", open:true, clue:"Why would a harmless animal copy a poisonous one? Because predators will ___ it.",
+    answer:"avoid", choices:["avoid","attack","hunt"] },
+
+  { cover:"classification", tier:2, type:"function", open:true, clue:"In classification writing you sort animals into ___ — groups of the same kind.",
+    answer:"species", choices:["species","stripes","prey"] },
+  { cover:"classification", tier:3, type:"function", open:false, clue:"Which sentence belongs in a classification text?",
+    answer:"Insects can be divided into several groups.",
+    choices:["Insects can be divided into several groups.","I really love looking at insects.","The insect ran away quickly yesterday."] },
+
+  { cover:"dictionary_use", tier:2, type:"function", open:true, clue:"You look up a word and the dictionary says it is a NOUN. Is it a naming word, an action word, or a describing word?",
+    answer:"a naming word", choices:["a naming word","an action word","a describing word"] },
+  { cover:"dictionary_use", tier:3, type:"function", open:false, clue:"Which words would you find between 'camouflage' and 'copy' in a dictionary?",
+    answer:"characteristic, confuse",
+    choices:["characteristic, confuse","attack, avoid","predator, species"] },
+
+  { cover:"scan_text", tier:2, type:"function", open:true, clue:"You need ONE fact from a long text and you do not want to read every word. What is that reading skill called?",
+    answer:"scanning", choices:["scanning","copying","classifying"] },
+  { cover:"scan_text", tier:3, type:"function", open:false, clue:"You are scanning a text to find how many species were counted. What should your eyes look for?",
+    answer:"numbers", choices:["numbers","adjectives","the title"] },
+];
+
+// ---------------------------------------------------------------------------
+// ELITE BANK — tier 4.
+//
+// These ask students to USE Unit 2's language rather than recognise it: apply
+// a rule, choose between two words that are genuinely close in meaning, or
+// reason about why an animal does what it does. Every cover key in the realm
+// appears here, because the Boss's health IS the count of curriculum items the
+// class has not yet faced, and it draws the hard version wherever one exists.
+// ---------------------------------------------------------------------------
+
+const REALM2_ELITE_QUESTIONS = [
+  // ---- vocabulary used, not recognised ----
+  { cover:"camouflage", tier:4, type:"vocab", open:true, clue:"An animal is brown and grey and sits still on tree bark all day. Give the ONE word for what it is using.",
+    answer:"camouflage", choices:["camouflage","imitation","classification"] },
+  { cover:"camouflage", tier:4, type:"grammar", open:false, clue:"Choose the correct sentence:",
+    answer:"Its camouflage works best when it does not move.",
+    choices:["Its camouflage works best when it does not move.","It's camouflage works best when it does not move.","Its camouflage work best when it does not move."] },
+
+  { cover:"characteristic", tier:4, type:"function", open:true, clue:"Finish the classification sentence: 'One ___ of all insects is that they have six legs.'",
+    answer:"characteristic", choices:["characteristic","species","camouflage"] },
+
+  { cover:"copy", tier:4, type:"vocab", open:true, clue:"Which is closer in meaning to 'copy' — imitate, or invent?",
+    answer:"imitate", choices:["imitate","invent","escape"] },
+
+  { cover:"frighten", tier:4, type:"grammar", open:true, clue:"Put it in the past: 'The sudden noise ___ every bird out of the tree.'",
+    answer:"frightened", choices:["frightened","frighten","frightens"] },
+
+  { cover:"hide", tier:4, type:"function", open:true, clue:"A predator is close by. Does the prey animal hide, hunt, or attack?",
+    answer:"hide", choices:["hide","hunt","attack"] },
+
+  { cover:"hunt", tier:4, type:"grammar", open:false, clue:"Choose the correct sentence:",
+    answer:"Wolves hunt in groups called packs.",
+    choices:["Wolves hunt in groups called packs.","Wolves hunts in groups called packs.","Wolves are hunt in groups called packs."] },
+
+  { cover:"imitate", tier:4, type:"function", open:true, clue:"A hoverfly has yellow and black bands but no sting. Which poisonous insect is it imitating?",
+    answer:"a wasp", choices:["a wasp","a beetle","a moth"] },
+  { cover:"imitate", tier:4, type:"vocab", open:true, clue:"Which word means to copy something so well that others are fooled by it?",
+    answer:"imitate", choices:["imitate","resemble","confuse"] },
+
+  { cover:"insect", tier:4, type:"function", open:true, clue:"A spider has eight legs. Using the unit's rule, is a spider an insect — yes or no?",
+    answer:"no", choices:["no","yes","only sometimes"] },
+
+  { cover:"poisonous", tier:4, type:"function", open:true, clue:"A frog is bright red and blue. What is that colouring most likely warning predators about?",
+    answer:"it is poisonous", choices:["it is poisonous","it is fast","it is young"] },
+
+  { cover:"predator", tier:4, type:"function", open:true, clue:"An eagle eats fish. In that sentence, which word describes the eagle — predator or prey?",
+    answer:"predator", choices:["predator","prey","species"] },
+
+  { cover:"prey", tier:4, type:"grammar", open:false, clue:"Choose the correct sentence:",
+    answer:"The owl watched its prey from the branch.",
+    choices:["The owl watched its prey from the branch.","The owl watched its prey's from the branch.","The owl watched it prey from the branch."] },
+
+  { cover:"resemble", tier:4, type:"vocab", open:true, clue:"'Resemble' and 'imitate' are close. Which one means only to LOOK like something, without copying its behaviour?",
+    answer:"resemble", choices:["resemble","imitate","confuse"] },
+
+  { cover:"species", tier:4, type:"function", open:true, clue:"Two animals look different but can have young together. Are they the same species or different species?",
+    answer:"the same species", choices:["the same species","different species","neither"] },
+
+  { cover:"spot", tier:4, type:"function", open:true, clue:"Describe a leopard's markings in one word.",
+    answer:"spots", choices:["spots","stripes","bands"] },
+
+  { cover:"stripe", tier:4, type:"function", open:true, clue:"Why might a zebra's stripes help it survive in a running herd?",
+    answer:"they confuse predators", choices:["they confuse predators","they frighten insects","they make it faster"] },
+
+  // ---- action verbs, applied ----
+  { cover:"attack", tier:4, type:"grammar", open:true, clue:"Put it in the past: 'The wasp ___ as soon as we touched the nest.'",
+    answer:"attacked", choices:["attacked","attack","attacks"] },
+
+  { cover:"avoid", tier:4, type:"function", open:true, clue:"Birds have learned this butterfly tastes terrible. What do they now do — avoid it, or attack it?",
+    answer:"avoid it", choices:["avoid it","attack it","imitate it"] },
+
+  { cover:"confuse", tier:4, type:"function", open:true, clue:"A squid releases a cloud of black ink. Which verb best describes the effect on the predator?",
+    answer:"confuse", choices:["confuse","defend","resemble"] },
+
+  { cover:"defend", tier:4, type:"vocab", open:true, clue:"Which pair are OPPOSITES — attack and defend, or attack and hunt?",
+    answer:"attack and defend", choices:["attack and defend","attack and hunt","hide and escape"] },
+
+  { cover:"escape", tier:4, type:"grammar", open:false, clue:"Choose the correct sentence:",
+    answer:"The lizard escaped by dropping its tail.",
+    choices:["The lizard escaped by dropping its tail.","The lizard escaped for dropping its tail.","The lizard escape by dropping its tail."] },
+
+  // ---- as ... as, used ----
+  { cover:"as_as_equal", tier:4, type:"grammar", open:true, clue:"Join them with as ... as: 'The moth is 4cm. The leaf is 4cm.' The moth is ___ ___ ___ the leaf.",
+    answer:"as long as", choices:["as long as","as longer as","so long as"] },
+  { cover:"as_as_equal", tier:4, type:"grammar", open:false, clue:"Choose the correct sentence:",
+    answer:"This spider is as dangerous as it looks.",
+    choices:["This spider is as dangerous as it looks.","This spider is as dangerous than it looks.","This spider is dangerous as it looks."] },
+
+  { cover:"as_as_negative", tier:4, type:"grammar", open:true, clue:"Rewrite with 'not as ... as': 'The gecko is smaller than the iguana.' The gecko is not ___ ___ ___ the iguana.",
+    answer:"as big as", choices:["as big as","as bigger as","as small as"] },
+  { cover:"as_as_negative", tier:4, type:"grammar", open:false, clue:"Choose the correct sentence:",
+    answer:"A moth is not as colourful as a butterfly.",
+    choices:["A moth is not as colourful as a butterfly.","A moth is not as more colourful as a butterfly.","A moth is not so colourful than a butterfly."] },
+
+  { cover:"as_as_meaning", tier:4, type:"function", open:true, clue:"'The copy is not as poisonous as the original.' Which one is MORE dangerous?",
+    answer:"the original", choices:["the original","the copy","they are equal"] },
+  { cover:"as_as_meaning", tier:4, type:"function", open:true, clue:"'This lizard is as still as a stone.' Is the lizard moving a lot, a little, or not at all?",
+    answer:"not at all", choices:["not at all","a little","a lot"] },
+
+  // ---- tag questions, used ----
+  { cover:"tag_positive", tier:4, type:"grammar", open:true, clue:"Add the tag: 'Those beetles imitate ants, ___ ___?'",
+    answer:"don't they", choices:["don't they","do they","aren't they"] },
+  { cover:"tag_positive", tier:4, type:"grammar", open:true, clue:"Add the tag: 'She has seen the camouflage, ___ ___?'",
+    answer:"hasn't she", choices:["hasn't she","doesn't she","isn't she"] },
+
+  { cover:"tag_negative", tier:4, type:"grammar", open:true, clue:"Add the tag: 'The insect didn't escape, ___ ___?'",
+    answer:"did it", choices:["did it","didn't it","does it"] },
+  { cover:"tag_negative", tier:4, type:"grammar", open:true, clue:"Add the tag: 'They weren't hunting, ___ ___?'",
+    answer:"were they", choices:["were they","weren't they","did they"] },
+
+  { cover:"tag_rule", tier:4, type:"grammar", open:false, clue:"Which sentence uses BOTH rules correctly?",
+    answer:"It's poisonous, isn't it? And it isn't harmless, is it?",
+    choices:["It's poisonous, isn't it? And it isn't harmless, is it?","It's poisonous, is it? And it isn't harmless, isn't it?","It's poisonous, doesn't it? And it isn't harmless, do it?"] },
+  { cover:"tag_rule", tier:4, type:"grammar", open:true, clue:"The statement uses CAN'T. Which word must the tag use?",
+    answer:"can", choices:["can","can't","do"] },
+
+  // ---- skills, applied ----
+  { cover:"describe_animals", tier:4, type:"function", open:false, clue:"Choose the most complete description:",
+    answer:"It is a large striped predator that hunts alone.",
+    choices:["It is a large striped predator that hunts alone.","It is a large animal.","It is striped."] },
+
+  { cover:"compare_animals", tier:4, type:"function", open:true, clue:"Compare them in one structure: a chameleon and an octopus are equally good at changing colour. A chameleon is ___ ___ ___ an octopus at hiding.",
+    answer:"as good as", choices:["as good as","better than","as better as"] },
+
+  { cover:"imitation_talk", tier:4, type:"function", open:true, clue:"A moth's wings have two huge circles that look like owl eyes. What is the moth trying to do to birds?",
+    answer:"frighten them", choices:["frighten them","attract them","imitate their song"] },
+  { cover:"imitation_talk", tier:4, type:"function", open:true, clue:"Which is the better description of a harmless snake with a poisonous snake's colours — it resembles it, or it hunts it?",
+    answer:"it resembles it", choices:["it resembles it","it hunts it","it defends it"] },
+
+  { cover:"classification", tier:4, type:"function", open:false, clue:"Which opening belongs in a classification text about insects?",
+    answer:"There are three main groups of insect in this habitat.",
+    choices:["There are three main groups of insect in this habitat.","Yesterday I caught a beautiful insect.","Insects are the best animals in the world."] },
+  { cover:"classification", tier:4, type:"function", open:true, clue:"Classification writing puts things into groups. Which unit word means one of those groups?",
+    answer:"species", choices:["species","characteristic","camouflage"] },
+
+  { cover:"dictionary_use", tier:4, type:"function", open:true, clue:"Your dictionary shows 'poisonous (adj)'. Which unit word would come immediately BEFORE it alphabetically — predator or prey?",
+    answer:"predator", choices:["predator","prey","resemble"] },
+  { cover:"dictionary_use", tier:4, type:"function", open:false, clue:"Which list is in correct dictionary order?",
+    answer:"attack, avoid, confuse, defend, escape",
+    choices:["attack, avoid, confuse, defend, escape","avoid, attack, defend, confuse, escape","escape, defend, confuse, avoid, attack"] },
+
+  { cover:"scan_text", tier:4, type:"function", open:true, clue:"The question asks WHERE the species lives. When you scan, what kind of word are you hunting for?",
+    answer:"a place name", choices:["a place name","a number","a verb"] },
+];
+
+
+// ---------------------------------------------------------------------------
+// THE CAST
+//
+// Every creature here is a camouflage strategy, so the monsters ARE the
+// vocabulary. A Stick Moth resembles a twig; a Mimic Jay imitates; the Hollow
+// Fox is barely there at all. Mechanically they lean on GUARD and CHARGE far
+// more than Realm 1's storm cast, which was built on flurries and drains -
+// the Stormlands hit you, the Wildlands wait for you.
+// ---------------------------------------------------------------------------
+// ART STAND-INS. Every sprite path below currently points at its Realm 1
+// counterpart, so the realm is fully playable and testable TODAY. Swap the 17
+// paths (and the `artPending` flag on the realm) the moment the Wildlands art
+// lands - see realm2-art-brief.md for what each one is meant to be.
+const REALM2_MONSTERS = [
+  { id:"stickmoth", name:"Stick Moth", sprite:"assets/sprites/wisp.png",
+    voice:"glass", pitch:290, size:0.30,
+    taunt:"What you took for a dead twig unfolds into wings!",
+    attacks:[{kind:"hit",dmg:1},{kind:"guard"}], special:null, cadence:3 },
+
+  { id:"leafback", name:"Leafback Toad", sprite:"assets/sprites/husk.png",
+    voice:"growl", pitch:150, size:0.34,
+    taunt:"A mound of leaves blinks, and croaks!",
+    attacks:[{kind:"hit",dmg:1},{kind:"flurry",dmg:1,hits:2}], special:null, cadence:3 },
+
+  { id:"bramblecat", name:"Bramble Cat", sprite:"assets/sprites/fang.png",
+    voice:"shriek", pitch:300, size:0.42,
+    taunt:"The thorn bush uncoils and shows its teeth!",
+    attacks:[{kind:"hit",dmg:1},{kind:"heavy",dmg:2}], special:"expose", cadence:3 },
+
+  { id:"mimicjay", name:"Mimic Jay", sprite:"assets/sprites/crow.png",
+    voice:"shriek", pitch:340, size:0.30,
+    taunt:"The Mimic Jay calls out in somebody else's voice!",
+    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:1,shards:5}], special:"confuse", cadence:3 },
+
+  { id:"pebbleshell", name:"Pebbleshell Crab", sprite:"assets/sprites/shimmer.png",
+    voice:"glass", pitch:220, size:0.24,
+    taunt:"One of the river stones is walking sideways!",
+    attacks:[{kind:"guard"},{kind:"hit",dmg:1}], special:null, cadence:3 },
+
+  { id:"driftstag", name:"Driftwood Stag", sprite:"assets/sprites/serpent.png",
+    voice:"roar", pitch:110, size:0.62,
+    taunt:"The fallen branches stand up on four legs!",
+    attacks:[{kind:"heavy",dmg:2},{kind:"charge",dmg:3,turns:2}], special:null, cadence:3 },
+
+  { id:"glasslizard", name:"Glass Lizard", sprite:"assets/sprites/permafrost.png",
+    voice:"whoosh", pitch:260, size:0.28,
+    taunt:"You can see the forest straight through it!",
+    attacks:[{kind:"hit",dmg:1},{kind:"guard"}], special:"chill", cadence:3 },
+
+  { id:"ashmoth", name:"Ashwing", sprite:"assets/sprites/funnel.png",
+    voice:"whoosh", pitch:200, size:0.36,
+    taunt:"Ash lifts off the burnt bark on grey wings!",
+    attacks:[{kind:"flurry",dmg:1,hits:2},{kind:"hit",dmg:1}], special:"expose", cadence:3 },
+
+  { id:"burrower", name:"Sand Burrower", sprite:"assets/sprites/eyewalker.png",
+    voice:"growl", pitch:130, size:0.34,
+    taunt:"The ground erupts and something eyeless rears up!",
+    attacks:[{kind:"charge",dmg:3,turns:2},{kind:"hit",dmg:1}], special:null, cadence:3 },
+
+  { id:"thornhog", name:"Thornhog", sprite:"assets/sprites/brute.png",
+    voice:"growl", pitch:120, size:0.40,
+    taunt:"A Thornhog lowers its splintered tusks!",
+    attacks:[{kind:"heavy",dmg:2},{kind:"hit",dmg:1}], special:null, cadence:3 },
+
+  { id:"hollowfox", name:"Hollow Fox", sprite:"assets/sprites/siren.png",
+    voice:"whoosh", pitch:180, size:0.44,
+    taunt:"Dead leaves swirl into the shape of a fox — and two pale eyes open!",
+    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:1,shards:7}], special:"confuse", cadence:3 },
+
+  { id:"mossbear", name:"Moss Bear", sprite:"assets/sprites/wyrm.png",
+    voice:"roar", pitch:96, size:0.70,
+    taunt:"The mossy boulder rises onto its hind legs. It is not a boulder.",
+    attacks:[{kind:"heavy",dmg:2},{kind:"regen"}], special:null, cadence:3 },
+];
+
+const REALM2_ELITES = [
+  { id:"canopy", name:"The Watcher in the Canopy", sprite:"assets/sprites/warden.png",
+    voice:"shriek", pitch:150, size:0.84,
+    taunt:"Four amber eyes open in the bark above you. It has been watching a while.",
+    attacks:[{kind:"heavy",dmg:2},{kind:"guard"},{kind:"charge",dmg:3,turns:2}],
+    special:"expose", cadence:3 },
+
+  { id:"patient", name:"The Patient One", sprite:"assets/sprites/herald.png",
+    voice:"glass", pitch:170, size:0.82,
+    taunt:"What you walked past twice unfolds its forelimbs. It was waiting.",
+    attacks:[{kind:"guard"},{kind:"charge",dmg:4,turns:2},{kind:"hit",dmg:2}],
+    special:"chill", cadence:3 },
+
+  { id:"roottyrant", name:"Root Tyrant", sprite:"assets/sprites/colossus.png",
+    voice:"roar", pitch:88, size:0.92,
+    taunt:"The forest floor stands up, and it is shaped like a man.",
+    attacks:[{kind:"heavy",dmg:3},{kind:"regen"},{kind:"flurry",dmg:1,hits:3}],
+    special:null, cadence:3 },
+
+  { id:"skintaker", name:"The Skin-Taker", sprite:"assets/sprites/djinn.png",
+    voice:"shriek", pitch:130, size:0.86,
+    taunt:"It is wearing a hundred animals, and it would like one more.",
+    attacks:[{kind:"drain",dmg:2,shards:12},{kind:"heavy",dmg:2},{kind:"guard"}],
+    special:"confuse", cadence:3 },
+];
+
+// the two standard banks are one pool as far as the game is concerned
+const REALM2_ALL_QUESTIONS = REALM2_QUESTIONS.concat(REALM2_GRAMMAR);
+
+const REALM2_COVER_KEYS = [...new Set(REALM2_ALL_QUESTIONS.map(q => q.cover))];
+
+function questionsForCoverR2(cover, preferElite = false) {
+  const basic = REALM2_ALL_QUESTIONS.filter(q => q.cover === cover);
+  const elite = REALM2_ELITE_QUESTIONS.filter(q => q.cover === cover);
+  if (preferElite && elite.length) return elite;
+  return basic;
+}
+
 const REALMS = {
   1: {
     id: 1,
@@ -492,7 +972,29 @@ const REALMS = {
     coverKeys: REALM1_COVER_KEYS,
     ready: true,
   },
-  2:{ id:2, name:"The Wildlands",        theme:"Animals & Camouflage",     ready:false },
+  2: {
+    id: 2,
+    name: "The Wildlands",
+    theme: "Animals & Camouflage",
+    unit: "Unit 2 — Copycat Animals",
+    sky: "forest",
+    monsters: REALM2_MONSTERS,
+    elites: REALM2_ELITES,
+    boss: { id:"camouflage", name:"The Great Camouflage",
+            sprite:"assets/sprites/titan.png",
+            voice:"roar", pitch:64, size:1.00,
+            taunt:"THE FOREST ITSELF STANDS UP.",
+            attacks:[{kind:"heavy",dmg:3},{kind:"guard"},
+                     {kind:"charge",dmg:4,turns:2},{kind:"flurry",dmg:1,hits:3},
+                     {kind:"drain",dmg:1,shards:10}],
+            special:"confuse", cadence:3 },
+    npc: { name:"The Tracker", sprite:"assets/sprites/chaser.png" },
+    artPending: true,     // sprites are Realm 1 stand-ins until the art lands
+    questions: REALM2_ALL_QUESTIONS,
+    eliteQuestions: REALM2_ELITE_QUESTIONS,
+    coverKeys: REALM2_COVER_KEYS,
+    ready: true,
+  },
   3:{ id:3, name:"The Concert Caverns",  theme:"Music",                    ready:false },
   4:{ id:4, name:"The Void Station",     theme:"Outer Space",              ready:false },
   5:{ id:5, name:"The Memory Archive",   theme:"Culture & Traditions",     ready:false },

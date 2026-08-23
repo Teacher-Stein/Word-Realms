@@ -13,6 +13,7 @@ Then:
     python3 tools/tests/test_announce.py      # the arena banner is readable
     python3 tools/tests/test_reachable.py     # no item exists that nothing can grant
     python3 tools/tests/test_events.py        # every event states both sides
+    node    tools/tests/check_content.js      # every realm's question bank is sound
     node    tools/tests/balance_sim.js        # wipe rates, questions per run
 
 ## What each one is guarding
@@ -95,3 +96,20 @@ It also statically forbids any event from touching monster HP or moving the
 party between nodes (either would reduce the number of questions asked), sets
 the party up so every conditional event can be forced, and plays a Riddle Gate
 end to end to confirm a quiz event really does ask the questions it advertises.
+
+**check_content.js** validates every `ready` realm's question bank before a
+class sees it. It catches the errors a human makes writing a hundred questions
+in one sitting, all of which are invisible until a child is standing in front
+of the TV: an answer that is not among its own choices, a distractor that is
+the answer with an article stripped, a missing `open` flag, a tier outside 1-4,
+a curriculum item with only one question, a key with no elite version, two
+identical questions, and a thin blind-call pool.
+
+The subtlest check is the `open` one, and it took two passes to get right.
+A question tagged `open` must be answerable from the clue alone. The first
+version flagged any clue containing "which one", which wrongly condemned
+*"'Resemble' and 'imitate' are close. Which one means only to LOOK like
+something?"* — perfectly answerable aloud, because the clue names both
+candidates. The rule is now: flag a clue that points at the options **and** does
+not contain the answer. Verified by planting a genuinely unanswerable question
+and confirming it is still caught.

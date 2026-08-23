@@ -122,7 +122,9 @@ function renderMenu() {
       <div class="realm-card-status">${
         !unlocked ? "🔒 Locked"
         : !realm.ready ? "Coming soon"
-        : inProgress ? "Resume →" : "Enter →"}</div>`;
+        : inProgress ? "Resume →" : "Enter →"}</div>
+      ${realm.artPending && realm.ready
+        ? '<div class="realm-card-note">Playable · artwork still to come</div>' : ""}`;
     if (playable) card.addEventListener("click", () => window.enterRealm(realm.id));
     grid.appendChild(card);
   });
