@@ -13,6 +13,8 @@ Then:
     python3 tools/tests/test_announce.py      # the arena banner is readable
     python3 tools/tests/test_reachable.py     # no item exists that nothing can grant
     python3 tools/tests/test_events.py        # every event states both sides
+    python3 tools/tests/test_art.py           # every sprite exists, fits and reads
+    python3 tools/tests/shot_realm2.py        # Realm 2's art in a real browser
     node    tools/tests/check_content.js      # every realm's question bank is sound
     node    tools/tests/balance_sim.js        # wipe rates, questions per run
 
@@ -113,3 +115,41 @@ something?"* — perfectly answerable aloud, because the clue names both
 candidates. The rule is now: flag a clue that points at the options **and** does
 not contain the answer. Verified by planting a genuinely unanswerable question
 and confirming it is still caught.
+
+
+**test_art.py** is the art half of test_reachable.py. Realm 2 shipped in v5.9
+with all seventeen sprite paths pointing at Realm 1's cast as documented
+stand-ins, and nothing in the suite could tell a deliberate stand-in from a
+path someone forgot to swap. This one fails if a sprite or backdrop is missing,
+if a ready realm borrows another realm's art, if two realms share a file, if
+the chroma key left magenta behind, if a sprite falls outside the size band the
+arena is built for — or if a backdrop is BRIGHTER than the heroes standing on
+it. That last check is not decoration: the party is 59-75 luminance points
+brighter than the room everywhere in Realm 1, and that is what makes four small
+figures readable across a classroom. Realm 2's sunlit forest arrived at
+luminance 117 against a hero at 85 and inverted it. It was invisible as a
+problem on a laptop and would have been obvious on a TV in week one.
+
+**shot_realm2.py** walks Realm 2 in a real browser and photographs every
+monster it meets, checking rendered aspect against the art's true aspect.
+test_art.py can only prove the files are right; sprite sizing happens at
+runtime in `sizeSprite()` off `naturalWidth`, which is how the Hurricane Titan
+shipped 58% too wide. It requires at least four distinct monsters before it
+will report PASS — an earlier draft used the wrong option selector, answered
+nothing, walked one room and printed PASS with a completely empty result.
+
+## A note on flaky harnesses
+
+While wiring Realm 2's art in, test_brace.py failed three times in a row on a
+change that touched nothing but sprite paths and a backdrop table. Two hours
+went into bisecting a regression that did not exist. The cause was in the
+harness: Brace is `display:none` in every non-combat room and is only re-shown
+when the encounter screen renders, and the test sampled the button the instant
+`reach_fight()` returned — so under CPU load it read the previous room's state.
+It now waits for the button, and reports separately whether Brace never became
+visible or stayed disabled.
+
+The lesson sits next to the one above it. A test that only fails when the
+machine is busy is worse than no test, because it teaches you to disbelieve the
+suite. If a test fails, reproduce it on a quiet machine before believing it —
+and if it passes there, fix the harness rather than shrugging.

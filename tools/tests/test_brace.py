@@ -111,9 +111,32 @@ with sync_playwright() as pw:
           return { hearts: run.hearts, shields: run.shields, cadence: m.cadence };
         }""", cadence)
 
-        btn = p.query_selector('#btn-brace')
-        if not (btn and btn.is_visible() and not btn.is_disabled()):
-            failures.append(f'cadence {cadence}: Brace button unavailable'); continue
+        # Brace is display:none in every non-combat room and is only re-shown
+        # when the encounter screen renders. Sampling the button once, the
+        # instant reach_fight() returns, reads whatever the previous room left
+        # behind if that render has not landed yet - which on a loaded machine
+        # it often has not. This reported a WORKING Brace as broken three times
+        # while Realm 2's art was being wired in, and cost an hour chasing a
+        # regression that did not exist.
+        #
+        # Waiting is not weakening the assertion: a Brace that is genuinely
+        # dead stays hidden or disabled for the whole window and still fails,
+        # with a message that says which of the two it was.
+        btn = None
+        for _ in range(30):                       # up to ~3s
+            btn = p.query_selector('#btn-brace')
+            if btn and btn.is_visible() and not btn.is_disabled():
+                break
+            p.wait_for_timeout(100)
+        if not btn:
+            failures.append(f'cadence {cadence}: no Brace button in the DOM'); continue
+        if not btn.is_visible():
+            failures.append(f'cadence {cadence}: Brace button never became '
+                            f'visible in a fight'); continue
+        if btn.is_disabled():
+            failures.append(f'cadence {cadence}: Brace button stayed disabled '
+                            f'(frozen={p.evaluate("!!(STATE.run&&STATE.run.bracing)")})')
+            continue
         btn.click(); p.wait_for_timeout(320)
 
         braced_flag = p.evaluate("!!(STATE.run && STATE.run.bracing)")
