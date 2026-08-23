@@ -1069,6 +1069,14 @@ function applyHit(rawDmg, m, P) {
   let incoming = rawDmg;
   const dmg = incomingDamage(incoming, m);
   const res = damage(dmg);
+  // Thorn Etch: the party is paid for taking a blow. Never damages the
+  // monster - that would shorten the fight, and a shorter fight is fewer
+  // questions.
+  if (dmg > 0 && STATE.run && STATE.run.enchants &&
+      STATE.run.enchants.armour === "thorn_etch") {
+    const paid = addShards(4);
+    if (paid) floatText(P.heroStage, `+${paid} shards`, "block");
+  }
   playHitFlash(P.flash, P.corridor);
   animateSprite(P.hero, "flinching", 520);
   if (res.blocked && res.blockedBy && res.blockedBy !== "Shields") {
@@ -1274,7 +1282,8 @@ function monsterDefeated(ctx) {
   setTimeout(() => SFX.monsterCry(monsterVoice(m), true), 160);
   animateSprite(m.isBoss ? "boss-sprite" : "monster-sprite", "dying", 820);
 
-  const gain = m.isBoss ? 0 : (m.isElite ? CONFIG.SHARDS_ELITE : CONFIG.SHARDS_FIGHT);
+  let gain = m.isBoss ? 0 : (m.isElite ? CONFIG.SHARDS_ELITE : CONFIG.SHARDS_FIGHT);
+  if (gain && hasRelic("magpie_eye")) gain += 6;
   const gained = gain ? addShards(gain) : 0;
   run.stats.monsters++;
   bumpStat(student, "monsters");
@@ -1312,7 +1321,7 @@ function monsterDefeated(ctx) {
     const gear = availableGear();
     if (gear && Math.random() < 0.5) offerGear(gear);
   } else {
-    let chance = CONFIG.POTION_DROP_CHANCE + (hasRelic("magpie_eye") ? 0.2 : 0);
+    let chance = CONFIG.POTION_DROP_CHANCE;   // Magpie's Eye pays shards now, not potions
     if (Math.random() < chance) {
       const pid = pick(POTIONS).id; addPotion(pid);
       const pot = potionById(pid);
@@ -1383,19 +1392,24 @@ function tryLastStand(ctx, onSurvive) {
   const run = STATE.run;
   if (!run || !CONFIG.LAST_STAND_ENABLED) { handleDeath(); return; }
 
-  // The Last Breath relic buys a second one - which is the whole reason to
-  // spend 52 shards on it.
-  let viaRelic = false;
-  if (!run.usedLastStand) {
-    run.usedLastStand = true;
-  } else if ((hasRelic("last_breath") || hasPerk("second_breath")) &&
-             !run.usedLastBreath) {
-    run.usedLastBreath = true;
-    viaRelic = true;
-  } else {
+  // Last Stands are COUNTED, not flagged.
+  //
+  // The relic and the Forge perk both used to gate on the same
+  // `usedLastBreath` boolean, so owning one made the other worth exactly
+  // nothing - and nothing on the shop tile or the relic card said so. Since
+  // the Forge is bought over the course of a realm, a rare 52-shard relic
+  // could be dead the moment a class picked it up. They stack now: one Last
+  // Stand by default, plus one for the relic, plus one for the perk.
+  const allowed = 1 + (hasRelic("last_breath") ? 1 : 0) +
+                      (hasPerk("second_breath") ? 1 : 0);
+  run.lastStandsUsed = (run.lastStandsUsed || 0);
+  if (run.lastStandsUsed >= allowed) {
     handleDeath();
     return;
   }
+  const viaRelic = run.lastStandsUsed > 0;   // any beyond the first is bought
+  run.lastStandsUsed++;
+  run.usedLastStand = true;                  // kept for older saves / UI
   saveState();
 
   const m = ctx && ctx.monster;
@@ -1467,7 +1481,8 @@ function tryLastStand(ctx, onSurvive) {
 function doTeamUp(btnId, hpElId, feedbackId) {
   const run = STATE.run;
   const ctx = btnId === "btn-teamup" ? run.encounter : run.boss;
-  const perRun = CONFIG.TEAMUPS_PER_RUN + (hasRelic("team_banner") ? 2 : 0);
+  const perRun = CONFIG.TEAMUPS_PER_RUN + (hasRelic("team_banner") ? 2 : 0)
+                                        + (hasRelic("iron_bell") ? 2 : 0);
   if (!ctx || (run.teamUpsUsed || 0) >= perRun) return;
   run.teamUpsUsed = (run.teamUpsUsed || 0) + 1;
 
@@ -1599,7 +1614,8 @@ function updateCombatButtons(prefix) {
   // Team Up used to be unlimited and its only cost was one more question -
   // which is a thing we want - so it was free, and free is not a decision.
   // Three per RUN makes it something to save.
-  const perRun = CONFIG.TEAMUPS_PER_RUN + (hasRelic("team_banner") ? 2 : 0);
+  const perRun = CONFIG.TEAMUPS_PER_RUN + (hasRelic("team_banner") ? 2 : 0)
+                                        + (hasRelic("iron_bell") ? 2 : 0);
   const left = Math.max(0, perRun - (run.teamUpsUsed || 0));
   const canTeam = STATE.roster && STATE.roster.students.length > 1 && left > 0;
   teamBtn.disabled = !canTeam;
@@ -1777,6 +1793,48 @@ function enterRest() {
     afterPopups(() => backToMap(true));
   });
 
+  // ETCH — the fourth campfire choice, and the only way enchantments have ever
+  // been reachable. All four were defined in items.js, three of them were read
+  // defensively in combat, `applyEnchant()` existed... and nothing in the game
+  // ever called it. The inventory slot was real; nothing could go in it.
+  //
+  // The campfire is exactly the right home for it: it costs the Mend, the
+  // Repair or the Sharpen, which makes an etch a genuine trade rather than a
+  // free upgrade.
+  const etchable = [];
+  if (run.weapon) etchable.push("weapon");
+  if (run.armour) etchable.push("armour");
+
+  if (etchable.length) {
+    const slot = etchable[0];
+    const gear = gearById(slot === "weapon" ? run.weapon : run.armour);
+    const already = run.enchants && run.enchants[slot];
+    const pool = ENCHANTMENTS.filter(e =>
+      (slot === "weapon" ? e.effect.startsWith("Weapon") : e.effect.startsWith("Armour")) &&
+      e.id !== already);
+
+    if (pool.length) {
+      const etch = pick(pool);
+      option("Etch",
+        already
+          ? `Re-etch your ${gear.name} — ${etch.name}: ${etch.effect.replace(/^(Weapon|Armour): /, "")}`
+          : `Etch your ${gear.name} — ${etch.name}: ${etch.effect.replace(/^(Weapon|Armour): /, "")}`,
+        () => {
+          applyEnchant(slot, etch.id);
+          SFX.relic();
+          renderTopHud("enc");
+          showPopup({
+            banner: "ETCH", tone: "good", icon: etch.icon,
+            title: `${etch.name} cut into your ${gear.name}`,
+            effect: etch.effect.replace(/^(Weapon|Armour): /, ""),
+            desc: etch.desc,
+            extra: "An etching is lost if you replace the gear it is cut into.",
+          });
+          afterPopups(() => backToMap(true));
+        });
+    }
+  }
+
   renderTopHud("enc");
   renderStudentChips();
   showScreen("screen-encounter");
@@ -1791,10 +1849,18 @@ function enterSafe() {
   const realm = currentRealm();
   applySky("corridor-sky", realm.sky);
   paintHero("hero-sprite", "hero-shields");
+  // Safe Paths gave NOTHING - 11% of every walk was dead air that looked like a
+  // reward on the map - while three separate code comments and the README all
+  // claimed they restored shields. A small top-up makes the node honest and
+  // makes it a real (if minor) alternative to a fight, without touching the
+  // campfire's monopoly on a full repair.
+  const patched = addShieldTop(CONFIG.SAFE_PATH_SHIELDS || 0);
   $("enc-who").textContent = "Safe Path — a quiet stretch of corridor";
-  $("enc-question").textContent =
-    "No danger here, and no reward. A good moment to open the pack. " +
-    "Armour is only repaired at a campfire.";
+  $("enc-question").textContent = patched
+    ? `A quiet stretch. You strap the armour back down — +${patched} shields — ` +
+      "and there is time to open the pack. A campfire is still the only full repair."
+    : "No danger here. Your armour is already sound, but there is time to " +
+      "open the pack.";
   $("enc-choices").innerHTML = "";
   $("enc-feedback").textContent = "";
   $("btn-teamup").disabled = true;
@@ -2133,7 +2199,13 @@ function resolveFightAnswer(correct, q, defending) {
 // ===================== END OF RUN =====================
 function handleVictory() {
   const run = STATE.run;
-  const realmName = currentRealm().name;
+  const realm = currentRealm();
+  // handleVictory is reached through afterPopups(), which fires on a timer
+  // once the reward cards have been dismissed. If the run has already been
+  // cleared - a double-fire, or a teacher exiting mid-card - there is nothing
+  // left to summarise and currentRealm() is null.
+  if (!run || !realm) return;
+  const realmName = realm.name;
   const stats = { ...run.stats };
   const heartsLeft = run.hearts, maxHearts = run.maxHearts;
   const shards = run.shards;

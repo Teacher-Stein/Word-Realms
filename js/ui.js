@@ -711,6 +711,9 @@ function itemTile(item, opts = {}) {
            <div class="it-name">${escapeHtml(item.name)}</div>
            <div class="it-effect">${escapeHtml(item.effect)}</div>
            <div class="it-desc">${escapeHtml(item.desc)}</div>`;
+  if (opts.note) {
+    html += `<div class="it-note">${escapeHtml(opts.note)}</div>`;
+  }
   if (opts.price != null) {
     html += `<div class="it-price"><span class="icon-shard"></span>${opts.price}</div>`;
   }
@@ -844,6 +847,28 @@ function renderShop(nodeId) {
       onClick: () => window.shopBuy(nodeId, "relics", i),
     }));
   });
+
+  const gearEl = document.getElementById("shop-gear");
+  if (gearEl) {
+    gearEl.innerHTML = "";
+    (stock.gear || []).forEach((entry, i) => {
+      const g = gearById(entry.id);
+      if (!g) return;
+      const current = run[g.slot] ? gearById(run[g.slot]) : null;
+      gearEl.appendChild(itemTile(g, {
+        price: entry.price, sold: entry.sold,
+        unaffordable: !entry.sold && run.shards < entry.price,
+        // A weapon or armour REPLACES what is already carried, and the etching
+        // on the old piece is lost with it. Say so on the tile rather than
+        // letting a class find out afterwards.
+        note: current && current.id !== g.id
+          ? `Replaces your ${current.name}` : null,
+        buttonLabel: entry.sold ? "Sold" : (current ? "Swap" : "Buy"),
+        disabled: entry.sold || run.shards < entry.price,
+        onClick: () => window.shopBuy(nodeId, "gear", i),
+      }));
+    });
+  }
 
   const potEl = document.getElementById("shop-potions");
   potEl.innerHTML = "";

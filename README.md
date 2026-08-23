@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 5.6 — the room can read it.** Realm 1 (Unit 1, Extreme Weather) is
+class. **Version 5.7 — rewards that lie.** Realm 1 (Unit 1, Extreme Weather) is
 fully playable; Realms 2–9 appear as locked placeholders using the correct
 themes from the school syllabus.
 
@@ -23,7 +23,62 @@ If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
 
-## What's new in v5.6 — the room can read it
+## What's new in v5.7 — rewards that lie
+
+Every item here is a system the game advertised and then did not deliver — the
+same disease as the six phantom relics removed in v5.5.
+
+**Enchantments were completely unreachable.** All four were defined, the
+inventory slot existed, three of them were read defensively in combat, and
+`applyEnchant()` was written — and **nothing in the game ever called it**. The
+slot was real; nothing could go in it. The campfire now offers a fourth choice,
+**Etch**, competing with Mend, Repair and Sharpen — which makes an enchantment
+a genuine trade rather than a free upgrade. Thorn Etch, the one with no read
+side at all, is implemented: it pays the party 4 shards whenever a blow lands,
+because thorns that damaged the monster would shorten the fight.
+
+**Gear is now sold in shops.** It was offered 0.58 times per run — a 50% roll
+on an elite kill, and elites are walked 1.15 times — and the shop stocked
+relics and potions only. A class could go an entire realm without ever being
+shown a weapon. The gear row also gives late shards somewhere to go. A tile
+that would replace what you are carrying says so, and warns that the etching on
+the old piece goes with it.
+
+**Last Stands are counted, not flagged.** The Last Breath relic and the Second
+Breath Forge perk both gated on the same boolean, so owning one made the other
+worth exactly nothing — a rare 52-shard relic could be dead the moment a class
+picked it up, with nothing saying so. They stack now.
+
+**Safe Paths give +3 shields.** They gave nothing at all — 11% of every walk
+was dead air dressed up as a reward on the map — while three separate code
+comments and the README all claimed they restored shields.
+
+**Rarity is a drop rate now, not just a price tag.** Every relic had a flat
+3.8% chance on any drop, so Giant-Slayer — an epic that halves every elite
+fight — was exactly as likely as a common, and one elite kill in nine handed a
+class a fight-halving relic. Weighted 50/30/25/15, measured over 40,000 draws:
+common 51.8%, uncommon 30.7%, rare 11.0%, **epic 6.5%** — about one run in nine
+contains an epic. A first pass at 50/30/15/5 put epics at 2.5%, which is not
+"you earned it", it is a lottery.
+
+**Two dead-weight relics fixed.** Iron Bell only waived Team Up's 1 HP cost,
+and Team Ups are capped at three per run — its entire lifetime value was three
+monster HP. It now grants two extra Team Ups as well, which is more questions
+and more children talking. Magpie's Eye added potion drops to a party that is
+now capped at four potions; it pays +6 shards per monster felled instead.
+
+**`tools/tests/test_reachable.py`** exists so this cannot happen again. It is a
+static audit that fails if any relic, enchantment, weapon, armour or potion is
+never read outside `items.js`, if a grant function is defined but never called,
+or if the shop stops stocking one of its rows. Verified by planting a
+deliberately dead relic and watching it fail.
+
+One more null-run crash fixed: the victory screen could fire after the run had
+already been cleared.
+
+---
+
+## What was new in v5.6 — the room can read it
 
 **The combat narration moved into the middle of the arena.** It used to be a
 small line at the bottom left of the question panel — projected onto a TV

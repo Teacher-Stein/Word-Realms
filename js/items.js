@@ -42,10 +42,15 @@ const RELICS = [
     desc:"Every chest you open holds something worth keeping.",
     effect:"Treasure always gives a relic" },
 
+  // v5.7: this used to only waive Team Up's 1 HP cost. Team Ups are capped at
+  // three per RUN, so the relic's entire lifetime value was 3 monster HP -
+  // less than one extra question. It now also buys two more Team Ups, which is
+  // both a bigger effect and a better one: a Team Up is an extra question and
+  // two children talking about the answer.
   { id:"iron_bell",    name:"Iron Bell",       rarity:"uncommon",
     icon:"assets/items/iron_bell.png",
     desc:"One clear ring and your partner is already beside you.",
-    effect:"Team Up costs no monster HP" },
+    effect:"Team Up is free, and you get 2 more this run" },
 
   { id:"ember_pouch",  name:"Ember Pouch",     rarity:"rare",
     icon:"assets/items/ember_pouch.png",
@@ -98,10 +103,14 @@ const RELICS = [
     desc:"Somehow there is always a little more inside.",
     effect:"+25% shards from all sources" },
 
+  // v5.7: +20% potion drop was worthless against a party already drowning in
+  // them, and worse than worthless now that potions are capped at 4. It picks
+  // up shards from a felled monster instead - the currency that actually has
+  // somewhere to go since the shop gained a gear row.
   { id:"magpie_eye",   name:"Magpie's Eye",    rarity:"uncommon",
     icon:"assets/items/magpie_eye.png",
     desc:"It spots the glint of something useful.",
-    effect:"Monsters sometimes drop potions" },
+    effect:"+6 shards from every monster you fell" },
 
   // ---- utility ----
   { id:"team_banner",  name:"Rally Banner",    rarity:"uncommon",
@@ -191,9 +200,14 @@ const ENCHANTMENTS = [
   { id:"ward_etch",   name:"Ward Etch",   icon:"assets/items/ward_etch.png",
     desc:"A closed circle, unbroken.",
     effect:"Armour: +2 shields at every rest point" },
+  // v5.7: this was the one enchantment with no read side anywhere - and its
+  // old wording ("attackers lose shards") described something the monsters do
+  // not even have. Thorns that damaged the monster would shorten the fight and
+  // are forbidden, so it pays the PARTY instead: taking a hit is worth
+  // something, which is a real reason to stand and fight rather than Brace.
   { id:"thorn_etch",  name:"Thorn Etch",  icon:"assets/items/thorn_etch.png",
     desc:"Sharp on the inside as well as the out.",
-    effect:"Armour: attackers lose shards when they hit you" },
+    effect:"Armour: +4 shards whenever a blow lands on you" },
 ];
 
 const ALL_GEAR = WEAPONS.concat(ARMOURS);
@@ -202,6 +216,10 @@ function gearById(id)  { return ALL_GEAR.find(g => g.id === id); }
 function enchantById(id){ return ENCHANTMENTS.find(e => e.id === id); }
 
 const RARITY_PRICE = { common: 26, uncommon: 38, rare: 52, epic: 78 };
+// Gear is priced above a relic of the same rarity: it occupies a slot, it can
+// be replaced later, and it is the shard sink for a party that already has
+// everything else it wants.
+const GEAR_PRICE   = { common: 34, uncommon: 48, rare: 64, epic: 90 };
 
 function relicById(id)  { return RELICS.find(r => r.id === id); }
 function potionById(id) { return POTIONS.find(p => p.id === id); }

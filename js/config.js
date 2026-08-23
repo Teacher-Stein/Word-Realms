@@ -56,6 +56,11 @@ const CONFIG = {
   POTION_DROP_ELITE: 0.75,
   START_POTIONS: ["potion_heal"],   // so potions are visible from turn one
 
+  // A Safe Path used to give nothing at all, which made 11% of the walk dead
+  // air dressed up as a reward. Small enough that a campfire Repair is still
+  // the real fix.
+  SAFE_PATH_SHIELDS: 3,
+
   // --- shops ---
   SHOPS_PER_MAP: 3,
   SHOP_FIRST_DEPTH: 0.35,   // no shop before this fraction of the map

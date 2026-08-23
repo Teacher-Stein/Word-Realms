@@ -11,6 +11,7 @@ Then:
     python3 tools/tests/test_brace.py         # Brace blocks a blow
     python3 tools/tests/test_music.py         # the score plays, ducks, doesn't clip
     python3 tools/tests/test_announce.py      # the arena banner is readable
+    python3 tools/tests/test_reachable.py     # no item exists that nothing can grant
     node    tools/tests/balance_sim.js        # wipe rates, questions per run
 
 ## What each one is guarding
@@ -70,3 +71,16 @@ The dwell assertion is the point of the test. The first version of the banner
 was large and perfectly centred and still failed the brief, because it vanished
 after 2.2 seconds — "I can barely read it in time" is a timing complaint, not a
 size one, and only a timed check catches it.
+
+**test_reachable.py** is a static audit — no browser needed — and it exists so
+that one specific class of bug cannot come back. v5.5 deleted six relics whose
+ids appeared in `items.js` and nowhere else: the game handed children cards
+with written promises and then did nothing. v5.7 found the same disease in two
+more systems — all four enchantments were unreachable because `applyEnchant()`
+was never called from anywhere, and gear was offered 0.58 times per run and
+never stocked in a shop.
+
+It fails if any relic, enchantment, weapon, armour or potion id is never read
+outside `items.js`, if any grant function exists but is never called, or if the
+shop stops stocking one of its three rows. Verified by planting a deliberately
+dead relic and watching it fail.

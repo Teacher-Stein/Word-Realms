@@ -203,6 +203,7 @@ with sync_playwright() as pw:
                                ('typical class (82%)', 0.82, 130),
                                ('weak class (58%)', 0.58, 130)):
         page = browser.new_page(viewport={'width': 1600, 'height': 900})
+        page.add_init_script("window.__errs=[]; window.addEventListener('error', e => { window.__errs.push((e.error && e.error.stack) || e.message); });")
         errors = []
         page.on('console', lambda m: errors.append(m.text) if m.type == 'error' else None)
         page.on('pageerror', lambda e: errors.append('PAGEERROR ' + str(e) + ' || STACK: ' + str(getattr(e,'stack','')) ))
@@ -218,6 +219,11 @@ with sync_playwright() as pw:
         print(f'  console errors          {len(errors)}')
         for e in errors[:6]:
             print('    ', e[:160])
+        try:
+            for st in (page.evaluate('window.__errs') or [])[:2]:
+                print('    STACK:', str(st)[:700])
+        except Exception:
+            pass
         for l in log[:8]:
             print(l)
         if r['clock_bad'] or r['blind_on_closed'] or errors:
