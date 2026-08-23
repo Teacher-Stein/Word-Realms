@@ -1319,3 +1319,8 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 .choice.event-option.danger:hover {
   background: linear-gradient(rgba(120,28,36,.7), rgba(70,14,22,.7));
 }
+
+.realm-card-note {
+  margin-top: 6px; font-size: .74rem; font-weight: 800; letter-spacing: .5px;
+  color: #ffd76a; opacity: .9;
+}
