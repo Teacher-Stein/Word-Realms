@@ -1285,3 +1285,14 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 @media (max-height: 780px) {
   .arena-announce { top: 18%; font-size: clamp(1.25rem, 2.2vw, 1.9rem); padding: 10px 22px; }
 }
+
+/* A gear tile warns that buying replaces what the party already carries -
+   and that the etching on the old piece is lost with it. */
+.it-note {
+  margin-top: 4px; font-size: .82rem; font-weight: 800;
+  color: #ffcf6a; letter-spacing: .3px;
+}
+.shop-head {
+  margin: 16px 0 6px; font-size: .9rem; letter-spacing: 2px;
+  text-transform: uppercase; color: #b9a6ff;
+}
