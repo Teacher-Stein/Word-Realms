@@ -69,6 +69,11 @@ function migrateRun(st) {
   if (typeof r.usedLastStand  !== "boolean") r.usedLastStand  = false;
   if (typeof r.usedLastBreath !== "boolean") r.usedLastBreath = false;
   if (typeof r.usedEcho       !== "boolean") r.usedEcho       = false;
+  // v5.8 events
+  if (!Array.isArray(r.missedQs))   r.missedQs   = [];
+  if (!Array.isArray(r.eventsSeen)) r.eventsSeen = [];
+  if (typeof r.idolTaken     !== "boolean") r.idolTaken     = false;
+  if (typeof r.longRoadTaken !== "boolean") r.longRoadTaken = false;
   // v5.7: Last Stands became a counter so the relic and the perk can stack.
   if (typeof r.lastStandsUsed !== "number") {
     r.lastStandsUsed = (r.usedLastStand ? 1 : 0) + (r.usedLastBreath ? 1 : 0);
@@ -231,6 +236,10 @@ function startNewRun(realmId, heroId) {
     clarityActive: false, // Potion of Clarity trims the next question
     shopStock: {},        // nodeId -> generated stock, so a shop is stable
     coveredKeys: [],       // curriculum items already tested this run
+    missedQs: [],          // cover keys the class got WRONG (Echoing Hall)
+    eventsSeen: [],        // event ids already offered this run
+    idolTaken: false,      // Whispering Idol: +50% shards, +1 wrong-answer damage
+    longRoadTaken: false,
     usedQuestionIdx: [],   // avoid repeating the exact same question
     usedLuckyCharm: false,
     usedEcho: false,
@@ -251,6 +260,20 @@ function startNewRun(realmId, heroId) {
 
 function currentRealm() {
   return STATE.run ? REALMS[STATE.run.realmId] : null;
+}
+
+// Remember what the class got wrong this run. The Echoing Hall event brings
+// one back for a second attempt, which is spaced repetition dressed up as a
+// reward - and it targets exactly the material they have demonstrably not got.
+function noteMissed(q) {
+  const run = STATE.run;
+  if (!run || !q || !q.cover) return;
+  run.missedQs = run.missedQs || [];
+  // most recent last, and never more than a handful
+  run.missedQs = run.missedQs.filter(k => k !== q.cover);
+  run.missedQs.push(q.cover);
+  if (run.missedQs.length > 12) run.missedQs.shift();
+  saveState();
 }
 
 function markCovered(cover) {

@@ -278,6 +278,11 @@ function wrongAnswerDamage(q) {
   const tier = q && q.tier ? q.tier : 1;
   let dmg = CONFIG.TIER_DAMAGE[tier] || 1;
   if (run.debuff === "expose") dmg += 1;
+  // The Whispering Idol: the class chose to carry it, knowing this. It is the
+  // one lasting effect in the game that makes the party WORSE at something, and
+  // it scales with their real accuracy - a confident class profits, a shaky one
+  // pays for it every single question.
+  if (run.idolTaken) dmg += 1;
   return dmg;
 }
 

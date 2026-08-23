@@ -1034,6 +1034,7 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
     // wrong answer: the monster counter-attacks immediately
     run.stats.wrong++;
     bumpStat(student, "wrong");
+    noteMissed(q);          // the Echoing Hall event brings these back
     resetStreak();
     run.bracing = false;
 
@@ -1630,8 +1631,15 @@ function enterEvent() {
   clearScenery();
   updateStageScale("corridor");
   showCombatButtons(false);
+  if (typeof ANNOUNCER !== "undefined") ANNOUNCER.clear();
   const realm = currentRealm();
-  const ev = pick(REALM1_EVENTS);
+  const run = STATE.run;
+  if (!realm || !run) return;
+
+  const ev = pickEvent();
+  if (!ev) { backToMap(true); return; }
+  markEventSeen(ev.id);
+
   applySky("corridor-sky", realm.sky);
   paintHero("hero-sprite", "hero-shields");
   $("monster-sprite").src = realm.npc.sprite;
@@ -1641,65 +1649,223 @@ function enterEvent() {
   $("enc-who").textContent = ev.who;
   $("enc-question").textContent = ev.text;
   $("btn-teamup").disabled = true;
-  const choices = $("enc-choices");
-  choices.innerHTML = "";
   $("enc-feedback").textContent = "";
   $("enc-feedback").className = "enc-feedback";
 
-  const mk = (label, risky) => {
+  const choices = $("enc-choices");
+  choices.innerHTML = "";
+
+  const opts = ev.options();
+  if (!opts || !opts.length) { backToMap(true); return; }
+
+  opts.forEach(opt => {
     const div = document.createElement("div");
-    div.className = "choice";
-    div.textContent = label;
+    div.className = "choice event-option" +
+      (opt.tone === "danger" ? " danger" : "") +
+      (opt.disabled ? " locked removed" : "");
+    // BOTH SIDES, always. The old events were a hidden 62/38 coin flip; the
+    // whole point of the rewrite is that a child can weigh the trade before
+    // taking it, which is the risk-assessment lesson rather than gambling.
+    div.innerHTML = `<b>${escapeHtml(opt.label)}</b><span>${opt.sub || ""}</span>`;
+    if (opt.disabled) { choices.appendChild(div); return; }
     div.addEventListener("click", () => {
+      if (div.classList.contains("locked")) return;
       choices.querySelectorAll(".choice").forEach(c => c.classList.add("locked"));
       SFX.click();
-      const fb = $("enc-feedback");
-      if (!risky) {
-        showPopup({
-          banner: "MOVED ON", tone: "neutral", title: "You walk away",
-          effect: "No risk, no reward",
-          desc: "Sometimes that's the wise call.",
-        });
-        afterPopups(() => backToMap(true));
-        return;
-      }
-      if (Math.random() < 0.62) {
-        addShards(4);
-        SFX.treasure();
+      if (opt.quiz) { runEventQuiz(ev, opt.quiz); return; }
+      const outcome = opt.run();
+      if (outcome) {
+        SFX[outcome.tone === "good" ? "treasure" : "click"]();
         renderTopHud("enc");
         showPopup({
-          banner: "IT PAYS OFF", tone: "good", title: "A good decision",
-          effect: "+4 Knowledge Shards",
-          desc: "The Storm Chaser nods approvingly.",
-          extra: `Chosen by ${STATE.run.currentStudent}`,
+          banner: outcome.banner, tone: outcome.tone, icon: outcome.icon || null,
+          title: outcome.title, effect: outcome.effect, desc: outcome.desc,
+          extra: `Decided by ${run.currentStudent}`,
         });
-        afterPopups(() => backToMap(true));
-      } else {
-        SFX.monsterAttack();
-        playHitFlash("hit-flash", "corridor");
-        const res = damage(1);
-        if (!res.blocked) bumpStat(STATE.run.currentStudent, "damage");
-        SFX.heartLost();
-        fb.textContent = res.blocked
-          ? "It goes badly — but the Lucky Charm absorbs it!"
-          : "It goes badly. The party loses a heart.";
-        fb.className = "enc-feedback bad";
-        renderTopHud("enc");
-        setTimeout(() => {
-          if (res.dead) tryLastStand({ monster: null }, () => backToMap(true));
-          else backToMap(true);
-        }, 1500);
       }
+      // A trade can take the party below zero - the Toll Bridge is meant to be
+      // able to. Route that through the normal failure ladder rather than
+      // walking on at 0 hearts.
+      afterPopups(() => {
+        if (STATE.run && STATE.run.hearts <= 0) {
+          tryLastStand({ monster: null }, () => backToMap(true));
+        } else {
+          backToMap(true);
+        }
+      });
     });
-    return div;
-  };
-  choices.appendChild(mk(ev.optionA, true));
-  choices.appendChild(mk(ev.optionB, false));
+    choices.appendChild(div);
+  });
 
   renderTopHud("enc");
   renderStudentChips();
   showScreen("screen-encounter");
   animateSprite("monster-sprite", "arriving", 560);
+}
+
+// ---------------------------------------------------------------------------
+// Events that are resolved by ANSWERING.
+//
+// These are the most valuable events in the game, because they are the only
+// ones that ADD review volume instead of just moving resources around. A
+// Riddle Gate is three extra questions the class would not otherwise have
+// been asked.
+// ---------------------------------------------------------------------------
+function runEventQuiz(ev, spec) {
+  const run = STATE.run;
+  const realm = currentRealm();
+  if (!run || !realm) return;
+
+  const ids = { question: "enc-question", choices: "enc-choices",
+                feedback: "enc-feedback" };
+  let asked = 0, correctCount = 0;
+
+  // Which question does this event ask?
+  const draw = () => {
+    if (spec.kind === "echo") {
+      const missed = (run.missedQs || []);
+      const key = missed[missed.length - 1];
+      const opts = key ? questionsForCover(key) : [];
+      return opts.length ? pick(opts) : drawQuestion(realm);
+    }
+    if (spec.kind === "page") {
+      // deliberately a curriculum item nobody has faced yet, so answering it
+      // takes a hit off the Boss's health bar
+      const missing = realm.coverKeys.filter(k => !run.coveredKeys.includes(k));
+      const key = missing.length ? pick(missing) : null;
+      const opts = key ? questionsForCover(key) : [];
+      return opts.length ? pick(opts) : drawQuestion(realm);
+    }
+    return drawQuestion(realm, spec.kind === "champion");
+  };
+
+  const finish = () => {
+    const out = eventQuizOutcome(ev, spec, correctCount);
+    renderTopHud("enc");
+    showPopup(out);
+    afterPopups(() => {
+      if (STATE.run && STATE.run.hearts <= 0) {
+        tryLastStand({ monster: null }, () => backToMap(true));
+      } else {
+        backToMap(true);
+      }
+    });
+  };
+
+  const step = () => {
+    if (asked >= spec.count) { finish(); return; }
+    const q = draw();
+    if (!q) { finish(); return; }
+    asked++;
+
+    if (spec.who) {
+      run.currentStudent = spec.who;
+      saveState();
+      renderStudentChips();
+    } else {
+      nextStudent();
+      renderStudentChips();
+    }
+
+    $("enc-who").textContent = spec.who
+      ? `${spec.who} steps into the ring — alone.`
+      : `${ev.who}  (${asked} of ${spec.count})`;
+
+    renderQuestion(q, ids, correct => {
+      if (correct) {
+        correctCount++;
+        markCovered(q.cover);
+        run.stats.correct++;
+        bumpStat(run.currentStudent, "correct");
+      } else {
+        run.stats.wrong++;
+        bumpStat(run.currentStudent, "wrong");
+        noteMissed(q);
+      }
+      saveState();
+      setTimeout(step, 1400);
+    });
+  };
+
+  step();
+}
+
+function eventQuizOutcome(ev, spec, got) {
+  const run = STATE.run;
+  const all = got >= spec.count;
+
+  if (spec.kind === "gate") {
+    if (all) {
+      const relic = availableRelic();
+      if (relic) addRelic(relic);
+      return { banner: "THE GATE OPENS", tone: "good",
+               icon: relic ? relic.icon : null,
+               title: relic ? relic.name : "All three locks turn",
+               effect: relic ? relic.effect : "",
+               desc: "Three for three. The gate did not expect that." };
+    }
+    const paid = addShards(got * 6);
+    return { banner: "IT GRINDS OPEN", tone: got ? "good" : "neutral",
+             title: `${got} of ${spec.count} locks`,
+             effect: paid ? `+${paid} shards` : "Nothing behind it",
+             desc: "Enough to get through. Not enough for what was inside." };
+  }
+
+  if (spec.kind === "page") {
+    if (all) {
+      return { banner: "LEARNED", tone: "good", title: "The page is understood",
+               effect: "Marked covered — the Boss has one less hit",
+               desc: "The Boss's health is the count of everything you have " +
+                     "not been tested on. That is one fewer." };
+    }
+    return { banner: "TOO SOON", tone: "neutral", title: "The page goes back",
+             effect: "Nothing marked",
+             desc: "It will come up again at the Boss." };
+  }
+
+  if (spec.kind === "wager") {
+    if (got >= spec.target) {
+      const paid = addShards(spec.pot * spec.target);
+      return { banner: "CALLED IT", tone: "good",
+               title: `Wagered ${spec.target}, landed ${got}`,
+               effect: `+${paid} shards`,
+               desc: "Knowing what you know is worth as much as knowing it." };
+    }
+    return { banner: "SHORT", tone: "bad",
+             title: `Wagered ${spec.target}, landed ${got}`,
+             effect: "No shards",
+             desc: "The figure gathers the cards without a word." };
+  }
+
+  if (spec.kind === "echo") {
+    if (all) {
+      heal(2);
+      return { banner: "THE ECHO CLEARS", tone: "good",
+               title: "Got it, second time round",
+               effect: "+2 hearts · marked covered",
+               desc: "The thing you got wrong is the thing worth going back for." };
+    }
+    return { banner: "STILL RINGING", tone: "neutral", title: "Not this time either",
+             effect: "", desc: "It will keep." };
+  }
+
+  if (spec.kind === "champion") {
+    if (all) {
+      const relic = availableRelic();
+      if (relic) addRelic(relic);
+      return { banner: "THE STONES ANSWER", tone: "good",
+               icon: relic ? relic.icon : null,
+               title: relic ? relic.name : "The ring accepts them",
+               effect: relic ? relic.effect : "",
+               desc: `${spec.who} did that alone.`,
+               extra: `Won by ${spec.who}` };
+    }
+    return { banner: "THE STONES ARE SILENT", tone: "neutral",
+             title: "Not this time",
+             effect: "", desc: `${spec.who} stepped up, which is the harder part.` };
+  }
+
+  return { banner: "DONE", tone: "neutral", title: "", effect: "", desc: "" };
 }
 
 // ===================== CAMPFIRE (was Rest) =====================

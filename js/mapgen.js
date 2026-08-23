@@ -18,7 +18,10 @@ function shuffle(arr) {
 // Weighted pool for ordinary layers. Elites are handled separately so a map
 // can never fill up with 5-hit fights.
 const NODE_WEIGHTS = [
-  ["fight", 12], ["event", 4], ["rest", 3], ["treasure", 3], ["safe", 3],
+  // v5.8: events raised 4 -> 6. They used to be a 62/38 coin flip worth 4
+  // shards; now every one is a stated trade and several of them ADD
+  // questions, so they are worth stopping at. ~2.25 -> ~3 walked per run.
+  ["fight", 12], ["event", 6], ["rest", 3], ["treasure", 3], ["safe", 3],
 ];
 
 function weightedNodeType() {

@@ -156,6 +156,13 @@ function runOne(acc, S) {
       }
       if (p.hearts <= 0) return { q, rooms, dead: true };
     } else if (nn.type === 'treasure') q++;
+    else if (nn.type === 'event') {
+      // v5.8: several events are resolved by ANSWERING. Modelled as an average
+      // over the bank - four of eleven ask questions (1, 1, 3 and 3 of them),
+      // and a class takes the question option most of the time because it is
+      // usually the better one.
+      if (Math.random() < 0.36 * 0.8) { const n = Math.random() < 0.5 ? 1 : 3; q += n; S.eventQ += n; }
+    }
   }
   const missing = COVER.filter(k => !covered.has(k)).length;
   q += fight({ cadence: CONFIG.BOSS_CADENCE,
@@ -172,12 +179,12 @@ function shape(label, opt) {
   const cells = [];
   for (const acc of [0.95, 0.85, 0.75]) {
     const S = { f:0, fNoHeart:0, fNoAim:0, fq:0, e:0, eq:0, acts:0,
-                focus:0, stunTicks:0, wrongDmg:0, clockDmg:0, riskWins:0 };
+                focus:0, stunTicks:0, wrongDmg:0, clockDmg:0, riskWins:0, eventQ:0 };
     let q = 0, d = 0, r = 0; const N = 2500;
     for (let i = 0; i < N; i++) { const x = runOne(acc, S); q += x.q; r += x.rooms; if (x.dead) d++; }
     if (acc === 0.85) {
       const tot = S.wrongDmg + S.clockDmg;
-      cells.push(`q ${(q/N).toFixed(0)} · q/fight ${(S.fq/S.f).toFixed(1)} · painless ${(S.fNoHeart/S.f*100).toFixed(0)}% · acts/fight ${(S.acts/(S.f+S.e)).toFixed(1)} · wrong=${(S.wrongDmg/tot*100).toFixed(0)}% of dmg`);
+      cells.push(`q ${(q/N).toFixed(0)} (ev ${(S.eventQ/N).toFixed(1)}) · q/fight ${(S.fq/S.f).toFixed(1)} · painless ${(S.fNoHeart/S.f*100).toFixed(0)}% · acts/fight ${(S.acts/(S.f+S.e)).toFixed(1)} · wrong=${(S.wrongDmg/tot*100).toFixed(0)}% of dmg`);
     }
     cells.push(`${(acc*100)|0}%: ${(d/N*100).toFixed(0)}%`);
   }

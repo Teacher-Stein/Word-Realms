@@ -12,6 +12,7 @@ Then:
     python3 tools/tests/test_music.py         # the score plays, ducks, doesn't clip
     python3 tools/tests/test_announce.py      # the arena banner is readable
     python3 tools/tests/test_reachable.py     # no item exists that nothing can grant
+    python3 tools/tests/test_events.py        # every event states both sides
     node    tools/tests/balance_sim.js        # wipe rates, questions per run
 
 ## What each one is guarding
@@ -84,3 +85,13 @@ It fails if any relic, enchantment, weapon, armour or potion id is never read
 outside `items.js`, if any grant function exists but is never called, or if the
 shop stops stocking one of its three rows. Verified by planting a deliberately
 dead relic and watching it fail.
+
+**test_events.py** enforces the rule the v5.8 rewrite exists for: **every event
+option must state both its cost and its reward before it is taken.** An option
+with no consequence line fails the test, because that is a hidden gamble again
+— which is exactly what the old 62/38 coin-flip events were.
+
+It also statically forbids any event from touching monster HP or moving the
+party between nodes (either would reduce the number of questions asked), sets
+the party up so every conditional event can be forced, and plays a Riddle Gate
+end to end to confirm a quiz event really does ask the questions it advertises.

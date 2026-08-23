@@ -198,10 +198,12 @@ def play(page, accuracy, budget, log):
 with sync_playwright() as pw:
     browser = pw.chromium.launch(args=['--no-sandbox'])
     fails = 0
-    for label, acc, budget in (('near-perfect (99%)', 0.99, 130),
-                               ('strong class (92%)', 0.92, 130),
-                               ('typical class (82%)', 0.82, 130),
-                               ('weak class (58%)', 0.58, 130)):
+    # v5.8 events ask their own questions (a Riddle Gate is three extra), so a
+    # run covers less map per iteration than it used to.
+    for label, acc, budget in (('near-perfect (99%)', 0.99, 90),
+                               ('strong class (92%)', 0.92, 90),
+                               ('typical class (82%)', 0.82, 90),
+                               ('weak class (58%)', 0.58, 90)):
         page = browser.new_page(viewport={'width': 1600, 'height': 900})
         page.add_init_script("window.__errs=[]; window.addEventListener('error', e => { window.__errs.push((e.error && e.error.stack) || e.message); });")
         errors = []

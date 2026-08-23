@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 5.7 — rewards that lie.** Realm 1 (Unit 1, Extreme Weather) is
+class. **Version 5.8 — events worth stopping for.** Realm 1 (Unit 1, Extreme Weather) is
 fully playable; Realms 2–9 appear as locked placeholders using the correct
 themes from the school syllabus.
 
@@ -23,7 +23,63 @@ If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
 
-## What's new in v5.7 — rewards that lie
+## What's new in v5.8 — events worth stopping for
+
+**The old events were a slot machine.** "Help search the rubble?" — a 62%
+chance of 4 shards against a 38% chance of losing a heart, with the odds
+invisible. Across a whole run that was worth about 6 shards, roughly 1% of
+income, spread over 2.25 rooms. A child learns nothing from pulling a lever.
+
+**Eleven new events, and every option states both sides before it is chosen.**
+Nothing is a gamble on hidden odds. What makes them interesting is that the
+right answer depends on the state the party is actually in — a party at 8
+hearts should pay the Toll Bridge and a party at 3 should not — so the argument
+happens out loud in the room, which is the whole point.
+
+They come in four kinds:
+
+**Trades** state a cost for a reward. The **Toll Bridge** (hearts for a relic),
+the **Frozen Cache** (shards for one of three relics *you can see first* —
+choosing is much better than receiving), the **Weathervane** (all your shields
+for +2 maximum hearts), the **Hoarder's Stall** (trade your worst relic up).
+
+**Quiz events are resolved by answering**, which makes them the most valuable
+kind in this particular game — they *add* review volume instead of moving
+resources around. The **Riddle Gate** is three extra questions for a relic. The
+**Lost Page** draws from a curriculum item the class has not been tested on yet,
+and answering it marks it covered — which literally takes a hit off the Boss's
+health bar, since the Boss's HP *is* the count of what nobody has faced. The
+**Scholar's Wager** has you bet how many of the next three you will get before
+seeing any of them. And the **Echoing Hall** brings back a question the class
+got **wrong earlier this run** — spaced repetition disguised as a reward,
+targeting exactly the material they have demonstrably not got.
+
+**The Champion's Trial** sends the student with the *fewest turns so far* into
+the ring alone, for a relic for the whole party. It turns being called on into a
+reward moment for a quiet child rather than an exposure, and it self-corrects
+the turn distribution while it is at it.
+
+**Lasting effects** follow the party. The **Whispering Idol** pays +50% shards
+for the rest of the run and makes every wrong answer cost one extra heart — it
+scales with the class's real accuracy, so a confident class profits and a shaky
+one pays for it every question. **The Long Road** grafts two extra rooms onto
+the map and pays a relic: more questions, which is strictly good.
+
+Events also scale with depth — a layer-3 Toll Bridge costs 2 hearts, a layer-12
+one costs 3 — and an event is never offered if the party cannot use it (no
+Frozen Cache without shards, no Echoing Hall with nothing missed). Event rooms
+raised from 4 to 6 in the map weighting, so a run now walks about three.
+
+**Verified:** `test_events.py` fails any option that does not state its
+consequence, statically forbids an event from touching monster HP or moving the
+party between nodes, and plays a Riddle Gate end to end to confirm it asks its
+three questions. The Long Road's map surgery was checked over 400 generated
+maps — the boss stays reachable, the path to it grows from 16 rooms to 18, and
+no link is ever left dangling.
+
+---
+
+## What was new in v5.7 — rewards that lie
 
 Every item here is a system the game advertised and then did not deliver — the
 same disease as the six phantom relics removed in v5.5.
