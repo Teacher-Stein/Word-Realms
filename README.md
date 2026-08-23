@@ -1,9 +1,11 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 5.9 — Realm 2.** Two realms playable. Realm 1 (Unit 1, Extreme Weather) is
-fully playable; Realms 2–9 appear as locked placeholders using the correct
-themes from the school syllabus.
+class. **Version 6.0 — The Wildlands, painted.** Two realms fully playable and fully
+illustrated. Realm 1 (Unit 1, Extreme Weather) and Realm 2 (Unit 2, Copycat
+Animals) each have their own cast, boss, guide and three painted backdrops;
+Realms 3–9 appear as locked placeholders using the correct themes from the
+school syllabus.
 
 Runs entirely in the browser. No installs, no accounts, no internet needed
 once the page has loaded.
@@ -23,7 +25,39 @@ If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
 
-## What's new in v5.9 — The Wildlands
+## What's new in v6.0 — The Wildlands gets its face
+
+Realm 2 shipped in v5.9 playable but wearing Realm 1's clothes: all seventeen
+sprite paths pointed at the storm cast as stand-ins. They are now real — 18 new
+assets, drawn for this realm, plus three painted forest backdrops.
+
+**Each realm now has its own palette.** Realm 1's 56 shared colours are a storm
+palette: blues, greys, bone. Pushing a forest through it moved every colour by
+27.6 RGB units on average and turned the moss and the toad *purple*. Realm 2
+gets 48 forest colours of its own on top of the shared cast, which cuts that to
+11.2 and is indistinguishable from the source art. Every realm from here gets
+the same treatment, and its own `assets/sprites/realmN/` folder so the shared
+palette stays clean.
+
+**The backdrops were darkened, and there is a number behind it.** Everywhere in
+Realm 1 the party is 59–75 luminance points *brighter* than the room, and that
+bright-on-dark relationship is what makes four small figures readable from the
+back of a classroom. The sunlit forest as generated measured 117 against a hero
+at 85 — it inverted the relationship, in the one realm where children are meant
+to be spotting camouflaged animals. The three bands now run +26, +43 and +60,
+darkening as the party goes deeper.
+
+**Two new tests, because art can ship broken too.** `test_art.py` fails if a
+sprite is missing, if a ready realm borrows another realm's art, if the chroma
+key left magenta behind, if a sprite falls outside the arena's size band, or if
+a backdrop is brighter than the heroes. `shot_realm2.py` walks Realm 2 in a real
+browser and photographs every monster it meets, checking rendered aspect against
+the art's true aspect — the check that would have caught the Hurricane Titan
+shipping 58% too wide.
+
+---
+
+## What was new in v5.9 — The Wildlands
 
 **Realm 2 is playable.** Unit 2, *Copycat Animals* — 112 original questions
 across all 32 curriculum items, a cast of 17 camouflage creatures, and a boss

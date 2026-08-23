@@ -847,92 +847,93 @@ const REALM2_ELITE_QUESTIONS = [
 // more than Realm 1's storm cast, which was built on flurries and drains -
 // the Stormlands hit you, the Wildlands wait for you.
 // ---------------------------------------------------------------------------
-// ART STAND-INS. Every sprite path below currently points at its Realm 1
-// counterpart, so the realm is fully playable and testable TODAY. Swap the 17
-// paths (and the `artPending` flag on the realm) the moment the Wildlands art
-// lands - see realm2-art-brief.md for what each one is meant to be.
+// ART. The Wildlands cast lives in assets/sprites/realm2/ rather than beside
+// the Realm 1 sprites, and that is deliberate: the props pipeline builds its
+// shared palette by globbing assets/sprites/*.png, so if Realm 2's forest
+// greens sat in that glob then every realm built after this one would quietly
+// inherit them. Each realm gets its own folder and its own palette extension.
 const REALM2_MONSTERS = [
-  { id:"stickmoth", name:"Stick Moth", sprite:"assets/sprites/wisp.png",
+  { id:"stickmoth", name:"Stick Moth", sprite:"assets/sprites/realm2/stick_moth.png",
     voice:"glass", pitch:290, size:0.30,
     taunt:"What you took for a dead twig unfolds into wings!",
     attacks:[{kind:"hit",dmg:1},{kind:"guard"}], special:null, cadence:3 },
 
-  { id:"leafback", name:"Leafback Toad", sprite:"assets/sprites/husk.png",
+  { id:"leafback", name:"Leafback Toad", sprite:"assets/sprites/realm2/leafback_toad.png",
     voice:"growl", pitch:150, size:0.34,
     taunt:"A mound of leaves blinks, and croaks!",
     attacks:[{kind:"hit",dmg:1},{kind:"flurry",dmg:1,hits:2}], special:null, cadence:3 },
 
-  { id:"bramblecat", name:"Bramble Cat", sprite:"assets/sprites/fang.png",
+  { id:"bramblecat", name:"Bramble Cat", sprite:"assets/sprites/realm2/bramble_cat.png",
     voice:"shriek", pitch:300, size:0.42,
     taunt:"The thorn bush uncoils and shows its teeth!",
     attacks:[{kind:"hit",dmg:1},{kind:"heavy",dmg:2}], special:"expose", cadence:3 },
 
-  { id:"mimicjay", name:"Mimic Jay", sprite:"assets/sprites/crow.png",
+  { id:"mimicjay", name:"Mimic Jay", sprite:"assets/sprites/realm2/mimic_jay.png",
     voice:"shriek", pitch:340, size:0.30,
     taunt:"The Mimic Jay calls out in somebody else's voice!",
     attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:1,shards:5}], special:"confuse", cadence:3 },
 
-  { id:"pebbleshell", name:"Pebbleshell Crab", sprite:"assets/sprites/shimmer.png",
+  { id:"pebbleshell", name:"Pebbleshell Crab", sprite:"assets/sprites/realm2/pebbleshell_crab.png",
     voice:"glass", pitch:220, size:0.24,
     taunt:"One of the river stones is walking sideways!",
     attacks:[{kind:"guard"},{kind:"hit",dmg:1}], special:null, cadence:3 },
 
-  { id:"driftstag", name:"Driftwood Stag", sprite:"assets/sprites/serpent.png",
+  { id:"driftstag", name:"Driftwood Stag", sprite:"assets/sprites/realm2/driftwood_stag.png",
     voice:"roar", pitch:110, size:0.62,
     taunt:"The fallen branches stand up on four legs!",
     attacks:[{kind:"heavy",dmg:2},{kind:"charge",dmg:3,turns:2}], special:null, cadence:3 },
 
-  { id:"glasslizard", name:"Glass Lizard", sprite:"assets/sprites/permafrost.png",
+  { id:"glasslizard", name:"Glass Lizard", sprite:"assets/sprites/realm2/glass_lizard.png",
     voice:"whoosh", pitch:260, size:0.28,
     taunt:"You can see the forest straight through it!",
     attacks:[{kind:"hit",dmg:1},{kind:"guard"}], special:"chill", cadence:3 },
 
-  { id:"ashmoth", name:"Ashwing", sprite:"assets/sprites/funnel.png",
+  { id:"ashmoth", name:"Ashwing", sprite:"assets/sprites/realm2/ashwing.png",
     voice:"whoosh", pitch:200, size:0.36,
     taunt:"Ash lifts off the burnt bark on grey wings!",
     attacks:[{kind:"flurry",dmg:1,hits:2},{kind:"hit",dmg:1}], special:"expose", cadence:3 },
 
-  { id:"burrower", name:"Sand Burrower", sprite:"assets/sprites/eyewalker.png",
+  { id:"burrower", name:"Sand Burrower", sprite:"assets/sprites/realm2/sand_burrower.png",
     voice:"growl", pitch:130, size:0.34,
     taunt:"The ground erupts and something eyeless rears up!",
     attacks:[{kind:"charge",dmg:3,turns:2},{kind:"hit",dmg:1}], special:null, cadence:3 },
 
-  { id:"thornhog", name:"Thornhog", sprite:"assets/sprites/brute.png",
+  { id:"thornhog", name:"Thornhog", sprite:"assets/sprites/realm2/thornhog.png",
     voice:"growl", pitch:120, size:0.40,
     taunt:"A Thornhog lowers its splintered tusks!",
     attacks:[{kind:"heavy",dmg:2},{kind:"hit",dmg:1}], special:null, cadence:3 },
 
-  { id:"hollowfox", name:"Hollow Fox", sprite:"assets/sprites/siren.png",
+  { id:"hollowfox", name:"Hollow Fox", sprite:"assets/sprites/realm2/hollow_fox.png",
     voice:"whoosh", pitch:180, size:0.44,
     taunt:"Dead leaves swirl into the shape of a fox — and two pale eyes open!",
     attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:1,shards:7}], special:"confuse", cadence:3 },
 
-  { id:"mossbear", name:"Moss Bear", sprite:"assets/sprites/wyrm.png",
+  { id:"mossbear", name:"Moss Bear", sprite:"assets/sprites/realm2/moss_bear.png",
     voice:"roar", pitch:96, size:0.70,
     taunt:"The mossy boulder rises onto its hind legs. It is not a boulder.",
     attacks:[{kind:"heavy",dmg:2},{kind:"regen"}], special:null, cadence:3 },
 ];
 
 const REALM2_ELITES = [
-  { id:"canopy", name:"The Watcher in the Canopy", sprite:"assets/sprites/warden.png",
+  { id:"canopy", name:"The Watcher in the Canopy", sprite:"assets/sprites/realm2/watcher.png",
     voice:"shriek", pitch:150, size:0.84,
     taunt:"Four amber eyes open in the bark above you. It has been watching a while.",
     attacks:[{kind:"heavy",dmg:2},{kind:"guard"},{kind:"charge",dmg:3,turns:2}],
     special:"expose", cadence:3 },
 
-  { id:"patient", name:"The Patient One", sprite:"assets/sprites/herald.png",
+  { id:"patient", name:"The Patient One", sprite:"assets/sprites/realm2/patient_one.png",
     voice:"glass", pitch:170, size:0.82,
     taunt:"What you walked past twice unfolds its forelimbs. It was waiting.",
     attacks:[{kind:"guard"},{kind:"charge",dmg:4,turns:2},{kind:"hit",dmg:2}],
     special:"chill", cadence:3 },
 
-  { id:"roottyrant", name:"Root Tyrant", sprite:"assets/sprites/colossus.png",
+  { id:"roottyrant", name:"Root Tyrant", sprite:"assets/sprites/realm2/root_tyrant.png",
     voice:"roar", pitch:88, size:0.92,
     taunt:"The forest floor stands up, and it is shaped like a man.",
     attacks:[{kind:"heavy",dmg:3},{kind:"regen"},{kind:"flurry",dmg:1,hits:3}],
     special:null, cadence:3 },
 
-  { id:"skintaker", name:"The Skin-Taker", sprite:"assets/sprites/djinn.png",
+  { id:"skintaker", name:"The Skin-Taker", sprite:"assets/sprites/realm2/skin_taker.png",
     voice:"shriek", pitch:130, size:0.86,
     taunt:"It is wearing a hundred animals, and it would like one more.",
     attacks:[{kind:"drain",dmg:2,shards:12},{kind:"heavy",dmg:2},{kind:"guard"}],
@@ -981,15 +982,14 @@ const REALMS = {
     monsters: REALM2_MONSTERS,
     elites: REALM2_ELITES,
     boss: { id:"camouflage", name:"The Great Camouflage",
-            sprite:"assets/sprites/titan.png",
+            sprite:"assets/sprites/realm2/camouflage.png",
             voice:"roar", pitch:64, size:1.00,
             taunt:"THE FOREST ITSELF STANDS UP.",
             attacks:[{kind:"heavy",dmg:3},{kind:"guard"},
                      {kind:"charge",dmg:4,turns:2},{kind:"flurry",dmg:1,hits:3},
                      {kind:"drain",dmg:1,shards:10}],
             special:"confuse", cadence:3 },
-    npc: { name:"The Tracker", sprite:"assets/sprites/chaser.png" },
-    artPending: true,     // sprites are Realm 1 stand-ins until the art lands
+    npc: { name:"The Tracker", sprite:"assets/sprites/realm2/tracker.png" },
     questions: REALM2_ALL_QUESTIONS,
     eliteQuestions: REALM2_ELITE_QUESTIONS,
     coverKeys: REALM2_COVER_KEYS,

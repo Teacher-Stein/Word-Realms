@@ -560,10 +560,19 @@ function animateSprite(spriteId, cls, ms = 600) {
 // floor and torches are hidden - the painting supplies all of that - but the
 // animated storm layer stays on top of it.
 // ---------------------------------------------------------------------------
+// Band 1 is the shallowest and band 3 the deepest. Realm 2's bands were also
+// darkened on the way through the pipeline, in a ramp: the party is measurably
+// brighter than the room in all three (+26, +43, +60 luminance), which is the
+// relationship Realm 1 has everywhere and the reason the cast reads from the
+// back of a classroom. The sunlit forest as generated was BRIGHTER than the
+// heroes and inverted it.
 const BACKDROPS = {
   1: ["assets/backdrops/realm1_band1.png",
       "assets/backdrops/realm1_band2.png",
       "assets/backdrops/realm1_band3.png"],
+  2: ["assets/backdrops/realm2_band1.png",
+      "assets/backdrops/realm2_band2.png",
+      "assets/backdrops/realm2_band3.png"],
 };
 
 // How far through the map the party is, 0 at the entrance and 1 at the boss.
