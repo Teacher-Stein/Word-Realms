@@ -90,7 +90,7 @@
       <div id="teacher-pin-view">
         <p>Enter PIN to manage realm access.</p>
         <input id="pin-input" type="password" maxlength="6" inputmode="numeric"
-               placeholder="PIN">
+               placeholder="Passphrase">
         <button id="pin-submit" class="pixel-btn">Unlock</button>
         <p class="hint">Default PIN is 1234 — change it in js/config.js</p>
         <div id="pin-error" class="error-text"></div>
@@ -171,9 +171,6 @@
             putting on the answer. <b>SAFE</b> plays normally. <b>RISKY</b> pays
             double shards and makes a mistake cost double. Backing yourself when
             you know it is the whole skill.</li>
-        <li><b>Focus</b> — once per fight, the whole class answers together.
-            Get it right and 2 answers are struck off the monster's clock. It
-            buys time, never damage, so the fight runs <i>longer</i>.</li>
         <li>At a <b>Campfire</b> there is time for <b>one</b> thing only: Mend
             hearts, Repair shields, or Sharpen for a permanent extra heart.</li>
         <li><b>Shields</b> (blue) soak damage before your hearts do and do NOT
@@ -244,8 +241,7 @@
       <div class="hud-block currency">
         <span class="badge"><span class="icon-shard"></span><span id="hud-shards">0</span></span>
         <span class="badge ember"><span class="icon-ember"></span><span id="hud-ember">0</span></span>
-        <span class="badge potions" id="hud-potions" title="Potions">No potions</span>
-        <span class="badge streak" id="hud-streak" title="Answer streak">Streak 0</span>
+        <div class="potion-row" id="hud-potions"></div>
         <span class="badge relics" id="hud-relics" title="Relics">—</span>
       </div>
     </div>
@@ -289,6 +285,7 @@
       <div class="hud-block currency">
         <span class="badge"><span class="icon-shard"></span><span id="enc-shards">0</span></span>
         <span class="badge ember"><span class="icon-ember"></span><span id="enc-ember">0</span></span>
+        <div class="potion-row" id="enc-potions"></div>
       </div>
     </div>
 
@@ -309,11 +306,14 @@
         <img id="hero-sprite" class="hero-sprite" alt="">
         <div class="shield-row" id="hero-shields"></div>
       </div>
-      <!-- The monster's nameplate, HP and intent sit BELOW the sprite. Above
-           it they were clipped off the top of the corridor on a 16:9 TV. -->
+      <!-- v6.1: the nameplate, HP and intent sit ABOVE the sprite again.
+           They were moved below in v5.x because they were being clipped off
+           the top of the corridor on a 16:9 TV - but the arena is now the
+           BOTTOM half of the screen, so there is headroom, and the intent
+           needs to be near the question it informs rather than at the very
+           bottom edge of the picture. -->
       <div class="combatant foe-side" id="monster-stage">
         <div class="foe-status" id="monster-status"></div>
-        <img id="monster-sprite" class="monster-sprite" alt="">
         <div class="foe-info">
           <div class="foe-info-row">
             <div class="nameplate" id="monster-name"></div>
@@ -321,6 +321,7 @@
           </div>
           <div class="intent" id="monster-intent"></div>
         </div>
+        <img id="monster-sprite" class="monster-sprite" alt="">
       </div>
       <img id="room-scenery" class="room-scenery" alt="">
       <div class="slash-fx" id="slash-fx"></div>
@@ -352,7 +353,6 @@
       <div class="panel-foot">
         <div class="enc-feedback" id="enc-feedback"></div>
         <button id="btn-use-item" class="pixel-btn tiny" style="display:none;">Use an Item</button>
-        <button id="btn-focus" class="pixel-btn tiny focus">Focus (whole class)</button>
         <button id="btn-brace" class="pixel-btn tiny brace">Brace</button>
         <button id="btn-teamup" class="pixel-btn tiny teamup">Team Up (+1 monster HP)</button>
       </div>
@@ -376,6 +376,7 @@
       </div>
       <div class="hud-block currency">
         <span class="badge"><span class="icon-shard"></span><span id="boss-shards">0</span></span>
+        <div class="potion-row" id="boss-potions"></div>
       </div>
     </div>
 
@@ -393,7 +394,6 @@
       </div>
       <div class="combatant foe-side huge" id="boss-stage">
         <div class="foe-status" id="boss-status"></div>
-        <img id="boss-sprite" class="monster-sprite boss-sprite" alt="">
         <div class="foe-info">
           <div class="foe-info-row">
             <div class="nameplate" id="boss-name"></div>
@@ -401,6 +401,7 @@
           </div>
           <div class="intent" id="boss-intent"></div>
         </div>
+        <img id="boss-sprite" class="monster-sprite boss-sprite" alt="">
       </div>
       <div class="slash-fx" id="boss-slash-fx"></div>
       <div class="vignette"></div>
@@ -431,7 +432,6 @@
       <div class="panel-foot">
         <div class="enc-feedback" id="boss-feedback"></div>
         <button id="btn-use-item-boss" class="pixel-btn tiny" style="display:none;">Use an Item</button>
-        <button id="btn-focus-boss" class="pixel-btn tiny focus">Focus (whole class)</button>
         <button id="btn-brace-boss" class="pixel-btn tiny brace">Brace</button>
         <button id="btn-teamup-boss" class="pixel-btn tiny teamup">Team Up (+1 boss HP)</button>
       </div>
@@ -525,7 +525,16 @@
 
 </div>
 
+<!-- The teacher's Distracted button. It lives OUTSIDE every <section class="screen">
+     deliberately: it has to be reachable on the map, in a shop, at a campfire
+     and mid-fight, and duplicating it into eight screens would guarantee that
+     one of them was missed. Shown only while a run is in progress. -->
+<button id="btn-distracted" type="button" title="A student broke the rule — the party pays">
+  <span class="dx-icon">!</span> Distracted
+</button>
+
 <script src="js/config.js"></script>
+<script src="js/sha256.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/music.js"></script>
 <script src="js/announce.js"></script>

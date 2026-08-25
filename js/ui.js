@@ -27,6 +27,10 @@ const MAP_PAD_Y = 110;
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
+  // The Distracted button sits outside the screens and follows the run, not
+  // the screen - so every screen change is also the moment to check whether it
+  // should be on show.
+  if (typeof syncDistractedButton === "function") syncDistractedButton();
   // A hidden section has no measurable height, so the shared sprite scale can
   // only be worked out once the screen is actually on. Re-measure here and
   // correct anything that was sized from the previous screen's value.
@@ -388,6 +392,49 @@ function walkTotemTo(fromId, toId, done) {
 }
 
 // ------------------------------- HUD ---------------------------------------
+// ---------------------------------------------------------------------------
+// Potions in the HUD.
+//
+// They used to live only inside the Inventory screen, behind a button, which
+// meant that across four real classes they were largely forgotten - a resource
+// nobody can see is a resource nobody spends. They now sit in the top bar
+// beside the hearts and shields on every screen, drawn as their own icons so
+// the class can see at a glance what the party is carrying.
+//
+// Clicking one does NOT drink it. It opens a confirmation with the potion's
+// name and what it actually does, because the room needs a moment to argue
+// about whether now is the time - and because a mis-click costing the party
+// its only Healing Draught in front of twenty-five children is a bad afternoon.
+// ---------------------------------------------------------------------------
+function renderPotionRow(prefix) {
+  const el = document.getElementById(`${prefix}-potions`);
+  const run = STATE.run;
+  if (!el || !run) return;
+  el.innerHTML = "";
+  const ids = run.potions || [];
+  if (!ids.length) {
+    el.innerHTML = '<span class="potion-empty">No potions</span>';
+    return;
+  }
+  // group identical potions so three Healing Draughts are one icon with x3
+  const counts = {};
+  ids.forEach(id => { counts[id] = (counts[id] || 0) + 1; });
+  Object.keys(counts).forEach(id => {
+    const p = typeof potionById === "function" ? potionById(id) : null;
+    if (!p) return;
+    const b = document.createElement("button");
+    b.className = "potion-chip";
+    b.type = "button";
+    b.title = `${p.name} — ${p.effect}`;
+    b.innerHTML = `<img src="${p.icon}" alt=""> ` +
+                  (counts[id] > 1 ? `<b>&times;${counts[id]}</b>` : "");
+    b.addEventListener("click", () => {
+      if (typeof window.confirmPotion === "function") window.confirmPotion(id, prefix);
+    });
+    el.appendChild(b);
+  });
+}
+
 function renderTopHud(prefix) {
   const run = STATE.run, realm = currentRealm();
   if (!run) return;
@@ -430,22 +477,14 @@ function renderTopHud(prefix) {
       }
     }
   }
-  const st = document.getElementById(`${prefix}-streak`);
-  if (st) {
-    st.textContent = `Streak ${run.streak || 0}`;
-    st.className = "badge streak" + ((run.streak || 0) >= CONFIG.STREAK_GUARD ? " hot" : "");
-  }
+
   const nameEl = document.getElementById(`${prefix}-realm-name`);
   if (nameEl) nameEl.textContent = `Realm ${realm.id} · ${realm.name}`;
   const sh = document.getElementById(`${prefix}-shards`);
   if (sh) sh.textContent = run.shards;
   const em = document.getElementById(`${prefix}-ember`);
   if (em) em.textContent = STATE.ember;
-  const po = document.getElementById(`${prefix}-potions`);
-  if (po) {
-    const n = run.potions ? run.potions.length : 0;
-    po.textContent = n ? `${n} potion${n > 1 ? "s" : ""}` : "No potions";
-  }
+  renderPotionRow(prefix);
   const rl = document.getElementById(`${prefix}-relics`);
   if (rl) rl.textContent = run.relics.length
     ? run.relics.map(r => r.name).join(" · ") : "No relics yet";
@@ -1225,9 +1264,7 @@ function renderStatusRow(elId) {
   }
   if (run.bracing)      add("BRACING", "brace", "a correct answer blocks");
   if (run.shieldActive) add("STORM SHIELD", "ward", "blocks the next hit");
-  if (run.streakGuard)  add("GUARDED", "ward", "next attack blocked");
   if ((run.shields || 0) > 0) add(`SHIELDS ${run.shields}`, "shield", "");
-  if ((run.streak || 0) >= 2) add(`STREAK ${run.streak}`, "streak", "");
 }
 
 // ---------------------------------------------------------------------------
@@ -1322,7 +1359,7 @@ function renderFoeStatus(elId, m) {
   if (m.enraged)  add("enraged");
 }
 
-// big centre-screen shout for streaks and enrage
+// big centre-screen shout for enrage and other one-off moments
 function showStreakBanner(text) {
   let el = document.getElementById("streak-banner");
   if (!el) {

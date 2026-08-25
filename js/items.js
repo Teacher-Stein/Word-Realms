@@ -131,24 +131,24 @@ const RELICS = [
 ];
 
 const POTIONS = [
-  { id:"potion_heal",    name:"Healing Draught", price:22,
+  { id:"potion_heal",    name:"Healing Draught", price:37,
     icon:"assets/items/potion_heal.png",
     desc:"Warm and bitter. The party stands up straighter.",
     effect:"Restore 2 hearts" },
 
-  { id:"potion_clarity", name:"Potion of Clarity", price:18,
+  { id:"potion_clarity", name:"Potion of Clarity", price:31,
     icon:"assets/items/potion_clarity.png",
     desc:"The wrong words blur and fade off the page.",
     effect:"Removes 1 wrong answer on the next question" },
 
-  { id:"potion_shield",  name:"Storm Shield",    price:20,
+  { id:"potion_shield",  name:"Storm Shield",    price:34,
     icon:"assets/items/potion_shield.png",
     desc:"A dome of hardened air holds for exactly one blow.",
     effect:"Blocks the next hit taken" },
 
   // Shields no longer refill for free in every room, so there has to be
   // something worth spending shards on between rest points.
-  { id:"potion_patch",   name:"Patch Kit",       price:16,
+  { id:"potion_patch",   name:"Patch Kit",       price:27,
     icon:"assets/items/potion_patch.png",
     desc:"Wire, hide and a great deal of swearing.",
     effect:"Restore 6 shields" },
@@ -215,11 +215,27 @@ const ALL_GEAR = WEAPONS.concat(ARMOURS);
 function gearById(id)  { return ALL_GEAR.find(g => g.id === id); }
 function enchantById(id){ return ENCHANTMENTS.find(e => e.id === id); }
 
-const RARITY_PRICE = { common: 26, uncommon: 38, rare: 52, epic: 78 };
+// v6.1: prices up by roughly 70%.
+//
+// Every one of four real classes bought EVERY item in every shop, which means
+// the shop was a shopping list rather than a decision. The shelf is already
+// six items (2 relics, 1 gear, 3 potions) so the problem was never stock size
+// - it was that a run earns more than six items cost.
+//
+// The fix is on THIS side rather than on income, deliberately. Most shard
+// income is the 2-per-correct-answer trickle, and that trickle is the game
+// telling a child that getting it right mattered. Cutting it to balance a shop
+// would weaken the exact feedback loop this game exists for. So the money
+// stays and the goods cost more.
+//
+// Target: six on the shelf, about two affordable. Watch this in a real lesson
+// - the last time this was tuned from a simulation, the simulation turned out
+// to be modelling a solo player rather than a class that plays well.
+const RARITY_PRICE = { common: 44, uncommon: 65, rare: 88, epic: 132 };
 // Gear is priced above a relic of the same rarity: it occupies a slot, it can
 // be replaced later, and it is the shard sink for a party that already has
 // everything else it wants.
-const GEAR_PRICE   = { common: 34, uncommon: 48, rare: 64, epic: 90 };
+const GEAR_PRICE   = { common: 58, uncommon: 82, rare: 108, epic: 152 };
 
 function relicById(id)  { return RELICS.find(r => r.id === id); }
 function potionById(id) { return POTIONS.find(p => p.id === id); }

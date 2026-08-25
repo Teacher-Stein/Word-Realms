@@ -479,9 +479,28 @@ textarea { resize: vertical; line-height: 1.5; }
 }
 
 /* ---------------------------- question panel ---------------------------- */
+/* ---------------------------------------------------------------------------
+   v6.1: THE QUESTION GOES AT THE TOP.
+   Four classes played this with the question panel at the bottom of the TV and
+   students at the back stood up to read over the heads of the rest of the
+   class. The whole game is designed around being readable from the back of a
+   room, so this outranks every aesthetic argument for putting the arena first.
+
+   Done with flex `order` rather than by moving the markup: every id, every
+   querySelector and every test that walks the DOM keeps working, and the
+   reading order for a screen reader stays question-then-scene.
+   --------------------------------------------------------------------------- */
+#screen-encounter .hud-top,
+#screen-boss      .hud-top { order: 0; }
+#screen-encounter .panel,
+#screen-boss      .panel    { order: 1; }
+#screen-encounter .corridor,
+#screen-boss      .corridor { order: 2; }
+
 .panel {
   background: linear-gradient(var(--panel-light), var(--panel));
-  border-top: 4px solid var(--accent); padding: 10px 26px 12px; z-index: 7;
+  /* the accent rule now separates the panel from the arena BELOW it */
+  border-bottom: 4px solid var(--accent); padding: 10px 26px 12px; z-index: 7;
   flex: 0 0 auto;
 }
 .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
@@ -655,9 +674,11 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 }
 .item-tile img { width: 76px; height: 76px; image-rendering: pixelated;
   filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
-.item-tile .it-name   { font-weight: 900; font-size: 1.05rem; color: var(--gold); margin-top: 6px; }
-.item-tile .it-effect { font-size: .92rem; color: #cfe6ff; font-weight: 700; margin-top: 6px; line-height: 1.35; }
-.item-tile .it-desc   { font-size: .82rem; opacity: .72; font-style: italic; margin-top: 6px; line-height: 1.35; }
+/* v6.1: the shop is read from the back of a classroom like everything else.
+   Stein's note after four classes: "items in shops need to have larger text". */
+.item-tile .it-name   { font-weight: 900; font-size: 1.42rem; color: var(--gold); margin-top: 7px; }
+.item-tile .it-effect { font-size: 1.18rem; color: #cfe6ff; font-weight: 700; margin-top: 7px; line-height: 1.35; }
+.item-tile .it-desc   { font-size: .98rem; opacity: .78; font-style: italic; margin-top: 7px; line-height: 1.35; }
 .item-tile .it-rarity {
   position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
   font-size: .62rem; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase;
@@ -1323,4 +1344,46 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 .realm-card-note {
   margin-top: 6px; font-size: .74rem; font-weight: 800; letter-spacing: .5px;
   color: #ffd76a; opacity: .9;
+}
+
+
+/* ---------------------------------------------------------------------------
+   v6.1 additions
+   --------------------------------------------------------------------------- */
+
+/* Potions in the HUD. Big enough to hit from a teacher's laptop trackpad and
+   to read from the back of the room; they sit with the currency badges. */
+.potion-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.potion-empty { font-size: .82rem; opacity: .55; letter-spacing: .5px; }
+.potion-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  background: rgba(12,7,20,.65); border: 2px solid var(--accent);
+  border-radius: 10px; padding: 3px 7px; cursor: pointer;
+  font: inherit; color: var(--text); line-height: 1;
+}
+.potion-chip:hover { border-color: var(--gold); background: rgba(52,38,10,.75); }
+.potion-chip img {
+  width: 30px; height: 30px; image-rendering: pixelated; display: block;
+}
+.potion-chip b { font-size: .95rem; color: #ffe9b0; }
+
+/* The Distracted button. Deliberately plain and slightly recessed: it is a
+   teacher's tool, not part of the game's reward language, and it should not
+   look like something to aim for. */
+#btn-distracted {
+  position: fixed; left: 14px; bottom: 12px; z-index: 60;
+  display: none; align-items: center; gap: 7px;
+  font-family: inherit; font-weight: 800; letter-spacing: 1px;
+  text-transform: uppercase; font-size: .82rem;
+  color: #ffd2ca; background: rgba(58,18,22,.85);
+  border: 2px solid #8d3b3b; border-radius: 9px;
+  padding: 7px 12px; cursor: pointer; opacity: .55;
+  transition: opacity .15s, border-color .15s;
+}
+#btn-distracted.on { display: inline-flex; }
+#btn-distracted:hover { opacity: 1; border-color: #ff8a7a; }
+#btn-distracted .dx-icon {
+  display: inline-grid; place-items: center;
+  width: 17px; height: 17px; border-radius: 50%;
+  background: #ff8a7a; color: #2a0d10; font-size: .8rem;
 }

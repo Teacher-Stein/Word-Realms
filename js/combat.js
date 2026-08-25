@@ -71,7 +71,11 @@ function makeMonster(base, isElite, isBoss = false) {
   if (variant) hp = Math.max(1, hp + variant.hpBonus);
   if (isElite && hasRelic("thunder_sigil")) hp = Math.max(2, hp - 1);
 
-  let cadence = (base.cadence || 3) + ramp.cadence;
+  // v6.1: CONFIG.MONSTER_CADENCE overrides the per-monster value in
+  // content.js. Every monster in both realms was authored at 3 and the number
+  // needed to move for all of them at once - see the long note in config.js
+  // about why the monster was never actually acting.
+  let cadence = (CONFIG.MONSTER_CADENCE || base.cadence || 3) + ramp.cadence;
   if (variant) cadence = Math.max(1, cadence + variant.cadenceBonus);
   if (hasRelic("oracle_eye")) cadence += 1;     // more warning, same number of questions
 

@@ -203,16 +203,17 @@ function openTeacher() {
   $("pin-error").textContent = "";
   showScreen("screen-teacher");
 }
+$("btn-distracted").addEventListener("click", distractedNow);
 $("btn-teacher").addEventListener("click", () => { SFX.click(); openTeacher(); });
 $("btn-map-teacher").addEventListener("click", () => { SFX.click(); openTeacher(); });
 $("pin-submit").addEventListener("click", () => {
-  if ($("pin-input").value === CONFIG.TEACHER_PIN) {
+  if (teacherPinOk($("pin-input").value)) {
     $("teacher-pin-view").style.display = "none";
     $("teacher-controls").style.display = "";
     renderTeacherRealmList();
     SFX.unlockChime();
   } else {
-    $("pin-error").textContent = "Incorrect PIN.";
+    $("pin-error").textContent = "That passphrase is not right.";
     SFX.wrong();
   }
 });
@@ -412,7 +413,23 @@ function backToMap(advanceTurn = true) {
   if (!STATE.run) return;
   MUSIC.setRealm(STATE.run ? STATE.run.realmId : 1);
   MUSIC.play("explore");
-  if (advanceTurn) { nextStudent(); showTurnCallout(STATE.run.currentStudent); }
+  // v6.1: the turn only moves on if this room actually ASKED something.
+  //
+  // Before this, walking into a shop, buying a potion and leaving consumed a
+  // student's turn - so a child could be "on" for a whole room and never
+  // answer a question, while the next child in the queue waited. Stein spotted
+  // it across four classes. The shopping decision still belongs to whoever is
+  // on turn, because arguing about what to buy is half the fun; they simply
+  // keep their turn for the next question.
+  //
+  // `answeredThisRoom` is set wherever an answer is recorded, so any room type
+  // that asks a question advances the turn and any room that does not, does
+  // not - without this function needing to know the list.
+  if (advanceTurn && STATE.run.answeredThisRoom) {
+    nextStudent();
+    showTurnCallout(STATE.run.currentStudent);
+  }
+  STATE.run.answeredThisRoom = false;
   renderTopHud("hud");
   showScreen("screen-map");
   renderMap();
@@ -581,11 +598,11 @@ $("pause-award").addEventListener("click", () => {
   // keystrokes and three clicks killed most of a monster with nobody
   // answering, and a Grade 5 class finds that in one lesson. It is a teacher
   // override, so it asks for the teacher's PIN.
-  const given = window.prompt("Teacher PIN to award this answer:");
+  const given = window.prompt("Teacher passphrase to award this answer:");
   if (given === null) return;
-  if (String(given).trim() !== String(CONFIG.TEACHER_PIN)) {
+  if (!teacherPinOk(given)) {
     SFX.wrong();
-    $("pause-sub").textContent = "That PIN is not right.";
+    $("pause-sub").textContent = "That passphrase is not right.";
     return;
   }
   SFX.unlockChime();
@@ -694,23 +711,88 @@ document.addEventListener("click", ev => {
   P.onPick(STAKE_RISKY, correct);
 });
 
-// ===================== FOCUS =====================
-window.useFocusNow = function (prefix) {
-  const fb = $(prefix === "boss" ? "boss-feedback" : "enc-feedback");
-  if (!useFocus()) {
-    SFX.wrong();
-    fb.textContent = "Focus is already spent for this fight.";
-    fb.className = "enc-feedback bad";
+// ===================== THE DISTRACTED BUTTON =====================
+//
+// Stein's request after playing with four classes: "when one student is
+// nominated but some other student shouts out the answer, it breaks my
+// classroom rule and I think I should have a button for 'distracted'".
+//
+// Three rules, and each one exists for a reason:
+//
+//   1. It NEVER consumes the question. The nominated student still answers it.
+//      Marking the answer wrong would cost review volume - the thing this game
+//      exists for - and would punish the one child who did nothing wrong.
+//   2. In a fight the monster strikes; anywhere else the party simply loses a
+//      heart. Same cost, so the rule reads identically to the class whether
+//      they are fighting, shopping or walking the map.
+//   3. It ignores Brace, shields and relics, and does not touch the monster's
+//      countdown. It is not a monster's turn; it is the cost of breaking the
+//      rule, and it must be visible every single time or it teaches nothing.
+function distractedNow() {
+  const run = STATE.run;
+  if (!run) return;
+
+  const boss = !!(run.boss && document.getElementById("screen-boss")
+                                     .classList.contains("active"));
+  const inFight = !!(boss ? run.boss : run.encounter);
+  const m = boss ? run.boss : run.encounter;
+  const side = boss ? "boss" : "enc";
+
+  const res = distractedPenalty(CONFIG.DISTRACTED_DAMAGE);
+
+  SFX.monsterAttack();
+  if (inFight && m) {
+    animateSprite(document.getElementById(boss ? "boss-sprite" : "monster-sprite"),
+                  "attack", 640);
+    const fb = $(`${side}-feedback`);
+    if (fb) {
+      fb.textContent =
+        `Someone called out. ${m.name} takes the opening — ${res.dealt} heart lost. ` +
+        `${run.currentStudent || "The student on turn"} still answers.`;
+      fb.className = "enc-feedback bad";
+    }
+    if (typeof ANNOUNCER !== "undefined") {
+      ANNOUNCER.say("DISTRACTED — THE MONSTER STRIKES", "bad");
+    }
+  } else if (typeof showPopup === "function") {
+    showPopup({
+      banner: "DISTRACTED", tone: "bad",
+      title: "The party loses focus",
+      effect: `-${res.dealt} heart`,
+      desc: "Someone answered out of turn. The rule is the rule.",
+    });
+  }
+
+  flashScreen();
+  ["hud", "enc", "boss"].forEach(renderTopHudSafe);
+  if (res.dead) {
+    // Go through the ordinary failure ladder rather than killing the run
+    // outright. A party that still has its Last Stand should get to make it -
+    // losing that because somebody shouted out would be a harsher punishment
+    // than anything else in the game, and it would fall on the whole class.
+    setTimeout(() => tryLastStand({ monster: inFight ? m : null },
+                                  () => { /* survived; carry on where we are */ }),
+               900);
     return;
   }
-  SFX.unlockChime();
-  showStreakBanner("FOCUS — THE WHOLE CLASS ANSWERS");
-  fb.textContent =
-    `Hands up, everyone. Get this right and ${CONFIG.FOCUS_STUN_ANSWERS} answers ` +
-    `are struck off the monster's clock.`;
-  fb.className = "enc-feedback good";
-  updateCombatButtons(prefix);
-};
+  saveState();
+}
+
+// Visible whenever a run is in progress, on every screen. Called from
+// showScreen() and after any state change that could start or end a run.
+function syncDistractedButton() {
+  const b = document.getElementById("btn-distracted");
+  if (!b) return;
+  b.classList.toggle("on", !!STATE.run);
+}
+
+function flashScreen() {
+  const f = document.getElementById("hit-flash");
+  if (!f) return;
+  f.classList.remove("go");
+  void f.offsetWidth;
+  f.classList.add("go");
+}
 
 // ===================== SHARED QUESTION RENDERER =====================
 function renderQuestion(q, ids, onAnswer) {
@@ -798,7 +880,7 @@ function startFight(isElite) {
   updateStageScale("corridor");
   showCombatButtons(true);
   if (typeof ANNOUNCER !== "undefined") ANNOUNCER.clear();
-  resetFocus();                 // one Focus per FIGHT, not per run
+  resetFocus();                 // clears the per-fight shield cap
   clearStake();
   STATE.run.potionUsedThisTurn = false;
   const run = STATE.run;
@@ -879,7 +961,6 @@ function askFightQuestion() {
   updateCombatButtons("enc");
   if (m.isElite) coach("elite");
   if (stakesAvailable(q, defending)) coach("stakes");
-  if (focusAvailable()) coach("focus");
   if (m.intent && !m.stunned) coach("intent");
 }
 
@@ -910,10 +991,9 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
 
   if (correct) {
     markCovered(q.cover);
-    run.stats.correct++;
+    run.stats.correct++; run.answeredThisRoom = true;
     bumpStat(student, "correct");
     m.helpers.filter(h => h !== student).forEach(h => bumpStat(h, "correct"));
-    const streak = bumpStreak();
 
     if (defending) {
       // Brace: block the blow, clear the debuff, deal no damage.
@@ -945,7 +1025,7 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
       $(P.feedback).className = "enc-feedback good";
       renderIntent(P.intent, m);
       renderTopHud(P.hud);
-      afterStreak(streak, () => nextCombatTurn(ctx));
+      afterStreak(0, () => nextCombatTurn(ctx));
       return;
     }
 
@@ -960,7 +1040,7 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
       $(P.feedback).className = "enc-feedback";
       renderIntent(P.intent, m);
       renderTopHud(P.hud);
-      afterStreak(streak, () => nextCombatTurn(ctx));
+      afterStreak(0, () => nextCombatTurn(ctx));
       return;
     }
 
@@ -969,21 +1049,6 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
     // A stake pays in shards - never in damage. Extra damage would mean a
     // shorter fight, and a shorter fight is fewer questions.
     const dmg = playerDamageAgainst(m);
-
-    // Focus: a correct answer strikes ticks off the monster's clock. This
-    // LENGTHENS the fight, which is the only reason it is allowed to exist.
-    const stun = consumeFocus(true);
-    let focusNote = "";
-    if (stun) {
-      // Do NOT clamp to cadence. The clock sits AT cadence at the start of
-      // every fight and immediately after every monster turn - the two moments
-      // a class is most likely to press the panic button - so Math.min threw
-      // the whole effect away and then announced success anyway. Focus is
-      // meant to lengthen a fight, so the clock is allowed to run past its
-      // normal maximum.
-      m.turnsUntilAct += stun;
-      focusNote = ` FOCUS — ${stun} answers struck off its clock!`;
-    }
 
     SFX.playerHit();
     animateSprite(P.hero, "attacking", 560);
@@ -1010,13 +1075,13 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
       if (rollStun()) {
         m.stunned = true;
         $(P.feedback).textContent =
-          `A stunning blow! ${m.name} loses its next turn.` + focusNote;
+          `A stunning blow! ${m.name} loses its next turn.`;
       } else {
         $(P.feedback).textContent =
           (blind ? `Called it blind! +${gained} shards${shielded ? ` and +${shielded} shield` : ""}`
          : crit  ? `Critical hit! +${gained} shards`
                  : `A clean hit! +${gained} shards`)
-          + stakeNote(stake, blind, true) + focusNote;
+          + stakeNote(stake, blind, true);
       }
       $(P.feedback).className = "enc-feedback good";
     }
@@ -1028,14 +1093,13 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
     saveState();
 
     if (m.hp <= 0) { setTimeout(() => monsterDefeated(ctx), 620); return; }
-    afterStreak(streak, () => nextCombatTurn(ctx));
+    afterStreak(0, () => nextCombatTurn(ctx));
 
   } else {
     // wrong answer: the monster counter-attacks immediately
-    run.stats.wrong++;
+    run.stats.wrong++; run.answeredThisRoom = true;
     bumpStat(student, "wrong");
     noteMissed(q);          // the Echoing Hall event brings these back
-    resetStreak();
     run.bracing = false;
 
     // This is where RISKY bites. The stake multiplies what the mistake costs;
@@ -1043,7 +1107,6 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
     const stake = currentStake();
     const blind = stakeIsBlind(q, stake);
     const dmg = wrongAnswerDamage(q) * stakeDamageMult(stake);
-    consumeFocus(false);          // a missed Focus is simply spent
     clearStake();
     if (stake === STAKE_RISKY) {
       $(P.feedback).textContent += stakeNote(stake, blind, false);
@@ -1106,25 +1169,22 @@ function applyHit(rawDmg, m, P) {
   return res;
 }
 
-// streak rewards, then continue
-function afterStreak(streak, done) {
-  const run = STATE.run;
-  if (streak === CONFIG.STREAK_GUARD) {
-    run.streakGuard = true; saveState();
-    showStreakBanner(`${streak} IN A ROW — NEXT ATTACK BLOCKED!`);
-    SFX.unlockChime();
-    setTimeout(done, 1500);
-    return;
-  }
-  if (streak >= CONFIG.STREAK_BONUS && streak % CONFIG.STREAK_BONUS === 0) {
-    const gained = addShards(12);
-    addPotion(pick(POTIONS).id);
-    showStreakBanner(`${streak} IN A ROW — +${gained} SHARDS & A POTION!`);
-    SFX.treasure();
-    renderTopHud("enc"); renderTopHud("boss");
-    setTimeout(done, 1700);
-    return;
-  }
+// v6.1: streaks are gone.
+//
+// STREAK_GUARD blocked the monster's next attack after 3 correct in a row,
+// which a decent class hits constantly - so it ate the monster's one action
+// per fight and students never learned that monsters HAVE a turn. STREAK_BONUS
+// then paid 12 shards and a potion every 5, which was a large slice of both
+// economies for something that required no decision.
+//
+// Stein's own summary after four classes: "it gave too many potions, blocked
+// too many attacks and gave too many shards. If this were a single player game
+// a streak would be more beneficial." A class of twenty-five will always find
+// three right answers in a row between them; it measures nothing.
+//
+// What is left is the beat of silence between answering and the monster
+// moving, which the room needs in order to look up at the screen.
+function afterStreak(_streak, done) {
   setTimeout(done, 1150);
 }
 
@@ -1188,19 +1248,6 @@ function nextCombatTurn(ctx) {
       // The monster's event loop runs on timers, so a wipe can null the run
       // between two hits of a flurry.
       if (!STATE.run) return;
-      if (STATE.run.streakGuard) {
-        STATE.run.streakGuard = false; saveState();
-        SFX.heal();
-        // This consumes on the first damage EVENT, so on a 3-hit flurry it
-        // blocks one hit and the other two land - while the old wording
-        // claimed the whole attack had been turned aside.
-        $(P.feedback).textContent = events.length > 1
-          ? "Your winning streak blocks one hit — the rest still land!"
-          : "Your winning streak turns the blow aside!";
-        $(P.feedback).className = "enc-feedback good";
-        setTimeout(step, 1000);
-        return;
-      }
       SFX.monsterAttack();
       animateSprite(P.sprite, "attack", 640);
       setTimeout(() => {
@@ -1277,7 +1324,7 @@ function monsterDefeated(ctx) {
   // The fight is over, so the fight buttons stop responding. They used to stay
   // enabled behind the reward cards, and a child clicking Brace on a dead
   // monster got nothing with no explanation.
-  document.querySelectorAll(".pixel-btn.brace, .pixel-btn.teamup, .pixel-btn.focus")
+  document.querySelectorAll(".pixel-btn.brace, .pixel-btn.teamup")
     .forEach(b => { b.disabled = true; });
   SFX.monsterDown();
   setTimeout(() => SFX.monsterCry(monsterVoice(m), true), 160);
@@ -1303,9 +1350,16 @@ function monsterDefeated(ctx) {
     extra: `Felled by ${student}${m.helpers.length ? " & " + m.helpers.join(" & ") : ""}`,
   });
 
-  // elites always drop a relic; regular monsters may drop a potion
+  // v6.1: elites and the boss are now the ONLY source of the good relics.
+  //
+  // Four classes reported that relics "seem easily obtainable and
+  // non-exclusive". They were: every source drew from the whole pool, so
+  // beating the Watcher in the Canopy gave you the same odds of a Lucky Charm
+  // as opening a treasure chest. A relic should be a story - we beat that
+  // thing and it gave us this - and ordinary fights pay in shards and the
+  // occasional potion instead, which is the "simple items" half of the rule.
   if (m.isElite) {
-    const relic = availableRelic();
+    const relic = availableRelic(["uncommon", "rare", "epic"]);
     if (relic) {
       addRelic(relic);
       bumpStat(student, "relics");
@@ -1445,11 +1499,10 @@ function tryLastStand(ctx, onSurvive) {
         const student = STATE.run.currentStudent;
         if (correct) {
           markCovered(q.cover);
-          STATE.run.stats.correct++;
+          STATE.run.stats.correct++; STATE.run.answeredThisRoom = true;
           bumpStat(student, "correct");
           STATE.run.hearts = 1;
           STATE.run.shields = 0;
-          STATE.run.streak = 0;
           if (m) m.stunned = true;           // the foe reels back too
           clearDebuff();
           saveState();
@@ -1464,9 +1517,8 @@ function tryLastStand(ctx, onSurvive) {
           });
           afterPopups(() => { if (onSurvive) onSurvive(); });
         } else {
-          STATE.run.stats.wrong++;
+          STATE.run.stats.wrong++; STATE.run.answeredThisRoom = true;
           bumpStat(student, "wrong");
-          resetStreak();
           saveState();
           SFX.defeat();
           setTimeout(handleDeath, 1500);
@@ -1556,13 +1608,13 @@ function doBrace(which) {
 }
 $("btn-brace").addEventListener("click", () => doBrace("enc"));
 $("btn-brace-boss").addEventListener("click", () => doBrace("boss"));
-$("btn-focus").addEventListener("click", () => window.useFocusNow("enc"));
-$("btn-focus-boss").addEventListener("click", () => window.useFocusNow("boss"));
 
-// Brace, Focus and Team Up only mean something when there is something to
-// fight, so they are hidden outright in Rest, Safe, Treasure and Event rooms.
+// Brace and Team Up only mean something when there is something to fight, so
+// they are hidden outright in Rest, Safe, Treasure and Event rooms. (The
+// Distracted button is NOT in this list - it lives in the HUD and is available
+// on every screen, because misbehaviour does not wait for a fight.)
 function showCombatButtons(show) {
-  ["btn-brace", "btn-teamup", "btn-focus"].forEach(id => {
+  ["btn-brace", "btn-teamup"].forEach(id => {
     const b = $(id);
     if (b) b.style.display = show ? "" : "none";
   });
@@ -1587,19 +1639,6 @@ function updateCombatButtons(prefix) {
     itemBtn.textContent = run.potionUsedThisTurn ? "Item used this turn"
                         : n ? `Use an Item (${n})` : "No items to use";
     itemBtn.onclick = () => openInventory({ usable: true, from: isBoss ? "boss" : "fight" });
-  }
-
-  // Focus: one per fight, the party's panic button and a licensed moment for
-  // the whole class to argue about an answer together.
-  const focusBtn = $(isBoss ? "btn-focus-boss" : "btn-focus");
-  if (focusBtn) {
-    focusBtn.style.display = CONFIG.FOCUS_ENABLED && m ? "" : "none";
-    const armed = focusArmed();
-    focusBtn.disabled = !focusAvailable() || armed;
-    focusBtn.classList.toggle("armed", armed);
-    focusBtn.textContent = armed ? "FOCUS — everyone answers!"
-                         : focusAvailable() ? "Focus (whole class)"
-                         : "Focus spent";
   }
 
   if (!m) { braceBtn.disabled = true; teamBtn.disabled = true; return; }
@@ -1775,10 +1814,10 @@ function runEventQuiz(ev, spec) {
       if (correct) {
         correctCount++;
         markCovered(q.cover);
-        run.stats.correct++;
+        run.stats.correct++; run.answeredThisRoom = true;
         bumpStat(run.currentStudent, "correct");
       } else {
-        run.stats.wrong++;
+        run.stats.wrong++; run.answeredThisRoom = true;
         bumpStat(run.currentStudent, "wrong");
         noteMissed(q);
       }
@@ -1796,7 +1835,9 @@ function eventQuizOutcome(ev, spec, got) {
 
   if (spec.kind === "gate") {
     if (all) {
-      const relic = availableRelic();
+      // events give a relic, but not one of the rare ones - those belong to
+      // elites and the boss now.
+      const relic = availableRelic(["common", "uncommon"]);
       if (relic) addRelic(relic);
       return { banner: "THE GATE OPENS", tone: "good",
                icon: relic ? relic.icon : null,
@@ -1851,7 +1892,7 @@ function eventQuizOutcome(ev, spec, got) {
 
   if (spec.kind === "champion") {
     if (all) {
-      const relic = availableRelic();
+      const relic = availableRelic(["common", "uncommon"]);
       if (relic) addRelic(relic);
       return { banner: "THE STONES ANSWER", tone: "good",
                icon: relic ? relic.icon : null,
@@ -2112,6 +2153,79 @@ function openInventory(opts = {}) {
   showScreen("screen-inventory");
 }
 
+// Clicking a potion in the HUD asks first. See renderPotionRow() in ui.js for
+// why. `from` is the screen prefix it was clicked on ("hud", "enc", "boss"),
+// which is also how we know whether drinking it costs the turn's attack.
+// Remove ONE WRONG option from the question currently on screen.
+//
+// The rule this must never break is the oldest one in the project: nothing may
+// hide or remove the CORRECT answer. So the option is chosen from the choices
+// whose text is not the answer, and if for any reason the live question cannot
+// be identified, this does nothing at all rather than guessing.
+//
+// Returns true if something was actually removed.
+function trimLiveQuestion() {
+  const run = STATE.run;
+  if (!run) return false;
+  for (const side of ["enc", "boss"]) {
+    const box = $(`${side}-choices`);
+    if (!box || !box.offsetParent) continue;          // not the visible screen
+    const foe = side === "boss" ? run.boss : run.encounter;
+    const q = foe && foe.currentQ;
+    if (!q || !q.answer) continue;
+    const live = [...box.querySelectorAll(".choice")]
+      .filter(c => !c.classList.contains("removed") &&
+                   c.textContent !== q.answer);
+    if (live.length < 1) continue;                    // nothing safe to remove
+    const victim = live[Math.floor(Math.random() * live.length)];
+    victim.classList.add("removed", "locked");
+    const fb = $(`${side}-feedback`);
+    if (fb) {
+      fb.textContent = "Potion of Clarity — one wrong answer is gone.";
+      fb.className = "enc-feedback good";
+    }
+    return true;
+  }
+  return false;
+}
+
+window.confirmPotion = function (id, from) {
+  const p = potionById(id);
+  const run = STATE.run;
+  if (!p || !run) return;
+  if (!(run.potions || []).includes(id)) return;
+
+  if ((from === "enc" || from === "boss") && run.potionUsedThisTurn) {
+    const fb = $(from === "boss" ? "boss-feedback" : "enc-feedback");
+    if (fb) {
+      fb.textContent = "Only one item per turn.";
+      fb.className = "enc-feedback bad";
+    }
+    SFX.wrong();
+    return;
+  }
+  SFX.click();
+
+  const inFight = (from === "enc" || from === "boss");
+  showPopup({
+    banner: "USE THIS POTION?", tone: "good", icon: p.icon,
+    title: p.name, effect: p.effect, desc: p.desc,
+    extra: id === "potion_clarity" && inFight
+      ? "It will remove one WRONG answer from the question on screen now."
+      : inFight ? "Drinking it costs this turn's attack, not the question."
+                : "",
+    button: "Drink it",
+    onClose: () => {
+      // usePotion() reads _inventoryReturn to decide whether drinking costs
+      // this turn's attack, so set it from the screen the chip was clicked on.
+      _inventoryReturn = from === "boss" ? "boss"
+                       : from === "enc"  ? "fight" : null;
+      usePotion(id);
+    },
+    cancel: "Not yet",
+  });
+};
+
 function usePotion(id) {
   const p = potionById(id);
   if (!p || !consumePotion(id)) return;
@@ -2132,7 +2246,17 @@ function usePotion(id) {
     effectText = `Shields ${before} → ${run.shields}`;
     SFX.unlockChime();
   } else if (id === "potion_clarity") {
-    run.clarityActive = true;
+    // v6.1: act on the question the class is LOOKING AT, not the next one.
+    // Stein's note after four classes: by the time the next question arrived
+    // nobody remembered the potion had been drunk, so it read as having done
+    // nothing. If there is a live question on screen, trim it now; only fall
+    // back to arming the flag when it is drunk from the map or a shop.
+    const trimmedNow = trimLiveQuestion();
+    if (trimmedNow) {
+      effectText = "One wrong answer removed from this question";
+    } else {
+      run.clarityActive = true;
+    }
     SFX.unlockChime();
   }
   if (_inventoryReturn === "fight" || _inventoryReturn === "boss") {
@@ -2205,12 +2329,14 @@ function enterTreasure() {
     const student = run.currentStudent;
     if (correct) {
       markCovered(q.cover);
-      run.stats.correct++;
+      run.stats.correct++; run.answeredThisRoom = true;
       bumpStat(student, "correct");
       SFX.treasure();
       const bonus = hasRelic("storm_map") ? 3 : 0;
+      // treasure gives the humbler relics; elites and the boss keep the rare
+      // ones, so a chest is a nice moment and an elite is a memorable one
       const relic = (hasRelic("scholars_lens") || Math.random() < 0.45)
-        ? availableRelic() : null;
+        ? availableRelic(["common", "uncommon"]) : null;
       if (relic) {
         addRelic(relic);
         bumpStat(student, "relics");
@@ -2230,7 +2356,7 @@ function enterTreasure() {
         });
       }
     } else {
-      run.stats.wrong++;
+      run.stats.wrong++; run.answeredThisRoom = true;
       bumpStat(student, "wrong");
       SFX.wrong();
       addShards(1);
@@ -2270,7 +2396,7 @@ function startBoss() {
   chooseIntent(m);
   run.boss = m;
   clearDebuff();
-  resetFocus();                 // the boss is a fight, so it gets its own Focus
+  resetFocus();                 // the boss is a fight: fresh per-fight caps
   clearStake();
   saveState();
 
@@ -2400,6 +2526,7 @@ function handleVictory() {
 
 function handleDeath() {
   const outcome = handleRunDeath();
+  if (outcome.already) return;      // a second timer arriving late
   SFX.defeat();
   $("result-title").textContent = "THE PARTY HAS FALLEN";
   let body = `<p>The storm overwhelms you. The run resets with a brand-new map

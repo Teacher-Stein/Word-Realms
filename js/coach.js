@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // COACH MODE
 //
-// The game now has Stakes, Focus, Brace, Team Up, campfires, relics,
+// The game now has Stakes, Brace, Team Up, campfires, relics,
 // potions, shards, Ember and debuffs. A class meeting all of that cold on a TV
 // is lost, and the teacher ends up spending the first fifteen minutes of the
 // lesson explaining instead of reviewing - every time, for nine realms.
@@ -22,21 +22,13 @@ const COACH_LESSONS = {
           "answer out loud for triple. Backing yourself when you KNOW is the " +
           "skill — and knowing when you don't know is the other half of it.",
   },
-  focus: {
-    banner: "NEW: FOCUS",
-    title: "One per fight — the whole class answers",
-    effect: "Get it right and the monster's clock loses 2 answers",
-    desc: "Hands up, argue about it, agree on one answer. Focus buys TIME, " +
-          "not damage, so the fight runs longer and you get more questions " +
-          "out of it. Save it for when the clock is nearly out.",
-  },
   intent: {
     banner: "NEW: THE MONSTER'S PLAN",
     title: "It tells you what it will do, and when",
     effect: "Read the red bar under the monster",
     desc: "The countdown is in ANSWERS, from anybody — not just your turn. " +
-          "When it says ON THE NEXT ANSWER you can Brace to block it, spend " +
-          "Focus to push it back, or take it and keep attacking.",
+          "When it says ON THE NEXT ANSWER you can Brace to block it, or take " +
+          "the hit and keep attacking.",
   },
   campfire: {
     banner: "NEW: THE CAMPFIRE",

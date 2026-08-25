@@ -66,6 +66,7 @@ function migrateRun(st) {
   if (!Array.isArray(r.absent))  r.absent = [];
   if (typeof r.shieldActive  !== "boolean") r.shieldActive  = false;
   if (typeof r.clarityActive !== "boolean") r.clarityActive = false;
+  if (typeof r.answeredThisRoom !== "boolean") r.answeredThisRoom = false;
   if (typeof r.usedLastStand  !== "boolean") r.usedLastStand  = false;
   if (typeof r.usedLastBreath !== "boolean") r.usedLastBreath = false;
   if (typeof r.usedEcho       !== "boolean") r.usedEcho       = false;
@@ -81,8 +82,12 @@ function migrateRun(st) {
   // v5.3: Momentum is gone. Old saves carry momentum/moRouse/moGuard - they
   // are simply ignored rather than migrated, since nothing reads them now.
   if (typeof r.stake          !== "string")  r.stake          = "safe";
-  if (typeof r.focusUsed      !== "boolean") r.focusUsed      = false;
-  if (typeof r.focusArmed     !== "boolean") r.focusArmed     = false;
+  // v6.1 removed Focus and streaks. A run saved by v6.0 still carries
+  // focusUsed / focusArmed / streak / streakGuard, and a class that was
+  // mid-run when the update landed must not lose it - so the fields are
+  // deleted on load rather than the save being rejected.
+  delete r.focusUsed; delete r.focusArmed;
+  delete r.streak;    delete r.streakGuard;
   if (typeof r.teamUpsUsed    !== "number")  r.teamUpsUsed    = 0;
   if (!r.stats) r.stats = { correct: 0, wrong: 0, monsters: 0, teamups: 0 };
   // Older maps contain no shop rooms - harmless, they just won't appear
@@ -227,15 +232,12 @@ function startNewRun(realmId, heroId) {
     armour: null,
     enchants: {},         // slot -> enchantment id
     shields: 0,           // absorbed before hearts
-    streak: 0,            // consecutive correct answers
-    bestStreak: 0,
     stake: "safe",        // this question's stake: "safe" or "risky"
-    focusUsed: false,     // Focus is once per FIGHT, reset by resetFocus()
-    focusArmed: false,
     teamUpsUsed: 0,       // Team Up is limited per RUN now, not per monster
     campfiresUsed: 0,
     shardMultiplier: 1,
     shieldActive: false,  // Storm Shield blocks the next hit
+    answeredThisRoom: false, // did this room ask anything? (turn rotation)
     clarityActive: false, // Potion of Clarity trims the next question
     shopStock: {},        // nodeId -> generated stock, so a shop is stable
     coveredKeys: [],       // curriculum items already tested this run
@@ -298,10 +300,18 @@ function drawQuestion(realm, elite = false) {
   // - a party wipe mid-animation nulls STATE.run, and currentRealm() then
   // returns null. Callers pass that null straight in.
   if (!run || !realm) return null;
+  // v6.1: the split is now absolute rather than a 65% lean.
+  //
+  // Stein, after four classes: "vocabulary and recognition for ordinary
+  // monsters, production and grammar for elites and the boss". The elite bank
+  // is exactly that - tier-4 questions that ask a student to USE the language
+  // rather than recognise it - but a third of elite questions were still being
+  // drawn from the ordinary bank, which blurred the one distinction that tells
+  // a class what kind of room they have walked into.
+  //
+  // An elite should feel different the moment the question appears.
   const eliteBank = realm.eliteQuestions || [];
-  const all = (elite && eliteBank.length && Math.random() < 0.65)
-    ? eliteBank
-    : realm.questions;
+  const all = (elite && eliteBank.length) ? eliteBank : realm.questions;
   const tag = i => (all === realm.questions ? i : "e" + i);
   let pool = all
     .map((q, i) => ({ q, i }))
@@ -352,6 +362,23 @@ function damage(n = 1) {
     absorbed, dealt: n,
     dead: run.hearts <= 0,
   };
+}
+
+// The Distracted penalty. Hearts only - no shields, no Lucky Charm, no Storm
+// Shield, no Brace.
+//
+// This is not a monster's attack, it is the cost of breaking the classroom
+// rule, and it has to be felt. Routing it through damage() would let it be
+// silently absorbed by whatever the party happened to be carrying, and a
+// consequence the room cannot see is not a consequence. It also means the
+// teacher can predict exactly what the button does before pressing it.
+function distractedPenalty(n) {
+  const run = STATE.run;
+  if (!run) return { dealt: 0, dead: false };
+  const before = run.hearts;
+  run.hearts = Math.max(0, run.hearts - n);
+  saveState();
+  return { dealt: before - run.hearts, dead: run.hearts <= 0 };
 }
 
 // ---------------------------- shields / gear -------------------------------
@@ -415,17 +442,6 @@ function applyEnchant(slot, enchantId) {
   saveState();
 }
 
-// ---------------------------- streaks --------------------------------------
-function bumpStreak() {
-  const run = STATE.run;
-  run.streak = (run.streak || 0) + 1;
-  run.bestStreak = Math.max(run.bestStreak || 0, run.streak);
-  saveState();
-  return run.streak;
-}
-function resetStreak() {
-  if (STATE.run) { STATE.run.streak = 0; saveState(); }
-}
 
 function heal(n = 1) {
   const run = STATE.run;
@@ -603,7 +619,6 @@ function clearRealm() {
     className: STATE.roster ? STATE.roster.className : "Unnamed class",
     partyName: STATE.roster ? (STATE.roster.partyName || "") : "",
     heroId: run.heroId,
-    bestStreak: run.bestStreak || 0,
     realmId,
     score,
     minutes,
@@ -648,6 +663,12 @@ function clearRealm() {
 // Dying now always pays, and always pays strictly less than winning.
 function handleRunDeath() {
   const run = STATE.run;
+  // Reachable from several timers - a flurry resolving, a Last Stand failing,
+  // the Distracted button landing the last heart - and more than one of them
+  // can fire for the same death. The second call used to throw on run.shards
+  // and leave the result screen half-drawn. Nulling the run is the signal that
+  // the death has already been counted.
+  if (!run) return { type: "ember", amount: 0, already: true };
   const gained = Math.round(run.shards / 3) + run.relics.length * 2 + 2;
   addEmber(gained);
   const outcome = { type: "ember", amount: gained };

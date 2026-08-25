@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// STAKES and FOCUS  (v5.3 — replaces Momentum)
+// STAKES  (v5.3 — replaced Momentum; Focus removed in v6.1)
 //
 // Why Momentum died:
 //
@@ -108,53 +108,18 @@ function stakeNote(stake, blind, correct) {
 }
 
 // ---------------------------------------------------------------------------
-// FOCUS
+// PER-FIGHT RESET
 //
-// One per fight. The whole class answers the next question together — hands
-// up, argue about it — and a correct answer stuns the monster's clock.
+// Focus lived here until v6.1. It was removed after four classes played the
+// game and nobody used it once: it stunned the monster's CLOCK, and the clock
+// was barely running. See the note in config.js about MONSTER_CADENCE.
 //
-// Note that this makes fights LONGER, not shorter: a stunned clock means more
-// questions before the party is threatened again, never fewer. That is the
-// only reason it is allowed to exist.
+// What remains is the per-fight shield cap, which still needs clearing when a
+// new fight starts.
 // ---------------------------------------------------------------------------
-
-function focusAvailable() {
-  const run = STATE.run;
-  return !!(CONFIG.FOCUS_ENABLED && run && !run.focusUsed);
-}
-
-function useFocus() {
-  const run = STATE.run;
-  if (!focusAvailable()) return false;
-  run.focusUsed = true;
-  run.focusArmed = true;
-  saveState();
-  return true;
-}
-
-function focusArmed() {
-  const run = STATE.run;
-  return !!(run && run.focusArmed);
-}
-
-// Consumed when the answer lands. Returns how many of the monster's ticks the
-// stun is worth (0 if Focus was not armed, or the answer was wrong).
-function consumeFocus(correct) {
-  const run = STATE.run;
-  if (!run || !run.focusArmed) return 0;
-  run.focusArmed = false;
-  saveState();
-  return correct ? CONFIG.FOCUS_STUN_ANSWERS : 0;
-}
-
-// Fresh Focus at the start of every fight — it is a per-fight lever, not a
-// per-run one, so the interesting question is "this ogre or the elite?" only
-// within a fight, and no class is ever left with nothing.
 function resetFocus() {
   const run = STATE.run;
   if (!run) return;
-  run.focusUsed = false;
-  run.focusArmed = false;
   run.stakeShieldsThisFight = 0;
   saveState();
 }

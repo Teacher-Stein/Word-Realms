@@ -60,7 +60,7 @@ const EVENTS = [
           tone: "danger",
           run: () => {
             damage(cost);
-            const relic = availableRelic();
+            const relic = availableRelic(["common", "uncommon"]);
             if (relic) addRelic(relic);
             return { banner: "ACROSS", tone: relic ? "good" : "neutral",
                      title: relic ? relic.name : "Nothing left in the box",
@@ -91,7 +91,7 @@ const EVENTS = [
       const picks = [];
       const seen = [];
       for (let i = 0; i < 3; i++) {
-        const r = availableRelic();
+        const r = availableRelic(["common", "uncommon"]);
         if (r && !seen.includes(r.id)) { picks.push(r); seen.push(r.id); }
       }
       if (!picks.length) return null;
@@ -324,7 +324,7 @@ const EVENTS = [
         sub: "2 extra rooms on the map · gain a relic now",
         run: () => {
           STATE.run.longRoadTaken = true;
-          const relic = availableRelic();
+          const relic = availableRelic(["common", "uncommon"]);
           if (relic) addRelic(relic);
           const added = extendMap(2);
           saveState();

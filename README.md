@@ -1,8 +1,8 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 6.0 — The Wildlands, painted.** Two realms fully playable and fully
-illustrated. Realm 1 (Unit 1, Extreme Weather) and Realm 2 (Unit 2, Copycat
+class. **Version 6.1 — What four classes taught us.** Two realms fully playable and
+fully illustrated. Realm 1 (Unit 1, Extreme Weather) and Realm 2 (Unit 2, Copycat
 Animals) each have their own cast, boss, guide and three painted backdrops;
 Realms 3–9 appear as locked placeholders using the correct themes from the
 school syllabus.
@@ -25,7 +25,75 @@ If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
 
-## What's new in v6.0 — The Wildlands gets its face
+## What's new in v6.1 — what four classes taught us
+
+Stein played v6.0 with four Grade 5 classes, 35–45 minutes each. Almost
+everything below comes from that, and several of the reports turned out to be
+the same bug wearing different hats.
+
+**The monster was never actually attacking.** A fight lasts about 4.6
+questions; at cadence 3 the monster acted roughly once, and the streak guard —
+three correct in a row, which a class of twenty-five hits constantly — blocked
+it. So students effectively never saw a monster complete an attack, all the
+threat came from wrong answers, and elites hitting for 3 arrived out of a clear
+sky. Three separate systems (streaks, Focus, Brace) existed to stop something
+that barely happened.
+
+**Streaks and Focus are gone.** Neither was a decision. Brace stays, because it
+is one — and it now defends against an attack that actually lands.
+
+**The threat has moved from the answer sheet to the fight.** A wrong answer on
+a hard question cost 6 of 9 hearts under RISKY: one guess, two thirds of the
+party. That is now 4 of 11, and the monster lands about three times as often.
+Damage from wrong answers has gone from 54% of the total to 39%, while the
+overall difficulty is unchanged — a typical class still loses about one run in
+three, which is what Stein asked for. Questions per run went *up*, from 36 to
+38.
+
+Cadence 2 was tried and rejected on the numbers: it took wipes to ~100% and cut
+questions per run from 36 to 23, and fewer questions is the one thing this game
+may never do.
+
+**A Distracted button.** When a student is nominated and somebody else shouts
+the answer, the teacher presses it: in a fight the monster takes the opening,
+anywhere else the party loses a heart. It never consumes the question — the
+nominated student still answers — because eating it would cost review time and
+punish the one child who did nothing wrong.
+
+**Your turn now means answering something.** Walking into a shop, buying a
+potion and leaving used to consume a student's turn. The shopping decision
+still belongs to whoever is up; they simply keep their turn for the next
+question.
+
+**The question is at the top of the screen.** Students at the back were
+standing up to read over the class. The arena moved to the bottom half and the
+monster's intent moved above the monster with it.
+
+**Potions live in the HUD**, next to the hearts and shields, on every screen.
+Clicking one asks first and explains what it does. The Potion of Clarity now
+removes a wrong answer from the question *on screen* rather than the next one.
+
+**The shop is a decision again.** Every one of four classes bought everything.
+Prices are up about 70%, and the boss no longer pays shards it is impossible to
+spend. The per-answer shard trickle is untouched — that one is the game telling
+a child their answer mattered.
+
+**Relics are worth having.** Rare relics now come only from elites and the
+boss. Chests, events and ordinary fights pay in shards, potions and the humbler
+relics.
+
+**Elites ask you to USE the language.** Vocabulary and recognition for ordinary
+monsters; production and grammar for elites and the boss, every time rather
+than two thirds of the time.
+
+**The teacher PIN is no longer readable from your own web page.** It is stored
+as a hash of a passphrase. Open `tools/set-pin.html`, type a passphrase, paste
+the line it gives you into `js/config.js`. The passphrase never leaves your
+browser — and the default in the file is a placeholder, so change it.
+
+---
+
+## What was new in v6.0 — The Wildlands gets its face
 
 Realm 2 shipped in v5.9 playable but wearing Realm 1's clothes: all seventeen
 sprite paths pointed at the storm cast as stand-ins. They are now real — 18 new

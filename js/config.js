@@ -2,7 +2,24 @@
 // Tuning. Safe to edit these numbers - everything else reads from here.
 // ---------------------------------------------------------------------------
 const CONFIG = {
-  TEACHER_PIN: "1234",
+  // The PIN is stored as a SHA-256 hash of a PASSPHRASE, never as the
+  // passphrase itself. This file is served publicly by GitHub Pages, so a
+  // cleartext PIN could be read by any student who opened the page source -
+  // and for most of this game's life it said "1234" right here.
+  //
+  // Hashing does not make it secret; the hash is public too, and anyone
+  // determined could test guesses against it offline. What it buys is that
+  // guessing has to be done deliberately rather than by accident, which is why
+  // it must be a PASSPHRASE (three or four unrelated words) and not four
+  // digits. Four digits fall in seconds.
+  //
+  // To change it: open tools/set-pin.html in a browser, type the passphrase,
+  // and paste the line it prints over the one below. The passphrase is hashed
+  // in your own browser and is never sent anywhere.
+  //
+  // Default below is the hash of "storm-tiger-lantern" - CHANGE IT.
+  TEACHER_PIN_SHA256:
+    "086e6dbaca9e9630b9aae77c2b89aebdfa089d2b69e23312711f9b6a4dcb8c26",
 
   // --- party ---
   // v5.0: hearts are now the party's MAIN resource and shields are a thin
@@ -13,8 +30,8 @@ const CONFIG = {
   // a smaller pool AND a slower clock, so the threat comes from not knowing
   // rather than from waiting. Wrong answers are now 47% of all damage and one
   // costs about a fifth of the party.
-  START_HEARTS: 9,
-  MAX_HEARTS: 14,
+  START_HEARTS: 11,
+  MAX_HEARTS: 16,
 
   // --- combat ---
   // v5.0: a 2-HP monster died before its first turn arrived, so it never got
@@ -45,7 +62,12 @@ const CONFIG = {
   SHARDS_FIGHT: 4,          // per regular monster felled
   SHARDS_ELITE: 12,         // per elite felled
   SHARDS_TREASURE: 8,
-  SHARDS_BOSS_HIT: 4,
+  // v6.1: was 4. The boss pays out AFTER the last shop by construction, so
+  // every shard earned in the boss fight was unspendable the moment it was
+  // earned - about 40 a run of pure inflation, and part of why the shop
+  // economy read as "you can afford everything". Dropped to 1 so a correct
+  // answer still registers as a reward without pretending to be money.
+  SHARDS_BOSS_HIT: 1,
   SHARDS_PER_HIT: 2,        // small trickle for every correct answer in combat
   SHARDS_TIER_BONUS: 2,     // extra per difficulty tier above 1
   // A run acquired 8.5 potions, 6.5 of them from streak bonuses alone, so the
@@ -59,7 +81,7 @@ const CONFIG = {
   // A Safe Path used to give nothing at all, which made 11% of the walk dead
   // air dressed up as a reward. Small enough that a campfire Repair is still
   // the real fix.
-  SAFE_PATH_SHIELDS: 3,
+  SAFE_PATH_SHIELDS: 5,
 
   // --- shops ---
   SHOPS_PER_MAP: 3,
@@ -69,17 +91,56 @@ const CONFIG = {
   // --- difficulty tiers: damage taken on a wrong answer ---
   // Hard questions now bite properly. Vocabulary still costs one heart; a
   // grammar or Elite question costs three of nine.
-  TIER_DAMAGE: { 1: 1, 2: 1, 3: 3, 4: 3 },   // tier 4 = the Elite bank
+  // v6.1: tier 3/4 dropped from 3 to 2. Measured across four real classes, a
+  // wrong answer was doing FAR more damage than the monster ever did - a RISKY
+  // tier-3 mistake cost 6 of 9 hearts, two thirds of the party for one guess,
+  // while the monster landed about half a hit per fight. That taught classes
+  // that RISKY is a trap and combat is scenery. The threat now comes from the
+  // monster's clock (see BOSS_CADENCE and the cadence:2 monsters) and a
+  // mistake costs a serious but survivable amount. RISKY now caps at 4.
+  TIER_DAMAGE: { 1: 1, 2: 1, 3: 2, 4: 2 },   // tier 4 = the Elite bank
 
   // --- survivability (tuned with tools/../sim: at 100% accuracy the party
   //     almost always survives; at 80% roughly 4 runs in 10 end in a wipe) ---
   // v4.3: shields NO LONGER refill in every room. They persist, and are only
   // topped up at a Rest room or Safe Path, by a potion, or by shopping. That
   // is what makes armour worth carrying. Lower this for a harder game.
-  REST_SHIELDS: 7,           // campfire "Repair"
+  // v6.1: 7 -> 18, and this is what pays for the monster now landing three
+  // times as often. Shields are the right buffer rather than more hearts:
+  // they are a MANAGED resource that only refills at a campfire or a Safe
+  // Path, so the class has to plan for the damage instead of simply having a
+  // deeper pool - and a bigger heart pool would have made a wrong answer feel
+  // like nothing, which is the mistake v5.1 already made and corrected.
+  // Shields also lengthen fights and never shorten them.
+  REST_SHIELDS: 18,          // campfire "Repair"
   REST_HEAL: 5,              // campfire "Mend"
   SHARPEN_HEARTS: 1,         // campfire "Sharpen" - permanent max hearts this run
-  BOSS_CADENCE: 4,           // boss acts every N student turns
+  BOSS_CADENCE: 3,           // boss acts every N student turns
+
+  // --- the monster clock (v6.1) ---
+  //
+  // This is the single most important number in the game and it was wrong.
+  //
+  // A fight lasts about 4.6 questions. At cadence 3 the monster got roughly
+  // one action per fight - and the streak guard (3 correct in a row, which a
+  // decent class hits constantly) blocked it. Across four real classes the
+  // students effectively never saw a monster complete an attack, so all the
+  // threat came from wrong answers, Brace and Focus defended against nothing,
+  // and elites hitting for 3 came out of a clear sky.
+  //
+  // Removing the streak guard on its own takes the monster from ~0.5 LANDED
+  // hits per fight to ~1.5 - three times the threat, with the countdown finally
+  // meaning something.
+  //
+  // Cadence 2 was tried and rejected on the numbers. It pushed monster actions
+  // to 2.0 a fight, which the party could not absorb: the wipe rate went to
+  // ~100% at every accuracy and questions per run FELL from 36 to 23, because
+  // runs were ending early. Fewer questions is the one thing this game may
+  // never do, so cadence 2 is out regardless of how it feels.
+  //
+  // Overrides the per-monster `cadence` in content.js, which is 3 everywhere.
+  // Kept as a single knob so the number can move for the whole cast at once.
+  MONSTER_CADENCE: 3,
 
   // --- monster behaviour ---
   VARIANT_CHANCE: 0.30,      // chance a regular monster is a tinted variant
@@ -121,19 +182,20 @@ const CONFIG = {
   STAKE_BLIND_SHIELD: 1,
   STAKE_SHIELD_CAP: 2,       // per fight
 
-  // --- focus ---
-  // One per fight. The whole class answers together and a correct answer stuns
-  // the monster's clock. It stuns the CLOCK, not the monster's health - so it
-  // makes a fight longer and adds questions rather than removing them.
-  FOCUS_ENABLED: true,
-  FOCUS_STUN_ANSWERS: 2,     // the monster's clock loses this many ticks
-
   // --- team up ---
   TEAMUPS_PER_RUN: 3,        // was unlimited, which made it a non-decision
 
-  // --- streaks ---
-  STREAK_GUARD: 3,          // correct answers in a row -> next attack blocked
-  STREAK_BONUS: 5,          // -> shards + a potion
+  // --- the distracted button (v6.1) ---
+  // A teacher's button, not a game mechanic. When a student is nominated and
+  // somebody else shouts the answer, the class rule has been broken and there
+  // needs to be a visible cost. In a fight the monster gets a free strike;
+  // anywhere else the party simply loses this many hearts, so the rule reads
+  // the same to the class on the map, in a shop or at a campfire.
+  //
+  // It deliberately does NOT consume the question. The nominated student still
+  // answers it. Eating the question would cost review volume AND punish the
+  // one child who did nothing wrong.
+  DISTRACTED_DAMAGE: 1,
 
   // --- per-realm difficulty ramp (v5.9) ---
   //
@@ -153,8 +215,12 @@ const CONFIG = {
     eliteHpPer: 3,
     // -1 starting heart every fourth realm: R1-4 = 9, R5-8 = 8, R9 = 7.
     heartsPer: 4,
-    // the monster clock speeds up once, late: R1-6 cadence 3, R7-9 cadence 2
-    cadenceFrom: 7,
+    // DISABLED in v6.1. This used to take cadence from 3 to 2 at Realm 7.
+    // Cadence 2 is now the base for every realm, and 1 would mean the monster
+    // acting on every single answer - the countdown would never show a number
+    // above one and there would be nothing to plan around. The late-realm
+    // ramp does its work through monster HP and hearts instead.
+    cadenceFrom: 0,
   },
 
   // --- misc ---
