@@ -1387,3 +1387,21 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
   width: 17px; height: 17px; border-radius: 50%;
   background: #ff8a7a; color: #2a0d10; font-size: .8rem;
 }
+
+/* Build stamp on the title screen. Small and quiet, but readable enough to
+   check from a standing position which version the classroom TV is running. */
+.build-stamp {
+  margin-top: 6px; font-size: .8rem; letter-spacing: 1px;
+  opacity: .45; font-weight: 700;
+}
+
+/* Shown only when the page is running a mix of old and new files. Deliberately
+   loud and deliberately at the top: it is the one message a teacher needs to
+   see before a lesson rather than after it. */
+#stale-warning {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+  background: #7a1f22; color: #ffe6e2; border-bottom: 3px solid #ff8a7a;
+  padding: 12px 18px; font-size: 1rem; line-height: 1.5; text-align: center;
+  font-family: inherit;
+}
+#stale-warning b { color: #fff; }

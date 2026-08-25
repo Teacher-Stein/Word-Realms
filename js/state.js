@@ -20,6 +20,7 @@ function defaultState() {
     coachOn: true,         // in-game explanations, first time only
     coachSeen: {},
     shortRealm: false,     // a 9-layer map for a single period
+    teacherPinHash: null,  // per-computer passphrase; falls back to config.js
     run: null,
   };
 }

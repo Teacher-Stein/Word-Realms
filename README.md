@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 6.1 — What four classes taught us.** Two realms fully playable and
+class. **Version 6.1.1 — What four classes taught us.** Two realms fully playable and
 fully illustrated. Realm 1 (Unit 1, Extreme Weather) and Realm 2 (Unit 2, Copycat
 Animals) each have their own cast, boss, guide and three painted backdrops;
 Realms 3–9 appear as locked placeholders using the correct themes from the
@@ -22,6 +22,22 @@ once the page has loaded.
 5. Wait about a minute, then reload your `https://…github.io/word-realms/` link.
 
 If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
+
+---
+
+## v6.1.1 — a half-updated upload no longer breaks the game
+
+`main.js` attaches 55 listeners when the page loads, one after another, and any
+one of them hitting a missing element used to throw and silently skip every
+listener below it. v6.1 added two buttons near the top of that list, so a
+browser holding a cached `index.html` lost the teacher menu entirely — it
+looked normal and did nothing, with no error on screen.
+
+Listeners now skip a missing element instead of throwing, so a partly-updated
+page loses one feature rather than all of them. If the files ever disagree, a
+red banner says so and tells you to press Ctrl+F5. And the title screen now
+shows the version, so you can tell what is actually live without opening
+developer tools.
 
 ---
 

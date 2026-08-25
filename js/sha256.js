@@ -89,11 +89,32 @@ const SHA256 = (function () {
   return { hex };
 })();
 
-// The one thing the game actually asks. Compares case-sensitively on the hash,
-// but trims surrounding whitespace from what was typed - a trailing space from
-// a phone keyboard should not lock a teacher out of their own menu.
+// Which hash are we checking against?
+//
+// Two places, in this order:
+//   1. STATE.teacherPinHash - set from inside the Teacher Menu. Lives in this
+//      browser only, so each classroom computer can have its own, and it is
+//      cleared by a Factory Reset.
+//   2. CONFIG.TEACHER_PIN_SHA256 - shipped in the repo, so it is the one that
+//      travels with the game to every machine.
+//
+// The local one wins when it is set, which means a teacher can change the
+// passphrase on the machine in front of them without editing any files, and
+// still has the config.js value as the thing that follows the game around.
+function teacherPinHash() {
+  try {
+    if (typeof STATE !== "undefined" && STATE && STATE.teacherPinHash) {
+      return String(STATE.teacherPinHash).toLowerCase().trim();
+    }
+  } catch (e) { /* STATE not loaded yet */ }
+  return (CONFIG.TEACHER_PIN_SHA256 || "").toLowerCase().trim();
+}
+
+// Compares on the hash, but trims surrounding whitespace from what was typed -
+// a trailing space from a tablet keyboard should not lock a teacher out of
+// their own menu.
 function teacherPinOk(entered) {
-  const want = (CONFIG.TEACHER_PIN_SHA256 || "").toLowerCase().trim();
+  const want = teacherPinHash();
   if (!want) return false;
   return SHA256.hex(String(entered == null ? "" : entered).trim()) === want;
 }

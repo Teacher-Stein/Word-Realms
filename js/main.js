@@ -4,6 +4,29 @@
 
 function $(id) { return document.getElementById(id); }
 
+// Attach a listener without betting the whole file on the element existing.
+//
+// This file wires 55 listeners at the top level. Every one of them used to be
+// `on("some-id", ...)`, which throws if the element is missing
+// - and because they run in sequence at load time, ONE missing element meant
+// every listener after it was never attached at all.
+//
+// That is not a theoretical worry. v6.1 added two new buttons near the top of
+// the list, and a browser holding a cached copy of the older index.html hit
+// the first one, threw, and silently skipped the Unlock button 30 lines below.
+// The teacher menu appeared perfectly normal and did nothing when clicked -
+// no error visible, no clue what was wrong, mid-lesson.
+//
+// A half-updated page should lose the one feature whose markup is missing, not
+// the whole game. Missing ids are collected and reported by checkMarkup().
+const _missingIds = [];
+function on(id, evt, fn, opts) {
+  const el = document.getElementById(id);
+  if (!el) { _missingIds.push(id); return null; }
+  el.addEventListener(evt, fn, opts);
+  return el;
+}
+
 // ===================== BOOT =====================
 function bootstrap() {
   renderMenu();
@@ -72,20 +95,20 @@ function bootstrap() {
 }
 
 // ===================== MENU / NAV =====================
-$("btn-sound").addEventListener("click", () => {
+on("btn-sound", "click", () => {
   STATE.soundOn = !STATE.soundOn;
   SFX.setEnabled(STATE.soundOn);
   SFX.unlock();
   $("btn-sound").textContent = STATE.soundOn ? "SFX: On" : "SFX: Off";
   saveState();
 });
-$("btn-music").addEventListener("click", () => {
+on("btn-music", "click", () => {
   STATE.musicOn = !STATE.musicOn;
   MUSIC.setEnabled(STATE.musicOn);
   $("btn-music").textContent = STATE.musicOn ? "Music: On" : "Music: Off";
   saveState();
 });
-$("vol-slider").addEventListener("input", e => {
+on("vol-slider", "input", e => {
   const v = parseInt(e.target.value, 10) / 100;
   STATE.volume = v;
   SFX.setVolume(v);
@@ -102,14 +125,14 @@ function syncMusicControls() {
   if (val) val.textContent = Math.round((STATE.musicVolume ?? 0.8) * 100) + "%";
   if (tog) tog.textContent = STATE.musicOn ? "Music: On" : "Music: Off";
 }
-$("pause-music-vol").addEventListener("input", e => {
+on("pause-music-vol", "input", e => {
   const v = parseInt(e.target.value, 10) / 100;
   STATE.musicVolume = v;
   MUSIC.setVolume(v);
   $("pause-music-val").textContent = Math.round(v * 100) + "%";
   saveState();
 });
-$("pause-music-toggle").addEventListener("click", () => {
+on("pause-music-toggle", "click", () => {
   SFX.click();
   STATE.musicOn = !STATE.musicOn;
   MUSIC.setEnabled(STATE.musicOn);
@@ -118,13 +141,13 @@ $("pause-music-toggle").addEventListener("click", () => {
   saveState();
 });
 
-$("btn-howto").addEventListener("click", () => { SFX.click(); showScreen("screen-howto"); });
-$("btn-howto-close").addEventListener("click", () => { SFX.click(); showScreen("screen-menu"); renderMenu(); });
+on("btn-howto", "click", () => { SFX.click(); showScreen("screen-howto"); });
+on("btn-howto-close", "click", () => { SFX.click(); showScreen("screen-menu"); renderMenu(); });
 
-$("btn-map-menu").addEventListener("click", () => { SFX.click(); MUSIC.stop(); showScreen("screen-menu"); renderMenu(); });
+on("btn-map-menu", "click", () => { SFX.click(); MUSIC.stop(); showScreen("screen-menu"); renderMenu(); });
 
 // ---- roster ----
-$("btn-roster").addEventListener("click", () => {
+on("btn-roster", "click", () => {
   SFX.click(); SFX.unlock();
   $("roster-class").value = STATE.roster ? STATE.roster.className : "";
   $("roster-party").value = STATE.roster ? (STATE.roster.partyName || "") : "";
@@ -132,7 +155,7 @@ $("btn-roster").addEventListener("click", () => {
   updateRosterCount();
   showScreen("screen-roster");
 });
-$("roster-names").addEventListener("input", updateRosterCount);
+on("roster-names", "input", updateRosterCount);
 function updateRosterCount() {
   const n = parseRosterNames().length;
   $("roster-count").textContent = n ? `${n} warriors ready` : "No students entered yet";
@@ -141,7 +164,7 @@ function parseRosterNames() {
   return $("roster-names").value.split("\n")
     .map(s => s.trim()).filter(Boolean);
 }
-$("roster-save").addEventListener("click", () => {
+on("roster-save", "click", () => {
   const cls = $("roster-class").value.trim() || "Unnamed class";
   const names = parseRosterNames();
   if (!names.length) { $("roster-count").textContent = "Add at least one student."; return; }
@@ -150,13 +173,13 @@ $("roster-save").addEventListener("click", () => {
   showScreen("screen-menu");
   renderMenu();
 });
-$("roster-close").addEventListener("click", () => { SFX.click(); showScreen("screen-menu"); renderMenu(); });
+on("roster-close", "click", () => { SFX.click(); showScreen("screen-menu"); renderMenu(); });
 
 // ---- ember forge ----
-$("btn-forge").addEventListener("click", () => {
+on("btn-forge", "click", () => {
   SFX.click(); SFX.unlock(); renderForge(); showScreen("screen-forge");
 });
-$("forge-close").addEventListener("click", () => {
+on("forge-close", "click", () => {
   SFX.click(); showScreen("screen-menu"); renderMenu();
 });
 window.forgeBuy = function (id) {
@@ -180,10 +203,10 @@ window.forgeBuy = function (id) {
 };
 
 // ---- leaderboards ----
-$("btn-scores").addEventListener("click", () => {
+on("btn-scores", "click", () => {
   SFX.click(); renderLeaderboards(); showScreen("screen-scores");
 });
-$("scores-close").addEventListener("click", () => { SFX.click(); showScreen("screen-menu"); renderMenu(); });
+on("scores-close", "click", () => { SFX.click(); showScreen("screen-menu"); renderMenu(); });
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
@@ -203,10 +226,39 @@ function openTeacher() {
   $("pin-error").textContent = "";
   showScreen("screen-teacher");
 }
-$("btn-distracted").addEventListener("click", distractedNow);
-$("btn-teacher").addEventListener("click", () => { SFX.click(); openTeacher(); });
-$("btn-map-teacher").addEventListener("click", () => { SFX.click(); openTeacher(); });
-$("pin-submit").addEventListener("click", () => {
+// Change the passphrase from inside the Teacher Menu. Only reachable once the
+// current passphrase has already been entered, so this is not a way in.
+on("newpin-save", "click", () => {
+  const el = $("newpin-input");
+  const note = $("newpin-note");
+  const v = (el.value || "").trim();
+  if (v.length < 8 || !/[a-zA-Z]/.test(v)) {
+    SFX.wrong();
+    note.textContent = "Too easy to guess. Use three or four words, at least 8 characters.";
+    note.style.color = "#ff8a7a";
+    return;
+  }
+  STATE.teacherPinHash = SHA256.hex(v);
+  saveState();
+  el.value = "";
+  SFX.unlockChime();
+  note.textContent = "Saved on this computer. Write it down — it cannot be recovered.";
+  note.style.color = "#9fe6b0";
+});
+
+on("newpin-clear", "click", () => {
+  STATE.teacherPinHash = null;
+  saveState();
+  SFX.click();
+  const note = $("newpin-note");
+  note.textContent = "This computer now uses the passphrase set in js/config.js.";
+  note.style.color = "#cfc8e6";
+});
+
+on("btn-distracted", "click", distractedNow);
+on("btn-teacher", "click", () => { SFX.click(); openTeacher(); });
+on("btn-map-teacher", "click", () => { SFX.click(); openTeacher(); });
+on("pin-submit", "click", () => {
   if (teacherPinOk($("pin-input").value)) {
     $("teacher-pin-view").style.display = "none";
     $("teacher-controls").style.display = "";
@@ -217,11 +269,11 @@ $("pin-submit").addEventListener("click", () => {
     SFX.wrong();
   }
 });
-$("pin-input").addEventListener("keydown", e => { if (e.key === "Enter") $("pin-submit").click(); });
-$("auto-unlock-toggle").addEventListener("change", e => {
+on("pin-input", "keydown", e => { if (e.key === "Enter") $("pin-submit").click(); });
+on("auto-unlock-toggle", "change", e => {
   STATE.teacherAutoUnlock = e.target.checked; saveState();
 });
-$("btn-teacher-close").addEventListener("click", () => {
+on("btn-teacher-close", "click", () => {
   SFX.click();
   if (STATE.run) { showScreen("screen-map"); renderTopHud("hud"); renderMap(); }
   else { showScreen("screen-menu"); renderMenu(); }
@@ -234,28 +286,28 @@ function askConfirm(text, fn) {
   $("confirm-box").style.display = "";
   pendingConfirm = fn;
 }
-$("confirm-no").addEventListener("click", () => {
+on("confirm-no", "click", () => {
   $("confirm-box").style.display = "none"; pendingConfirm = null; SFX.click();
 });
-$("confirm-yes").addEventListener("click", () => {
+on("confirm-yes", "click", () => {
   if (pendingConfirm) pendingConfirm();
   $("confirm-box").style.display = "none";
   pendingConfirm = null;
 });
-$("btn-reset-run").addEventListener("click", () => {
+on("btn-reset-run", "click", () => {
   SFX.click();
   askConfirm("Reset the current run? The class loses this realm's progress, hearts and relics.", () => {
     STATE.run = null; saveState();
     showScreen("screen-menu"); renderMenu();
   });
 });
-$("coach-toggle").addEventListener("change", e => {
+on("coach-toggle", "change", e => {
   STATE.coachOn = e.target.checked; saveState();
 });
-$("short-toggle").addEventListener("change", e => {
+on("short-toggle", "change", e => {
   STATE.shortRealm = e.target.checked; saveState();
 });
-$("btn-coach-reset").addEventListener("click", () => {
+on("btn-coach-reset", "click", () => {
   SFX.click(); resetCoach();
   $("pin-error").textContent = "";
   showPopup({ banner:"COACH RESET", tone:"good", title:"Explanations will show again",
@@ -264,7 +316,7 @@ $("btn-coach-reset").addEventListener("click", () => {
 
 // The whole term lives in one browser on one school computer. If that machine
 // gets reimaged, everything goes with it - so it has to be exportable.
-$("btn-save-export").addEventListener("click", () => {
+on("btn-save-export", "click", () => {
   SFX.click();
   const blob = new Blob([JSON.stringify(STATE, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
@@ -274,7 +326,7 @@ $("btn-save-export").addEventListener("click", () => {
   document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
 });
-$("save-import-file").addEventListener("change", e => {
+on("save-import-file", "change", e => {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -301,10 +353,10 @@ $("save-import-file").addEventListener("change", e => {
   reader.readAsText(file);
 });
 
-$("perks-toggle").addEventListener("change", e => {
+on("perks-toggle", "change", e => {
   STATE.perksEnabled = e.target.checked; saveState();
 });
-$("btn-new-term").addEventListener("click", () => {
+on("btn-new-term", "click", () => {
   SFX.click();
   askConfirm("Start a new term? The class list is kept. Warrior stats, leaderboards, Ember, Forge upgrades and realm unlocks are all cleared.", () => {
     newTermReset();
@@ -318,7 +370,7 @@ window.teacherRemoveStudent = function (name) {
     renderTeacherStudents();
   });
 };
-$("btn-factory").addEventListener("click", () => {
+on("btn-factory", "click", () => {
   SFX.click();
   askConfirm("Factory reset wipes EVERYTHING: roster, warrior stats, leaderboards, Ember and unlocks. This cannot be undone.", () => {
     factoryReset();
@@ -361,7 +413,7 @@ window.pickHero = function (heroId) {
   $("hero-confirm").disabled = false;
 };
 
-$("hero-confirm").addEventListener("click", () => {
+on("hero-confirm", "click", () => {
   if (!_chosenHeroId || _pendingRealm == null) return;
   SFX.unlockChime();
   const run = startNewRun(_pendingRealm, _chosenHeroId);
@@ -394,7 +446,7 @@ $("hero-confirm").addEventListener("click", () => {
              .filter(Boolean).join("  ·  "),
   });
 });
-$("hero-cancel").addEventListener("click", () => {
+on("hero-cancel", "click", () => {
   SFX.click(); showScreen("screen-menu"); renderMenu();
 });
 
@@ -439,17 +491,17 @@ function backToMap(advanceTurn = true) {
 
 // reroll buttons (student absent)
 ["btn-reroll", "btn-reroll-enc", "btn-reroll-boss"].forEach(id => {
-  $(id).addEventListener("click", () => {
+  on(id, "click", () => {
     SFX.click();
     rerollStudent();
     renderStudentChips();
     showTurnCallout(STATE.run && STATE.run.currentStudent);
   });
 });
-$("btn-recenter").addEventListener("click", () => { SFX.click(); centreOnCurrent(true); });
+on("btn-recenter", "click", () => { SFX.click(); centreOnCurrent(true); });
 
 // End Run - available right on the map so it isn't buried in the Teacher Menu
-$("btn-end-run").addEventListener("click", () => {
+on("btn-end-run", "click", () => {
   SFX.click();
   showPopup({
     banner: "END THIS RUN?", tone: "bad",
@@ -563,15 +615,15 @@ document.addEventListener("keydown", e => {
   togglePause();
 });
 
-$("pause-resume").addEventListener("click", () => { SFX.click(); togglePause(false); });
-$("pause-exit").addEventListener("click", () => {
+on("pause-resume", "click", () => { SFX.click(); togglePause(false); });
+on("pause-exit", "click", () => {
   SFX.click(); togglePause(false); MUSIC.stop();
   showScreen("screen-menu"); renderMenu();
 });
-$("pause-teacher").addEventListener("click", () => {
+on("pause-teacher", "click", () => {
   SFX.click(); togglePause(false); openTeacher();
 });
-$("pause-restart").addEventListener("click", () => {
+on("pause-restart", "click", () => {
   SFX.click(); togglePause(false);
   showPopup({
     banner: "RESTART THE REALM?", tone: "bad",
@@ -590,7 +642,7 @@ $("pause-restart").addEventListener("click", () => {
 // Teacher override: award the question currently on screen. Deliberately
 // living behind the pause menu rather than on a hotkey, so no child can reach
 // it and no key can be pressed by accident.
-$("pause-award").addEventListener("click", () => {
+on("pause-award", "click", () => {
   const side = questionIsLive();
   if (!side) return;
   // This was described in the code as living "behind the pause menu so no
@@ -1572,9 +1624,9 @@ function doTeamUp(btnId, hpElId, feedbackId) {
   });
 }
 
-$("btn-teamup").addEventListener("click", () =>
+on("btn-teamup", "click", () =>
   doTeamUp("btn-teamup", "monster-hp", "enc-feedback"));
-$("btn-teamup-boss").addEventListener("click", () =>
+on("btn-teamup-boss", "click", () =>
   doTeamUp("btn-teamup-boss", "boss-hp", "boss-feedback"));
 
 // ---- Brace: defend instead of attacking. Still asks a question, so no
@@ -1606,8 +1658,8 @@ function doBrace(which) {
   $(fb).className = "enc-feedback good";
   updateCombatButtons(which === "boss" ? "boss" : "enc");
 }
-$("btn-brace").addEventListener("click", () => doBrace("enc"));
-$("btn-brace-boss").addEventListener("click", () => doBrace("boss"));
+on("btn-brace", "click", () => doBrace("enc"));
+on("btn-brace-boss", "click", () => doBrace("boss"));
 
 // Brace and Team Up only mean something when there is something to fight, so
 // they are hidden outright in Rest, Safe, Treasure and Event rooms. (The
@@ -2134,7 +2186,7 @@ window.shopBuy = function (nodeId, kind, index) {
   renderShop(nodeId);
 };
 
-$("shop-leave").addEventListener("click", () => {
+on("shop-leave", "click", () => {
   SFX.click();
   STATE.run.activeShopNode = null;
   saveState();
@@ -2279,7 +2331,7 @@ function renderTopHudSafe(prefix) {
   try { renderTopHud(prefix); } catch (e) { /* screen not present */ }
 }
 
-$("inv-close").addEventListener("click", () => {
+on("inv-close", "click", () => {
   SFX.click();
   if (_inventoryReturn === "fight" || _inventoryReturn === "boss") {
     const boss = _inventoryReturn === "boss";
@@ -2303,7 +2355,7 @@ $("inv-close").addEventListener("click", () => {
   _inventoryReturn = null;
 });
 
-$("btn-inventory").addEventListener("click", () => openInventory({ usable: false }));
+on("btn-inventory", "click", () => openInventory({ usable: false }));
 
 // ===================== TREASURE =====================
 function enterTreasure() {
@@ -2549,7 +2601,7 @@ startNewRun = function (realmId, heroId) {
   return _origStartNewRun.apply(this, arguments);
 };
 
-$("btn-play-again").addEventListener("click", () => {
+on("btn-play-again", "click", () => {
   SFX.click();
   const id = STATE.lastRealmPlayed || lastRealmId || 1;
   STATE.run = null;
@@ -2557,10 +2609,56 @@ $("btn-play-again").addEventListener("click", () => {
   window.enterRealm(id);   // goes back through hero select, so the class
                             // can pick a different champion for the rerun
 });
-$("btn-result-menu").addEventListener("click", () => {
+on("btn-result-menu", "click", () => {
   SFX.click(); MUSIC.stop(); showScreen("screen-menu"); renderMenu();
 });
 
-$("popup-continue").addEventListener("click", () => { SFX.click(); closePopup(); });
+on("popup-continue", "click", () => { SFX.click(); closePopup(); });
 
 bootstrap();
+
+
+// ---------------------------------------------------------------------------
+// Startup self-check.
+//
+// The failure this exists for: a browser holding a cached index.html from the
+// previous version, running freshly-uploaded JavaScript. Every id the new code
+// expects is missing, so features quietly do nothing and the page gives no
+// clue why. On a classroom TV, five minutes before a lesson, that is the worst
+// possible way to fail.
+//
+// So say it out loud instead. The banner names the fix, because the fix is
+// always the same one.
+// ---------------------------------------------------------------------------
+function checkMarkup() {
+  // ids that must exist for the game to be usable at all
+  const REQUIRED = ["pin-input", "pin-submit", "btn-teacher", "enc-choices",
+                    "btn-distracted", "newpin-save", "hud-potions"];
+  const missing = REQUIRED.filter(id => !document.getElementById(id));
+  const staleScript = typeof SHA256 === "undefined";
+  const staleConfig = !CONFIG.TEACHER_PIN_SHA256;
+  if (!missing.length && !staleScript && !staleConfig) return;
+
+  const why = [];
+  if (missing.length)  why.push("index.html is an older version");
+  if (staleScript)     why.push("js/sha256.js did not load");
+  if (staleConfig)     why.push("js/config.js is an older version");
+
+  const bar = document.createElement("div");
+  bar.id = "stale-warning";
+  bar.innerHTML =
+    "<b>This page is running a mixture of old and new files.</b> " +
+    why.join(", ") + ".<br>" +
+    "Press <b>Ctrl</b>+<b>F5</b> to force a refresh. If that does not fix it, " +
+    "re-upload <b>index.html</b> and the whole <b>js</b> folder.";
+  document.body.appendChild(bar);
+  console.warn("Word Realms: stale files -", why.join(" | "),
+               missing.length ? "| missing ids: " + missing.join(", ") : "");
+}
+
+// after everything else has had its turn to load
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", checkMarkup);
+} else {
+  checkMarkup();
+}
