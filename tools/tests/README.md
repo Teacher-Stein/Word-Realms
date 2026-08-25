@@ -14,6 +14,7 @@ Then:
     python3 tools/tests/test_reachable.py     # no item exists that nothing can grant
     python3 tools/tests/test_events.py        # every event states both sides
     python3 tools/tests/test_art.py           # every sprite exists, fits and reads
+    python3 tools/tests/test_sheet_split.py   # no creature can leak into its neighbour
     python3 tools/tests/shot_realm2.py        # Realm 2's art in a real browser
     node    tools/tests/check_content.js      # every realm's question bank is sound
     node    tools/tests/balance_sim.js        # wipe rates, questions per run
@@ -153,3 +154,38 @@ The lesson sits next to the one above it. A test that only fails when the
 machine is busy is worse than no test, because it teaches you to disbelieve the
 suite. If a test fails, reproduce it on a quiet machine before believing it —
 and if it passes there, fix the harness rather than shrugging.
+
+
+**test_sheet_split.py** (v6.1) presses the art splitter with a synthetic sheet
+containing the exact trap that shipped five contaminated sprites in v6.0: two
+creatures where one has a spur lying inside the other's bounding box, plus a
+deliberately detached fleck of its own. It asserts that no neighbour leaks in
+AND that intentional detached pieces survive.
+
+Auditing the finished PNGs cannot catch this, which is why the test is on the
+splitter and not the output. Several creatures have floating pieces on purpose
+— the Hollow Fox sheds leaves, the Ashwing trails ash — so "sprite contains an
+island" is not a bug. Colour tells you nothing either: everything is quantised
+to one shared palette, and a grey beak inside a green cat measured 8.1 units
+from the cat's own colours against a legitimate leaf at 3.6.
+
+The fixture also earned its keep immediately. The first fix assigned stray
+pixels to the nearest creature one pixel at a time, which looked equivalent and
+was not — a piece lying between two creatures got sliced down the middle, 72
+pixels one way and the rest the other. Whole islands are assigned together now.
+
+## What changed in the suite for v6.1
+
+- `test_playthrough.py` no longer counts Focus. It now presses the **Distracted
+  button** roughly once every twelve questions and fails if the question count
+  on screen drops — that button must never eat the question it was pressed on.
+- `balance_sim.js` no longer models Focus or streaks, and reads the monster
+  clock from `CONFIG.MONSTER_CADENCE` rather than from each monster.
+- `test_announce.py` needed no change despite the screen flipping, because it
+  measures the banner against the arena rather than against the viewport.
+
+The playthrough suite also caught a crash that the author introduced in this
+same build: the Distracted button could land the killing blow while another
+timer was already resolving one, and `handleRunDeath()` ran twice on a run that
+no longer existed. That is the suite doing its job — but note that it was only
+caught because a test presses that button. Nothing else would have found it.

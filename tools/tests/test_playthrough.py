@@ -7,7 +7,7 @@ Checks, beyond "does it crash":
      question. We now read turnsUntilAct out of the live run and compare it to
      what the DOM claims, on every single question.
   2. RISKY never hides the options on a selection-only question.
-  3. Focus is offered once per fight and greys out after use.
+  3. The Distracted button never eats the question it was pressed on.
 """
 import sys, random
 from playwright.sync_api import sync_playwright
@@ -50,7 +50,7 @@ def play(page, accuracy, budget, log):
     rng = random.Random(int(accuracy * 1000))
     clock_checks = clock_bad = 0
     blind_on_closed = 0
-    focus_uses = 0
+    distracted_ate_question = 0
     answered = 0
 
     for _ in range(budget):
@@ -110,13 +110,25 @@ def play(page, accuracy, budget, log):
                         continue
                 page.wait_for_timeout(280)
 
-        # ---- Focus ----------------------------------------------------------
-        for side, btn in (('enc', '#btn-focus'), ('boss', '#btn-focus-boss')):
-            if visible(page, btn) and rng.random() < 0.25:
+        # ---- the Distracted button ------------------------------------------
+        # It must NEVER consume the question. Press it on roughly one question
+        # in twelve and check the options are still there afterwards; a teacher
+        # uses it mid-question and the nominated student still has to answer.
+        if answered and answered % 12 == 0 and visible(page, '#btn-distracted'):
+            before = page.evaluate(
+                "document.querySelectorAll('#enc-choices .choice').length")
+            if before:
                 try:
-                    if not page.query_selector(btn).is_disabled():
-                        page.click(btn, timeout=800); focus_uses += 1
-                        page.wait_for_timeout(220)
+                    page.click('#btn-distracted', timeout=800)
+                    page.wait_for_timeout(500)
+                    for _ in range(4):
+                        if page.query_selector('#popup-layer.open'):
+                            page.click('#popup-continue', timeout=700)
+                            page.wait_for_timeout(200)
+                    after = page.evaluate(
+                        "document.querySelectorAll('#enc-choices .choice').length")
+                    if after < before:
+                        distracted_ate_question += 1
                 except Exception:
                     pass
 
@@ -192,7 +204,8 @@ def play(page, accuracy, budget, log):
             break
 
     return dict(answered=answered, clock_checks=clock_checks, clock_bad=clock_bad,
-                blind_on_closed=blind_on_closed, focus_uses=focus_uses)
+                blind_on_closed=blind_on_closed,
+                distracted_ate_question=distracted_ate_question)
 
 
 with sync_playwright() as pw:
@@ -217,7 +230,7 @@ with sync_playwright() as pw:
         print(f'  clock readings checked  {r["clock_checks"]}')
         print(f'  clock readings WRONG    {r["clock_bad"]}')
         print(f'  blind on closed q       {r["blind_on_closed"]}')
-        print(f'  Focus used              {r["focus_uses"]}')
+        print(f'  Distracted ate a Q      {r["distracted_ate_question"]}  (must be 0)')
         print(f'  console errors          {len(errors)}')
         for e in errors[:6]:
             print('    ', e[:160])
@@ -228,7 +241,8 @@ with sync_playwright() as pw:
             pass
         for l in log[:8]:
             print(l)
-        if r['clock_bad'] or r['blind_on_closed'] or errors:
+        if (r['clock_bad'] or r['blind_on_closed'] or errors
+                or r['distracted_ate_question']):
             fails += 1
         page.screenshot(path=f'/tmp/v53_{label.split()[0]}.png')
         page.close()

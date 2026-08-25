@@ -48,6 +48,8 @@ SHEETS = {
                (2,"ashwing",100,False),(3,"sand_burrower",104,False)],
   "46f72b5e": [(0,"driftwood_stag",128,False),(1,"moss_bear",134,False),
                (2,"thornhog",100,True),(3,"hollow_fox",98,False)],
+  # index 0 was the fused owl+mantis. The owl (the Watcher) is still taken
+  # from it by colour-seeded split; the mantis was redrawn - see mantis_v2.
   "6d7705bc": [(0,"__SPLIT__",0,False),(1,"root_tyrant",140,False),
                (2,"skin_taker",138,False)],
   "6e6b1bf4": [(0,"camouflage",150,True)],
@@ -55,8 +57,13 @@ SHEETS = {
   # NPC proportions. Both came back as single subjects, so index 0 is all of it.
   "lizard_v2":  [(0,"glass_lizard",112,False)],
   "tracker_v2": [(0,"tracker",88,False)],
+  # round three: The Patient One redrawn. The first pass had two abdomens and
+  # four hind legs; the second was anatomically right but flat cartoon line-art
+  # and horizontal. This one is a mantis the forest has grown over - which is
+  # the rule the whole realm follows and which the first two prompts missed.
+  "mantis_v2":  [(0,"patient_one",128,False)],
 }
-SPLIT_H = {"watcher":132,"patient_one":128}
+SPLIT_H = {"watcher": 132}
 BACKDROPS = {"4f90ad06":"realm2_band1","0f2ca12c":"realm2_band2","078dd144":"realm2_band3"}
 WM = (0.885,0.795,0.950,0.900)
 
@@ -80,11 +87,67 @@ BAND_DIM = {
 TARGET_LUM = 70.0
 
 
-def sheet_objects(fid):
+def sheet_objects(fid, dilate=5, min_px=700):
+    """Cut one sheet into finished, CLEAN objects.
+
+    split_props.components() returns bounding boxes, and the obvious next move
+    - crop that rectangle out of the keyed sheet - is wrong. A bounding box is
+      a rectangle; a creature is not. Anything belonging to a NEIGHBOUR that
+      happens to fall inside the rectangle comes along for the ride. That is
+      how the Bramble Cat shipped with the Mimic Jay's beak floating beside its
+      ear, and the Jay shipped with 162 pixels of the Cat's brambles.
+
+    The fix is not to delete stray islands: several creatures here have
+    detached pieces ON PURPOSE - the Hollow Fox sheds leaves, the Ashwing
+    trails ash, the Sand Burrower throws up grit. Deleting small islands would
+    strip exactly the details that make those three work.
+
+    So instead every opaque pixel on the sheet is assigned to whichever
+    creature it is NEAREST to. A shed leaf goes with its fox; a beak stays with
+    its bird; nothing is invented and nothing intentional is lost.
+    """
     rgb, alpha, bg = sp.key_magenta(f"{SRC}/{fid}.png")
     rgb = sp.defringe(rgb, alpha, bg)
     full = np.dstack([rgb, alpha])
-    return full, sp.components(alpha)
+    m = alpha > 0
+
+    grown = ndimage.binary_dilation(m, np.ones((dilate, dilate), bool))
+    lab, n = ndimage.label(grown)
+    cores = [(lab == i) & m for i in range(1, n + 1)]
+    cores = [c for c in cores if c.sum() >= min_px]
+
+    # same reading order as split_props.components(): rows top to bottom,
+    # then left to right - the SHEETS indices above depend on it
+    def order(c):
+        ys, xs = np.where(c)
+        return (ys.min() // 200, xs.min())
+    cores.sort(key=order)
+
+    # Assign WHOLE ISLANDS, not individual pixels.
+    #
+    # Deciding per pixel looks equivalent and is not: a detached piece lying
+    # between two creatures gets sliced down the middle, half going to each.
+    # The synthetic fixture in tools/tests/test_sheet_split.py puts a spur
+    # exactly there and per-pixel assignment split it 72 pixels one way and the
+    # rest the other. A shed leaf belongs to one fox or the other; it is never
+    # half of each.
+    dist = np.stack([ndimage.distance_transform_edt(~c) for c in cores])
+    lab_all, n_all = ndimage.label(m, np.ones((3, 3), bool))
+    owner = np.full(m.shape, -1, dtype=np.int16)
+    for j in range(1, n_all + 1):
+        island = lab_all == j
+        # closest approach from this island to each core; ties go to the first,
+        # which is the leftmost core in reading order
+        owner[island] = int(np.argmin([d[island].min() for d in dist]))
+
+    objs = []
+    for i in range(len(cores)):
+        sel = m & (owner == i)
+        ys, xs = np.where(sel)
+        q = full.copy()
+        q[..., 3] = np.where(sel, alpha, 0)
+        objs.append(q[ys.min():ys.max() + 1, xs.min():xs.max() + 1])
+    return objs
 
 
 def split_by_colour(a):
@@ -98,8 +161,13 @@ def split_by_colour(a):
     ms = biggest(green)
     os_ = biggest(m & ~ndimage.binary_dilation(green, np.ones((3,3),bool)))
     dm, do = ndimage.distance_transform_edt(~ms), ndimage.distance_transform_edt(~os_)
+    # Only the owl is taken from this sheet now. The mantis half of the split
+    # was the Patient One, and it was redrawn (mantis_v2) because the original
+    # had two abdomens. Returning it here as well would produce a sprite that
+    # is then silently overwritten depending on dict ordering - a trap for
+    # whoever edits SHEETS next.
     out = {}
-    for name, sel in (("watcher", m & (do < dm)), ("patient_one", m & (dm <= do))):
+    for name, sel in (("watcher", m & (do < dm)),):
         ys, xs = np.where(sel)
         q = a.copy(); q[...,3] = np.where(sel, a[...,3], 0)
         out[name] = q[ys.min():ys.max()+1, xs.min():xs.max()+1]
@@ -168,11 +236,10 @@ if __name__ == "__main__":
     os.makedirs(DST_S, exist_ok=True); os.makedirs(DST_B, exist_ok=True)
     raw = {}
     for fid, plan in SHEETS.items():
-        full, boxes = sheet_objects(fid)
+        objs = sheet_objects(fid)
         for idx, name, th, flip in plan:
             if name is None: continue
-            x0,y0,x1,y1,_ = boxes[idx]
-            crop = full[y0:y1, x0:x1]
+            crop = objs[idx]
             if name == "__SPLIT__":
                 for n2, arr in split_by_colour(crop).items():
                     raw[n2] = (arr, SPLIT_H[n2], False)

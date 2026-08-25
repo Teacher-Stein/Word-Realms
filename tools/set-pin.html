@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word Realms — set the teacher passphrase</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; padding: 32px 20px; background: #14121c; color: #e8e4f4;
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: 640px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; color: #ffd76a; }
+  .sub { color: #a9a2c4; margin: 0 0 28px; }
+  label { display: block; font-weight: 600; margin: 22px 0 6px; }
+  input[type=text] {
+    width: 100%; box-sizing: border-box; padding: 12px 14px; font-size: 1.1rem;
+    background: #1e1b2b; color: #fff; border: 2px solid #4a4370; border-radius: 8px;
+  }
+  input[type=text]:focus { outline: none; border-color: #ffd76a; }
+  .out {
+    margin-top: 20px; padding: 14px; border-radius: 8px; background: #0f0d16;
+    border: 1px solid #35304f; font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: .82rem; word-break: break-all; white-space: pre-wrap; min-height: 3em;
+    color: #9fe6b0;
+  }
+  button {
+    margin-top: 12px; padding: 10px 18px; font-size: 1rem; font-weight: 600;
+    background: #ffd76a; color: #221c33; border: 0; border-radius: 8px; cursor: pointer;
+  }
+  button:disabled { opacity: .4; cursor: default; }
+  .note { background: #1b1826; border-left: 3px solid #ffd76a; padding: 12px 16px;
+          margin: 26px 0 0; border-radius: 0 8px 8px 0; color: #cfc8e6; font-size: .93rem; }
+  .warn { border-left-color: #ff8a7a; color: #ffd2ca; }
+  .strength { margin-top: 8px; font-size: .9rem; min-height: 1.4em; }
+  code { background: #0f0d16; padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Set the teacher passphrase</h1>
+  <p class="sub">Everything here happens inside this page, on this computer.
+    Nothing is sent anywhere.</p>
+
+  <label for="pass">Your passphrase</label>
+  <input type="text" id="pass" autocomplete="off" spellcheck="false"
+         placeholder="three or four unrelated words">
+  <div class="strength" id="strength"></div>
+
+  <label>Paste this line into <code>js/config.js</code>, replacing the one that
+    is already there:</label>
+  <div class="out" id="out">Type a passphrase above.</div>
+  <button id="copy" disabled>Copy the line</button>
+
+  <div class="note">
+    <b>Why a passphrase and not four digits?</b><br>
+    The line above is a one-way fingerprint of what you typed, so a student
+    reading your page source sees only the fingerprint. But that fingerprint is
+    public too, and a determined person could sit and test guesses against it.
+    Four digits would take seconds. Three or four unrelated words would take
+    longer than anyone's patience. Avoid your name, the school's name, and
+    anything a class could guess in ten tries.
+  </div>
+
+  <div class="note warn">
+    <b>Write it down somewhere safe.</b> There is no way to recover a
+    passphrase from the fingerprint — that is the entire point of it. If you
+    forget it, you will need to come back here and generate a new line.
+  </div>
+</div>
+
+<script src="../js/sha256.js"></script>
+<script>
+// sha256.js also defines teacherPinOk(), which reads CONFIG. Give it something
+// to read so loading this page standalone doesn't throw.
+window.CONFIG = window.CONFIG || { TEACHER_PIN_SHA256: "" };
+
+const pass = document.getElementById("pass");
+const out = document.getElementById("out");
+const copy = document.getElementById("copy");
+const strength = document.getElementById("strength");
+
+function assess(v) {
+  const words = v.trim().split(/\s+|[-_]+/).filter(Boolean);
+  if (!v.trim()) return ["", ""];
+  if (/^\d+$/.test(v.trim()))
+    return ["#ff8a7a", "Digits only — a class will guess this. Use words."];
+  if (v.trim().length < 10)
+    return ["#ffb36a", "Short. Aim for three or four words."];
+  if (words.length < 3)
+    return ["#ffb36a", "Try three or four unrelated words joined by dashes."];
+  return ["#9fe6b0", "Good — that is hard to guess and easy to remember."];
+}
+
+function update() {
+  const v = pass.value;
+  const [colour, msg] = assess(v);
+  strength.textContent = msg;
+  strength.style.color = colour;
+  if (!v.trim()) {
+    out.textContent = "Type a passphrase above.";
+    copy.disabled = true;
+    return;
+  }
+  out.textContent =
+    '  TEACHER_PIN_SHA256:\n    "' + SHA256.hex(v.trim()) + '",';
+  copy.disabled = false;
+}
+
+pass.addEventListener("input", update);
+copy.addEventListener("click", () => {
+  navigator.clipboard.writeText(out.textContent).then(
+    () => { copy.textContent = "Copied"; setTimeout(() => copy.textContent = "Copy the line", 1400); },
+    () => { copy.textContent = "Select it and copy by hand"; }
+  );
+});
+update();
+</script>
+</body>
+</html>

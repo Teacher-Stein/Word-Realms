@@ -1,4 +1,5 @@
-// v5.3 balance model. Momentum is gone; Stakes and Focus replace it.
+// v6.1 balance model. Focus and streaks are gone; the monster's clock does
+// the work instead. See config.js MONSTER_CADENCE for why.
 //
 //   Stakes - each question is answered SAFE or RISKY. RISKY doubles shards and
 //            DOUBLES the damage a wrong answer costs. It never changes damage
@@ -33,9 +34,8 @@ function runOne(acc, S) {
   const p = { hearts: O.hearts, maxHearts: O.hearts, shields: O.shields, ls: true };
 
   const fight = (mon, hp, isE) => {
-    let monHp = hp, cad = Math.max(1, mon.cadence || 3), until = cad;
+    let monHp = hp, cad = Math.max(1, CONFIG.MONSTER_CADENCE || mon.cadence || 3), until = cad;
     let t = 0, en = false, n = 0;
-    let focus = true;                       // one per FIGHT
     let shieldPaid = 0;                     // RISKY shields are capped per fight
     const h0 = p.hearts;
     let aimed = 0, wrongDmg = 0, clockDmg = 0;
@@ -43,12 +43,6 @@ function runOne(acc, S) {
     while (monHp > 0 && p.hearts > 0 && t < 90) {
       t++; n++;
 
-      // Focus policy: burn it when the blow is one answer away and the party
-      // is not comfortable. A class that ignores Focus has O.focusUse ~ 0.
-      let focusArmed = false;
-      if (focus && until <= 1 && Math.random() < O.focusUse) {
-        focus = false; focusArmed = true; S.focus++;
-      }
 
       // Stakes policy. A class that plays it safe risks rarely; a bold class
       // risks often. Crucially children misjudge: they take RISKY on questions
@@ -99,10 +93,6 @@ function runOne(acc, S) {
         // fell into. ~54% of the bank can be called blind (59 of 109).
         if (risky && Math.random() < O.blindFrac && shieldPaid < O.riskShieldCap) {
           p.shields += O.riskShield; shieldPaid += O.riskShield; S.riskWins++;
-        }
-        if (focusArmed) {
-          until = Math.min(cad, until + CONFIG.FOCUS_STUN_ANSWERS);
-          S.stunTicks += CONFIG.FOCUS_STUN_ANSWERS;
         }
       } else {
         const tier = isE ? (Math.random() < 0.65 ? 4 : 1)
@@ -175,7 +165,7 @@ function runOne(acc, S) {
 function shape(label, opt) {
   O = Object.assign({ layers: CONFIG.LAYERS_PER_REALM, shields: 2,
                       hearts: CONFIG.START_HEARTS,
-                      riskRate: 0.30, riskMisjudge: 0.06, focusUse: 0.55, riskShield: 1, riskShieldCap: 2, v52: false, moEff: 0.45, blindFrac: 0.54 }, opt);
+                      riskRate: 0.30, riskMisjudge: 0.06, riskShield: 1, riskShieldCap: 2, v52: false, moEff: 0.45, blindFrac: 0.54 }, opt);
   const cells = [];
   for (const acc of [0.95, 0.85, 0.75]) {
     const S = { f:0, fNoHeart:0, fNoAim:0, fq:0, e:0, eq:0, acts:0,
@@ -193,19 +183,19 @@ function shape(label, opt) {
 
 function trio(label, opt) {
   console.log('\n  ' + label);
-  shape('    plays safe, ignores Focus', Object.assign({}, opt, { riskRate: 0.08, focusUse: 0.05 }));
-  shape('    typical class',             Object.assign({}, opt, { riskRate: 0.30, focusUse: 0.55 }));
-  shape('    bold, uses Focus well',     Object.assign({}, opt, { riskRate: 0.65, focusUse: 0.90 }));
+  shape('    plays it safe        ', Object.assign({}, opt, { riskRate: 0.08, }));
+  shape('    typical class',             Object.assign({}, opt, { riskRate: 0.30 }));
+  shape('    bold, risks often  ',     Object.assign({}, opt, { riskRate: 0.65, }));
 }
 
 console.log('shape'.padEnd(42), 'at 85% accuracy  |  wipe rate by accuracy');
 console.log('\n=== v5.2 CONTROL: Momentum Guard, no Stakes, 9 hearts (what Stein has now) ===');
 shape('  typical class',    { hearts: 9, v52: true, moEff: 0.45 });
 
-console.log('\n=== v5.3: Stakes + Focus, sweeping hearts to match ===');
-for (const h of [9, 10, 11, 12, 13]) {
+console.log('\n=== v6.1: Stakes only, sweeping hearts to match ===');
+for (const h of [9, 11, 13, 15, 17, 19, 21]) {
   console.log('\n  ' + h + ' hearts');
-  shape('    plays safe, ignores Focus', { hearts: h, riskRate: 0.08, focusUse: 0.05 });
-  shape('    typical class',             { hearts: h, riskRate: 0.30, focusUse: 0.55 });
-  shape('    bold, uses Focus well',     { hearts: h, riskRate: 0.65, focusUse: 0.90 });
+  shape('    plays it safe        ', { hearts: h, riskRate: 0.08, });
+  shape('    typical class',             { hearts: h, riskRate: 0.30 });
+  shape('    bold, risks often  ',     { hearts: h, riskRate: 0.65, });
 }
