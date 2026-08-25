@@ -115,9 +115,17 @@ def play(page, accuracy, budget, log):
         # in twelve and check the options are still there afterwards; a teacher
         # uses it mid-question and the nominated student still has to answer.
         if answered and answered % 12 == 0 and visible(page, '#btn-distracted'):
-            before = page.evaluate(
-                "document.querySelectorAll('#enc-choices .choice').length")
-            if before:
+            # Compare the QUESTION, not just how many options are on screen.
+            # A raw count is ambiguous: the button can legitimately land the
+            # killing blow, which ends the run and empties the panel, and that
+            # is not the same thing as eating the question. The bug we care
+            # about is the question changing while the fight carries on.
+            before = page.evaluate("""() => {
+              const q = document.getElementById('enc-question');
+              const n = document.querySelectorAll('#enc-choices .choice').length;
+              return { q: q ? q.textContent : '', n };
+            }""")
+            if before['n']:
                 try:
                     page.click('#btn-distracted', timeout=800)
                     page.wait_for_timeout(500)
@@ -125,9 +133,19 @@ def play(page, accuracy, budget, log):
                         if page.query_selector('#popup-layer.open'):
                             page.click('#popup-continue', timeout=700)
                             page.wait_for_timeout(200)
-                    after = page.evaluate(
-                        "document.querySelectorAll('#enc-choices .choice').length")
-                    if after < before:
+                    after = page.evaluate("""() => {
+                      const q = document.getElementById('enc-question');
+                      return {
+                        q: q ? q.textContent : '',
+                        n: document.querySelectorAll('#enc-choices .choice').length,
+                        liveFight: !!(window.STATE && STATE.run && STATE.run.encounter
+                                      && STATE.run.encounter.hp > 0),
+                      };
+                    }""")
+                    # only a problem if the fight is still going and the
+                    # question moved on without anyone answering it
+                    if after['liveFight'] and (after['q'] != before['q']
+                                               or after['n'] < before['n']):
                         distracted_ate_question += 1
                 except Exception:
                     pass

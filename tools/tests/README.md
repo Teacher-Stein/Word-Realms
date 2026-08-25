@@ -15,6 +15,7 @@ Then:
     python3 tools/tests/test_events.py        # every event states both sides
     python3 tools/tests/test_art.py           # every sprite exists, fits and reads
     python3 tools/tests/test_sheet_split.py   # no creature can leak into its neighbour
+    python3 tools/tests/test_stale_deploy.py  # a half-updated upload must not brick the game
     python3 tools/tests/shot_realm2.py        # Realm 2's art in a real browser
     node    tools/tests/check_content.js      # every realm's question bank is sound
     node    tools/tests/balance_sim.js        # wipe rates, questions per run
@@ -189,3 +190,27 @@ same build: the Distracted button could land the killing blow while another
 timer was already resolving one, and `handleRunDeath()` ran twice on a run that
 no longer existed. That is the suite doing its job — but note that it was only
 caught because a test presses that button. Nothing else would have found it.
+
+
+**test_stale_deploy.py** (v6.1) serves the current JavaScript against the
+*previous* version's `index.html` and requires that the game still works.
+
+The bug it exists for shipped in v6.1 and reached a classroom. `main.js` wires
+55 listeners at the top level, in order, and every one used to be
+`$("some-id").addEventListener(...)` — which throws if the element is missing.
+v6.1 added two buttons near the START of that list. A browser holding a cached
+`index.html` hit the first one, threw, and never attached any listener below
+it, including the teacher menu's Unlock button. The menu looked completely
+normal and did nothing. No error on screen, no clue, mid-lesson.
+
+One missing div killed the whole game.
+
+Listeners now go through `on(id, event, fn)`, which skips a missing element and
+records the id instead of throwing. A half-updated page loses the one feature
+whose markup is absent, not everything after it in the file. `checkMarkup()`
+then shows a red banner naming what is stale and telling the teacher to press
+Ctrl+F5.
+
+Verified by reverting: put the two `$(...).addEventListener` calls back and the
+test does not merely fail, it times out — because the teacher menu never opens
+at all. That is what the failure looked like from the other side of the screen.

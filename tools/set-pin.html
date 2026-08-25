@@ -49,10 +49,28 @@
          placeholder="three or four unrelated words">
   <div class="strength" id="strength"></div>
 
-  <label>Paste this line into <code>js/config.js</code>, replacing the one that
-    is already there:</label>
+  <h2 style="font-size:1.05rem;margin:30px 0 4px;color:#ffd76a;">Step 1 — find this in <code>js/config.js</code></h2>
+  <p class="sub" style="margin:0 0 8px;">It is near the very top, about line 21.
+    Yours will have a different string of letters and numbers.</p>
+  <div class="out" style="color:#9a93b4;">  TEACHER_PIN_SHA256:
+    "086e6dbaca9e9630b9aae77c2b89aebdfa089d2b69e23312711f9b6a4dcb8c26",</div>
+
+  <h2 style="font-size:1.05rem;margin:26px 0 4px;color:#ffd76a;">Step 2 — replace those two lines with these</h2>
   <div class="out" id="out">Type a passphrase above.</div>
-  <button id="copy" disabled>Copy the line</button>
+  <button id="copy" disabled>Copy these two lines</button>
+  <p class="sub" style="margin:10px 0 0;font-size:.88rem;">
+    Keep the two spaces at the start of the first line and the comma at the end
+    of the second. Save the file, upload it, then hard-refresh the game with
+    <b>Ctrl</b>+<b>F5</b>.</p>
+
+  <div class="note" style="border-left-color:#9fe6b0;">
+    <b>You may not need this page at all.</b><br>
+    From v6.1 you can change the passphrase inside the game: <b>Teacher</b> →
+    enter the current passphrase → <b>Your passphrase</b> → type a new one →
+    <b>Set passphrase</b>. That applies to the computer you are sitting at and
+    needs no file editing. Use this page when you want the change to travel
+    with the game to every computer, or to set it for the first time.
+  </div>
 
   <div class="note">
     <b>Why a passphrase and not four digits?</b><br>
@@ -112,7 +130,7 @@ function update() {
 pass.addEventListener("input", update);
 copy.addEventListener("click", () => {
   navigator.clipboard.writeText(out.textContent).then(
-    () => { copy.textContent = "Copied"; setTimeout(() => copy.textContent = "Copy the line", 1400); },
+    () => { copy.textContent = "Copied"; setTimeout(() => copy.textContent = "Copy these two lines", 1400); },
     () => { copy.textContent = "Select it and copy by hand"; }
   );
 });
