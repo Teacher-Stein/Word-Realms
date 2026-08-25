@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 6.1.2 — What four classes taught us.** Two realms fully playable and
+class. **Version 6.2 — Twice the questions.** Two realms fully playable and
 fully illustrated. Realm 1 (Unit 1, Extreme Weather) and Realm 2 (Unit 2, Copycat
 Animals) each have their own cast, boss, guide and three painted backdrops;
 Realms 3–9 appear as locked placeholders using the correct themes from the
@@ -22,6 +22,31 @@ once the page has loaded.
 5. Wait about a minute, then reload your `https://…github.io/word-realms/` link.
 
 If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
+
+---
+
+## What's new in v6.2 — 192 new questions
+
+Both realms have roughly doubled: Realm 1 goes from 109 questions to **205**,
+Realm 2 from 112 to **208**.
+
+**The problem was not the total, it was the spread.** Every curriculum key had
+about three questions. The picker prefers keys the class has not covered yet,
+so every run worked through all 32 keys near the start, drawing from pools of
+three — which is why four classes in one day felt like the same lesson four
+times. The repetition was the teacher's, more than the students'.
+
+So the fix was aimed per key rather than at the pile: **every one of the 64
+curriculum keys across both realms now has 6 to 8 questions**, up from 3, and
+none has fewer than 6.
+
+The split follows the v6.1 rule. New standard questions are vocabulary and
+recognition at tiers 1–2; new elite questions are production and grammar at
+tier 4 — fix the error, finish the sentence in the right form, apply the word
+to a situation. Ordinary monsters ask you to recognise the language; elites and
+bosses ask you to use it.
+
+Every question is original. None reproduces *Our World 5* wording.
 
 ---
 
