@@ -105,14 +105,31 @@ const CONFIG = {
   // v4.3: shields NO LONGER refill in every room. They persist, and are only
   // topped up at a Rest room or Safe Path, by a potion, or by shopping. That
   // is what makes armour worth carrying. Lower this for a harder game.
-  // v6.1: 7 -> 18, and this is what pays for the monster now landing three
-  // times as often. Shields are the right buffer rather than more hearts:
-  // they are a MANAGED resource that only refills at a campfire or a Safe
-  // Path, so the class has to plan for the damage instead of simply having a
-  // deeper pool - and a bigger heart pool would have made a wrong answer feel
-  // like nothing, which is the mistake v5.1 already made and corrected.
-  // Shields also lengthen fights and never shorten them.
-  REST_SHIELDS: 18,          // campfire "Repair"
+  // Shields are the right buffer for the faster v6.1 monster rather than more
+  // hearts: they are a MANAGED resource that only refills at a campfire or a
+  // Safe Path, so the class has to plan for the damage instead of simply
+  // having a deeper pool - and a bigger heart pool would have made a wrong
+  // answer feel like nothing, which is the mistake v5.1 already made and
+  // corrected. Shields also lengthen fights and never shorten them.
+  //
+  // v6.1 took this 7 -> 18. v6.2.1 pulls it back to 12: at 18 the party took
+  // NO DAMAGE AT ALL in 91% of fights. The monster was swinging 1.9 times a
+  // fight and landing every one, and the shields ate the lot - so the whole
+  // point of v6.1 was being absorbed.
+  REST_SHIELDS: 12,          // campfire "Repair"
+
+  // What the party sets out with. This is NOT the same as a Repair, and the
+  // bug that prompted splitting them out is worth remembering:
+  //
+  // A run starts on zero shields and then called refillShields() once, so the
+  // party began every run as though they had just rested. That was invisible
+  // while a Repair was 7. When v6.1 raised Repair to 18 the starting kit
+  // silently tripled with it - nobody chose 18, it was inherited - and the
+  // first several fights became free.
+  //
+  // Half a Repair: enough that nobody walks into room one on nothing, small
+  // enough that the first campfire is a real upgrade rather than a top-up.
+  START_SHIELDS: 6,
   REST_HEAL: 5,              // campfire "Mend"
   SHARPEN_HEARTS: 1,         // campfire "Sharpen" - permanent max hearts this run
   BOSS_CADENCE: 3,           // boss acts every N student turns
@@ -229,7 +246,7 @@ const CONFIG = {
   // a question that cost an evening once already, when a cached index.html
   // and a fresh config.js disagreed and the teacher menu simply stopped
   // accepting any passphrase at all.
-  VERSION: "6.2",
+  VERSION: "6.2.1",
 
   SAVE_KEY: "wordrealms_save_v2",
   DEFAULT_UNLOCKED: [1],

@@ -423,9 +423,11 @@ on("hero-confirm", "click", () => {
   CONFIG.START_POTIONS.forEach(addPotion);
   const granted = hero.grant ? hero.grant(run) : "";
   const perkNotes = applyRunPerks(run);
-  // The party sets out equipped. Without this they walked into the first
-  // fight on zero shields, because shields now only fill at rest points.
-  refillShields();
+  // The party sets out equipped, but NOT fully rested. This used to call
+  // refillShields(), which handed out a whole campfire Repair before the
+  // class had moved - see START_SHIELDS in config.js for why that turned out
+  // to matter so much.
+  run.shields = CONFIG.START_SHIELDS;
   saveState();
 
   nextStudent();

@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 6.2 — Twice the questions.** Two realms fully playable and
+class. **Version 6.2.1 — Twice the questions.** Two realms fully playable and
 fully illustrated. Realm 1 (Unit 1, Extreme Weather) and Realm 2 (Unit 2, Copycat
 Animals) each have their own cast, boss, guide and three painted backdrops;
 Realms 3–9 appear as locked placeholders using the correct themes from the
@@ -22,6 +22,44 @@ once the page has loaded.
 5. Wait about a minute, then reload your `https://…github.io/word-realms/` link.
 
 If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
+
+---
+
+## v6.2.1 — the party was starting a run fully rested
+
+Stein noticed a new run beginning with 18 shields and asked whether that was
+too many. It was, and the reason was worse than the number.
+
+Starting shields were never a setting. A run began on zero and immediately
+called `refillShields()`, so the party set out as though they had just slept at
+a campfire. That was invisible while a Repair was 7. When v6.1 raised Repair to
+18 to pay for the faster monster, **the starting kit tripled with it** — nobody
+chose 18, it was inherited.
+
+The effect: the party took **no damage at all in 91% of fights**. The monster
+was swinging 1.9 times a fight and landing every blow, and an opening buffer
+they were handed at the door ate the lot. Everything v6.1 did to make the
+monster's clock matter was being absorbed before the class could feel it.
+
+Starting shields are now their own number (6, half a Repair), and Repair itself
+comes back to 12.
+
+**And the simulator had been measuring a different game.** `balance_sim.js`
+started its party with a hard-coded 2 shields while the real game gave 18, so
+every wipe rate it has ever reported was computed against a party nine times
+weaker at the door. It reads from `CONFIG` now.
+
+That correction finally allows a real calibration, by running the build whose
+classroom behaviour is actually known:
+
+| Build | Fights where nothing lands | Questions/run |
+|---|---|---|
+| v6.0 — measured at ~1 loss in 3 across four classes | 69% | 34 |
+| v6.2 as shipped | 91% | 49 |
+| v6.2.1 | 70% | 39 |
+
+v6.2.1 restores v6.0's feel almost exactly on the measure that matters, while
+the monster acts more often and the class answers five more questions a run.
 
 ---
 
