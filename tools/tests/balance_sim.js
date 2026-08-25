@@ -163,7 +163,19 @@ function runOne(acc, S) {
 }
 
 function shape(label, opt) {
-  O = Object.assign({ layers: CONFIG.LAYERS_PER_REALM, shields: 2,
+  // Starting shields are READ FROM CONFIG, not hard-coded.
+  //
+  // This line said `shields: 2` for six versions while the game handed the
+  // party a full campfire Repair on the first screen - 18 by v6.2. So every
+  // wipe rate this file has ever reported was measured against a party nine
+  // times weaker at the door than the real one, and a chunk of the "the
+  // simulator reads pessimistic" folklore was simply this: it was playing a
+  // different game.
+  //
+  // Any number in here is worthless if it is not reading the same config the
+  // browser reads. Do not hard-code a starting resource again.
+  O = Object.assign({ layers: CONFIG.LAYERS_PER_REALM,
+                      shields: CONFIG.START_SHIELDS,
                       hearts: CONFIG.START_HEARTS,
                       riskRate: 0.30, riskMisjudge: 0.06, riskShield: 1, riskShieldCap: 2, v52: false, moEff: 0.45, blindFrac: 0.54 }, opt);
   const cells = [];
