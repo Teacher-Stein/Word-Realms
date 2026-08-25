@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 6.1.1 — What four classes taught us.** Two realms fully playable and
+class. **Version 6.1.2 — What four classes taught us.** Two realms fully playable and
 fully illustrated. Realm 1 (Unit 1, Extreme Weather) and Realm 2 (Unit 2, Copycat
 Animals) each have their own cast, boss, guide and three painted backdrops;
 Realms 3–9 appear as locked placeholders using the correct themes from the
@@ -22,6 +22,38 @@ once the page has loaded.
 5. Wait about a minute, then reload your `https://…github.io/word-realms/` link.
 
 If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
+
+---
+
+## v6.1.2 — arena polish
+
+Flipping the screen in v6.1 moved the monster's nameplate and intent from below
+the sprite to above it, and left two things behind.
+
+**Every monster stood 13% lower than the hero.** The foe was deliberately
+placed low because its info block used to hang beneath it and needed the room.
+With the block moved above, nobody moved the sprite back up — so small
+creatures looked sunk into the floor and the Storm Chaser stood below the party
+he was talking to. Both now share one floor line.
+
+**The intent bar sat on top of the monster.** The sprite breathes, lifting 14px
+at the top of each breath, and the gap below the info block was only 8px — so
+twice every 2.4 seconds the creature rose into its own warning. The gap now
+clears the bob.
+
+**The heroes breathe too.** The monster has had an idle bob since v4 and the
+party stood perfectly still beside it, which read as a cardboard cut-out from
+the back of a room. Slower and shallower than the monster's, on a different
+period so the two never fall into step.
+
+**The Distracted button moved into the HUD.** Fixed to the bottom-left corner
+it covered the name of the student whose turn it was — the one thing the class
+needs to read. Hunting for a corner that is empty on all eight screens is a
+losing game, so it docks into the top bar instead, which is the only strip that
+is identical on every screen.
+
+Also: the coaching card told students to read the red bar *under* the monster,
+which stopped being true in v6.1.
 
 ---
 

@@ -25,7 +25,7 @@ const COACH_LESSONS = {
   intent: {
     banner: "NEW: THE MONSTER'S PLAN",
     title: "It tells you what it will do, and when",
-    effect: "Read the red bar under the monster",
+    effect: "Read the red bar above the monster",
     desc: "The countdown is in ANSWERS, from anybody — not just your turn. " +
           "When it says ON THE NEXT ANSWER you can Brace to block it, or take " +
           "the hit and keep attacking.",

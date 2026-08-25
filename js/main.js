@@ -832,10 +832,22 @@ function distractedNow() {
 
 // Visible whenever a run is in progress, on every screen. Called from
 // showScreen() and after any state change that could start or end a run.
+//
+// v6.1.2: it used to be fixed to the bottom-left corner, where it sat on top
+// of the student's name on the map screen - the one piece of text the class
+// needs to read to know whose turn it is. Hunting for a corner that is empty
+// on all eight screens is a losing game, so it DOCKS into the HUD bar instead:
+// one element, moved into whichever screen is showing. The HUD is the only
+// strip of the layout that is the same on every screen, so it cannot collide
+// with anything.
 function syncDistractedButton() {
   const b = document.getElementById("btn-distracted");
   if (!b) return;
   b.classList.toggle("on", !!STATE.run);
+  if (!STATE.run) return;
+  const screen = document.querySelector(".screen.active");
+  const dock = screen && screen.querySelector(".hud-top .hud-block.currency");
+  if (dock && b.parentElement !== dock) dock.appendChild(b);
 }
 
 function flashScreen() {

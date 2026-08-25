@@ -763,19 +763,30 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
   position: absolute; bottom: 19%; z-index: 3;
   display: flex; flex-direction: column; align-items: center; gap: 8px;
 }
+/* The foe needs a bigger gap than the hero. Its info block now sits ABOVE the
+   sprite, and idleBob lifts that sprite 14px at the top of its breath - with
+   the old 8px gap the monster rose INTO its own intent bar twice every 2.4
+   seconds, which is what put the red text on top of the Frost Fang. 24px
+   clears the bob with room to spare. */
+.foe-side { gap: 24px; }
 /* Both fighters stand on the painted backdrop's floor line, about 15% up from
-   the bottom of the corridor. The foe sits lower in the box because its info
-   block - nameplate, HP and intent - hangs below it into the dark foreground
-   strip, which is empty by design in all three backdrops. */
+   the bottom of the corridor.
+   v6.1.2: the foe used to sit at 2% because its info block - nameplate, HP and
+   intent - hung BELOW the sprite and needed that space. v6.1 moved the info
+   block above the sprite (the screen flipped, so the arena is the bottom half
+   and the intent belongs near the question) and nobody moved the sprite back
+   up. The result was every monster standing 13% lower than the hero: small
+   creatures looked sunk into the floor, and the Storm Chaser stood below the
+   party he was supposed to be talking to. Same floor line for everyone now. */
 .hero-side { left: 23%; transform: translateX(-50%); bottom: 15%; }
-.foe-side  { left: 70%; transform: translateX(-50%); bottom: 2%; }
-.foe-side.tall { bottom: 2%; }
-.foe-side.huge { bottom: 2%; }
+.foe-side  { left: 70%; transform: translateX(-50%); bottom: 15%; }
+.foe-side.tall { bottom: 15%; }
+.foe-side.huge { bottom: 15%; }
 
-/* nameplate + HP + intent, in flow directly below the sprite. Keeping the
-   block in flow (rather than absolutely positioned) means the sprite is
-   pushed up by exactly the space the info needs, so nothing runs off the
-   bottom of the corridor. */
+/* nameplate + HP + intent, sitting ABOVE the sprite since v6.1. It stays in
+   flow, so the sprite is pushed DOWN by exactly the space the info needs and
+   the block can never overlap the creature - which is what the `order` on
+   .combatant below relies on. */
 .foe-info {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   pointer-events: none;
@@ -788,7 +799,18 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 }
 .combatant img { display: block; filter: drop-shadow(0 12px 22px rgba(0,0,0,.6)); }
 
-.hero-sprite { image-rendering: pixelated; object-fit: contain; height: auto; }
+.hero-sprite {
+  image-rendering: pixelated; object-fit: contain; height: auto;
+  /* The monster has breathed since v4 and the hero has stood dead still next
+     to it, which made the party look like a cardboard cut-out on a TV across
+     a classroom. Deliberately a slower, shallower bob than the monster's, and
+     a different period, so the two never fall into lockstep. */
+  animation: heroBob 3.1s ease-in-out infinite;
+}
+@keyframes heroBob {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-9px); }
+}
 .hero-sprite:not([src]), .hero-sprite[src=""] { display: none; }
 .hero-sprite.attacking { animation: heroLunge .55s cubic-bezier(.3,-0.4,.4,1.5); }
 @keyframes heroLunge {
@@ -1371,7 +1393,10 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
    teacher's tool, not part of the game's reward language, and it should not
    look like something to aim for. */
 #btn-distracted {
-  position: fixed; left: 14px; bottom: 12px; z-index: 60;
+  /* Docked into the HUD by syncDistractedButton(), not floating over the
+     layout - see the note there. Fixed positioning is only the fallback for
+     the moment before a screen has been shown. */
+  position: static; z-index: 60;
   display: none; align-items: center; gap: 7px;
   font-family: inherit; font-weight: 800; letter-spacing: 1px;
   text-transform: uppercase; font-size: .82rem;
@@ -1381,6 +1406,7 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
   transition: opacity .15s, border-color .15s;
 }
 #btn-distracted.on { display: inline-flex; }
+.hud-block.currency #btn-distracted { margin-left: 4px; }
 #btn-distracted:hover { opacity: 1; border-color: #ff8a7a; }
 #btn-distracted .dx-icon {
   display: inline-grid; place-items: center;
