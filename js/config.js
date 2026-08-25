@@ -19,7 +19,7 @@ const CONFIG = {
   //
   // Default below is the hash of "storm-tiger-lantern" - CHANGE IT.
   TEACHER_PIN_SHA256:
-    "1401",
+    "086e6dbaca9e9630b9aae77c2b89aebdfa089d2b69e23312711f9b6a4dcb8c26",
 
   // --- party ---
   // v5.0: hearts are now the party's MAIN resource and shields are a thin
