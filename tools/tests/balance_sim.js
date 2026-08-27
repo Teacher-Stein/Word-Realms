@@ -34,7 +34,20 @@ function runOne(acc, S) {
   const p = { hearts: O.hearts, maxHearts: O.hearts, shields: O.shields, ls: true };
 
   const fight = (mon, hp, isE) => {
-    let monHp = hp, cad = Math.max(1, CONFIG.MONSTER_CADENCE || mon.cadence || 3), until = cad;
+    // O.cadenceBonus models a hero perk or relic that lengthens the monster's
+    // countdown (the Phonics Ranger's eye, the Oracle's Eye relic). It never
+    // shortens a fight - the monster's HP is unchanged, so the same number of
+    // correct answers is still needed to fell it. What it changes is how often
+    // the monster gets to swing back, which is exactly what needs measuring.
+    let monHp = hp,
+        cad = Math.max(1, CONFIG.MONSTER_CADENCE || mon.cadence || 3),
+        // O.cadenceFirstOnly gives the bonus to the OPENING countdown only:
+        // the monster's first swing is late, then it settles into its normal
+        // rhythm. That matters because a permanent bonus compounds with fight
+        // length - worth little in a 4-question skirmish and a great deal in a
+        // 12-question boss, which is precisely where runs are lost.
+        bonus = O.cadenceBonus || 0,
+        until = cad + bonus;
     let t = 0, en = false, n = 0;
     let shieldPaid = 0;                     // RISKY shields are capped per fight
     const h0 = p.hearts;
@@ -69,7 +82,7 @@ function runOne(acc, S) {
           if (d >= 2 && (p.mo || 0) >= 3 && Math.random() < O.moEff) { p.mo -= 3; d = Math.max(0, d - 2); }
           aimed += d; clockDmg += d;
           const ab = Math.min(p.shields, d); p.shields -= ab; p.hearts -= (d - ab);
-          S.acts++; until = cad;
+          S.acts++; until = cad + (O.cadenceFirstOnly ? 0 : bonus);
         }
         if (p.hearts <= 0 && p.ls) { p.ls = false; if (Math.random() < acc) p.hearts = 1; }
         continue;
@@ -111,7 +124,7 @@ function runOne(acc, S) {
         if (a.kind === 'charge' && Math.random() < 0.5) d = a.dmg + (en ? 1 : 0);
         aimed += d; clockDmg += d;
         const ab = Math.min(p.shields, d); p.shields -= ab; p.hearts -= (d - ab);
-        S.acts++; until = cad;
+        S.acts++; until = cad + (O.cadenceFirstOnly ? 0 : bonus);
       }
       if (p.hearts <= 0 && p.ls) { p.ls = false; if (Math.random() < acc) p.hearts = 1; }
     }
@@ -211,3 +224,32 @@ for (const h of [9, 11, 13, 15, 17, 19, 21]) {
   shape('    typical class',             { hearts: h, riskRate: 0.30 });
   shape('    bold, risks often  ',     { hearts: h, riskRate: 0.65, });
 }
+
+// ---------------------------------------------------------------------------
+// v6.3: what does the Phonics Ranger's new perk actually cost?
+//
+// Her old perk (+50% shards on everything) was picked every time by every
+// class, which meant the shop economy was permanently running at 1.5x income
+// against 1.0x prices. The replacement lengthens the monster's countdown by
+// one, the same shape as the Oracle's Eye relic.
+//
+// Two things to check here, and only the second is about difficulty:
+//   1. Questions per run must NOT fall. The monster's HP is untouched, so it
+//      should not - but rule 1 is worth measuring, not assuming.
+//   2. How much easier does it make a run? A hero perk should be worth about
+//      as much as three shields or two potions, not a free win.
+console.log('\n=== v6.3: the Phonics Ranger, +1 to the monster countdown ===');
+trio('everyone else (no bonus)', { cadenceBonus: 0 });
+trio('the Phonics Ranger', { cadenceBonus: 1 });
+
+// A perk is only "too strong" relative to the other three. The Knight's whole
+// gift is +3 shields on top of the starting 6, so that is the yardstick: a hero
+// perk should be worth roughly what she is worth, not several times it.
+console.log('\n=== v6.3: the Ranger measured against the Knight ===');
+shape('  nobody (bare start)', { riskRate: 0.30 });
+shape('  the Knight (+3 shields)', { riskRate: 0.30, shields: CONFIG.START_SHIELDS + 3 });
+shape('  the Ranger (+1 countdown)', { riskRate: 0.30, cadenceBonus: 1 });
+
+console.log('\n=== v6.3: permanent bonus vs opening-only ===');
+shape('  the Ranger, every countdown', { riskRate: 0.30, cadenceBonus: 1 });
+shape('  the Ranger, opening only', { riskRate: 0.30, cadenceBonus: 1, cadenceFirstOnly: true });

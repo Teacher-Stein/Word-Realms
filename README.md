@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 6.2.1 — Twice the questions.** Two realms fully playable and
+class. **Version 6.3 — Readable on a projector.** Two realms fully playable and
 fully illustrated. Realm 1 (Unit 1, Extreme Weather) and Realm 2 (Unit 2, Copycat
 Animals) each have their own cast, boss, guide and three painted backdrops;
 Realms 3–9 appear as locked placeholders using the correct themes from the
@@ -17,11 +17,68 @@ once the page has loaded.
 1. Open your `word-realms` repository on github.com.
 2. Click **Add file → Upload files**.
 3. Select everything *inside* this folder (`index.html`, `css`, `js`, `assets`,
-   `data`, `tools`, `README.md`) and drag it in — not the outer folder itself.
+   `tools`, `README.md`) and drag it in — not the outer folder itself.
 4. Scroll down, click **Commit changes**.
 5. Wait about a minute, then reload your `https://…github.io/word-realms/` link.
 
 If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
+
+---
+
+## v6.3 — the cast was a third of its proper size on a classroom screen
+
+Stein was zooming the browser in and out every lesson to see the fight, and
+nothing in the game reported a problem: at 1366x768 nothing overflowed and
+nothing was clipped, so the layout "fitted" perfectly. What it was doing instead
+was shrinking the entire cast to about a third of its size inside a large empty
+arena. Four separate faults were stacked on top of each other:
+
+- `fitStage()` decided whether the foe fitted by testing `offsetTop >= 6`, but
+  the combatants are positioned from the BOTTOM, so on a short screen that
+  number never rose however small the sprite got. The loop stepped the scale
+  down to its floor and stopped.
+- It was a one-way ratchet. Once it had shrunk, nothing ever grew it back, so a
+  single bad frame at load stayed shrunk for the rest of the lesson.
+- The monster's info block moved above the sprite in v6.1, but the reserved
+  space was still the 104px it needed below. Sixteen wasted pixels is nothing —
+  except the scale is quantised to half-steps, and it was exactly enough to
+  drop the whole cast a step.
+- Every sprite was scaled to the tallest creature in the game, so short monsters
+  came out small in a mostly empty arena.
+
+Each foe is now scaled to fill the arena in its own right, and the hero has a
+scale of her own so the party does not grow and shrink as different monsters
+walk in. At 1366x768 the cast went from a 105px hero and a 122px monster to
+264px and 234px. `test_resolution.py` measures rendered pixel heights, so this
+cannot quietly come back.
+
+**The Phonics Ranger has a new perk.** Her old one gave 50% more Knowledge
+Shards from every source, and every class worked out that it was simply the
+correct pick — which meant the shop economy was permanently running at 1.5x
+income against prices tuned for 1.0x, and the v6.1 price rise of 70% was in
+practice a 13% tightening. She now delays every monster's FIRST attack by one
+answer. A permanent version was tried and rejected on the numbers: it compounds
+with fight length, so it is worth almost nothing in a short skirmish and a great
+deal in a boss, which is where runs are lost. Opening-only lands within three
+points of the Storm Knight.
+
+**The Storm Knight's perk has been dead since v6.2.** Her card promises three
+shield points and she never got them: the line that sets the starting shields
+sat below the hero's grant and overwrote it rather than adding to it. Nothing
+looked wrong, because six shields is a perfectly ordinary number to start with.
+Any meta perk that grants shields was being eaten the same way.
+
+**Brace and the pack are now explained.** Brace is one of only two real
+tactical decisions a student makes in a fight and nothing had ever introduced
+it; potions moved into the HUD in v6.2 after four classes never used one, and
+moving a button is not the same as explaining it. Both cards appear at the
+moment the decision exists — Brace when the blow is one answer away, the pack
+when the party is actually carrying something.
+
+**Two new guards.** `test_perks.py` starts a run as each hero and checks the
+promise on the card actually happened; it caught the Storm Knight bug within a
+minute of being written. `test_reachable.py` now also audits coach lessons, so a
+card with no trigger, or a trigger with no card, fails the suite.
 
 ---
 

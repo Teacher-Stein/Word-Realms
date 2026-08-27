@@ -79,6 +79,20 @@ function makeMonster(base, isElite, isBoss = false) {
   if (variant) cadence = Math.max(1, cadence + variant.cadenceBonus);
   if (hasRelic("oracle_eye")) cadence += 1;     // more warning, same number of questions
 
+  // The Phonics Ranger reads the storm early - but only ONCE per fight. Her
+  // bonus goes on the opening countdown below, not on `cadence`, so the
+  // monster's first swing is late and then it settles into its normal rhythm.
+  //
+  // This started life as a permanent +1 to cadence, the same shape as the
+  // Oracle's Eye, and balance_sim.js said no. A permanent bonus compounds with
+  // fight length: worth almost nothing in a four-question skirmish and a great
+  // deal in a twelve-question boss, which is exactly where runs are lost. It
+  // cut the wipe rate by 28 points where the Knight's three shields cut it by
+  // three, so a class would have gone on picking the Ranger every time - the
+  // same problem as the old shard perk wearing a different coat. Opening-only
+  // helps every fight equally and lands within three points of the Knight.
+  const opening = (STATE.run && STATE.run.rangerEye) ? 1 : 0;
+
   return {
     base,
     id: base.id,
@@ -88,7 +102,7 @@ function makeMonster(base, isElite, isBoss = false) {
     isElite, isBoss,
     hp, maxHp: hp,
     cadence,
-    turnsUntilAct: cadence,
+    turnsUntilAct: cadence + opening,
     intent: null,
     charging: null,     // {dmg, turnsLeft}
     guarding: false,

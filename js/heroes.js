@@ -36,11 +36,25 @@ const HEROES = [
     name: "The Phonics Ranger",
     sprite: "assets/heroes/ranger.png",
     tagline: "A bowstring of pure lightning.",
-    perk: "Earns 50% more Knowledge Shards from every source.",
+    // v6.3: this used to be "+50% Knowledge Shards from every source", for the
+    // whole run. Two problems, and they compounded.
+    //
+    // It was not a choice. The other three heroes give a ONE-TIME gift - a
+    // relic, three shields, two potions. Half again on every shard for fifteen
+    // rooms dwarfs all of them, so picking her was simply correct, and Stein's
+    // classes worked that out and picked her every time.
+    //
+    // Which meant the shop economy was ALWAYS running at 1.5x income against
+    // prices tuned for 1.0x. The v6.1 price rise of 70% was, in practice, a 13%
+    // tightening - and every class still bought out every shop.
+    //
+    // Heroes should change how a class plays, not how much it earns. Hers is
+    // now information: she reads the storm one answer sooner than anyone else.
+    perk: "Every monster's FIRST attack comes one answer later than it should.",
     blurb: "Quick, quiet, and never misses the sound she is aiming for.",
     grant(run) {
-      run.shardMultiplier = 1.5;
-      return "Shard rewards increased by 50%";
+      run.rangerEye = true;
+      return "Every monster's opening attack is one answer late";
     },
   },
   {

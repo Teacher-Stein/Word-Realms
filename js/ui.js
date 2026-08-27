@@ -41,8 +41,21 @@ function showScreen(id) {
     fixSceneryWidth();
     // A sprite that hasn't decoded yet measures as zero, so fit once now and
     // again on the next frame, when the browser has laid the scene out.
+    //
+    // v6.3: the second pass RE-RUNS updateStageScale rather than only calling
+    // fitStage. This matters because fitStage can only step the scale DOWN.
+    // The first call above happens the instant .active is added, before the
+    // browser has settled the layout, so the corridor can measure short - and
+    // once a low scale was chosen there was no path back up. The cast came out
+    // a quarter smaller on some entries than others, on the same screen, and
+    // it looked like a rendering glitch rather than a measurement one.
     refitCurrentStage();
-    requestAnimationFrame(() => { fixSpriteWidths(); refitCurrentStage(); });
+    requestAnimationFrame(() => {
+      updateStageScale(boss ? "boss-corridor" : "corridor");
+      fixSpriteWidths();
+      fixSceneryWidth();
+      refitCurrentStage();
+    });
   }
 }
 
@@ -56,26 +69,72 @@ function refitCurrentStage() {
   if (enc && enc.classList.contains("active")) fitStage("corridor", "monster-stage");
 }
 
-// Belt and braces on top of updateStageScale(): measure what actually got
-// laid out and step the scale down until the foe - sprite, nameplate, HP and
-// intent together - is fully inside the corridor. Nothing may be cut off the
-// top of the screen, which is what sent us looking at this in the first place.
+// Belt and braces on top of updateStageScale(): measure what actually got laid
+// out and step the scale down until the foe - sprite, nameplate, HP and intent
+// together - is fully inside the corridor. Nothing may be cut off the top of
+// the screen, which is what sent us looking at this in the first place.
+//
+// v6.3: this was quietly ruining the game on a 1366x768 projector.
+//
+// The old test was `st.offsetTop >= 6`. That reads the element's offset from
+// its positioned parent - but .combatant is `position:absolute; bottom:15%`,
+// so its offsetTop is whatever is left over after the browser has placed it
+// from the BOTTOM. On a short screen that number stayed under 6 no matter how
+// small the sprite got, so the loop never found a size it was happy with and
+// walked all the way down to the floor of 1. updateStageScale() had correctly
+// worked out that a 435px arena wants scale 2; this function then halved it
+// again, and the whole cast rendered at a third of its proper size inside a
+// large empty arena. The only way to see the game was to zoom the browser.
+//
+// Measure the thing we actually care about instead: does the laid-out stage
+// fit inside the corridor, top and bottom, in real screen coordinates.
 function fitStage(corridorId, stageId) {
   const c = document.getElementById(corridorId);
   const st = document.getElementById(stageId);
   if (!c || !st) return;
-  for (let i = 0; i < 6 && STAGE_SCALE > 1; i++) {
-    // offsetTop/offsetHeight ignore CSS transforms. getBoundingClientRect()
-    // does not - and the monster's arrival animation starts at scale(.6), so
-    // measuring rects mid-animation reported a sprite that fitted when the
-    // full-size one did not.
+
+  // v6.3: this steps the scale UP as well as down.
+  //
+  // It used to only ever shrink. That made it a ratchet: updateStageScale()
+  // runs the instant a screen becomes active, before the browser has settled
+  // the layout, so the corridor could measure short once - and from then on
+  // there was no path back to a bigger cast however much room appeared. On a
+  // 1366x768 projector the whole cast ended up at the floor scale of 1 and the
+  // game had to be zoomed to be watchable.
+  const roomFor = () => {
+    const top = st.offsetTop;
+    const bottom = top + st.offsetHeight;
+    return { fits: top >= 4 && bottom <= c.clientHeight - 2,
+             slack: Math.min(top - 4, (c.clientHeight - 2) - bottom) };
+  };
+
+  for (let i = 0; i < 8; i++) {
     if (!st.offsetHeight) return;
-    if (st.offsetTop >= 6) return;
-    STAGE_SCALE = Math.max(1, STAGE_SCALE - 0.5);
+    const { fits, slack } = roomFor();
+    if (!fits) {
+      if (STAGE_SCALE <= 1) return;                 // already as small as it goes
+      STAGE_SCALE = Math.max(1, STAGE_SCALE - 0.5);
+    } else if (slack > st.offsetHeight * 0.22 && STAGE_SCALE < SPRITE_SCALE) {
+      // Comfortably inside with room to grow. The threshold is deliberately
+      // generous so this cannot oscillate between two half-steps.
+      const before = STAGE_SCALE;
+      STAGE_SCALE = Math.min(SPRITE_SCALE, STAGE_SCALE + 0.5);
+      fixSpriteWidths();
+      fixSceneryWidth();
+      if (!roomFor().fits) {                        // overshot - step back
+        STAGE_SCALE = before;
+        fixSpriteWidths();
+        fixSceneryWidth();
+      }
+      return;
+    } else {
+      return;                                       // a good fit; leave it
+    }
     fixSpriteWidths();
     fixSceneryWidth();
   }
 }
+
 
 // ------------------------------- hearts ------------------------------------
 function renderHearts(elId, hearts, maxHearts, losingIndex = -1) {
@@ -963,10 +1022,41 @@ function updateStageScale(corridorId) {
   const c = document.getElementById(corridorId);
   const h = c ? c.clientHeight : 0;
   if (!h) { STAGE_SCALE = SPRITE_SCALE; return STAGE_SCALE; }
-  const usable = h * 0.96 - 104;                // info block + floor margin
-  let s = Math.floor((usable / TALLEST_SPRITE) * 2) / 2;   // half-step scales
+  // The fixed allowance covers the info block above the sprite plus the floor
+  // margin below it. It was 104 when the nameplate/HP/intent block hung BELOW
+  // the sprite; since v6.1 that block sits above with a 24px gap and costs
+  // about 88.
+  const usable = h * 0.96 - 88;                 // info block + floor margin
+
+  // v6.3: scale to the sprite ACTUALLY on screen, not to the tallest one that
+  // could ever appear.
+  //
+  // This used to divide by TALLEST_SPRITE - the boss, 152 true pixels - for
+  // every fight in the game. So an 88px Blizzard Wisp was scaled as though it
+  // were a 152px Hurricane Titan, throwing away 40% of the room it had. On a
+  // 1920x1080 office monitor there is enough slack that nobody noticed. On a
+  // 1366x768 classroom projector it was the difference between a monster
+  // 135 pixels tall and one 300 pixels tall, and it is why the game had to be
+  // zoomed to be watchable.
+  //
+  // Scaling each foe to fill the same space also makes the cast render at a
+  // CONSISTENT height, which the old code did not: sprite size used to drift
+  // with how long the question text was, because a taller question panel left
+  // a shorter arena.
+  const nat = _foeNaturalHeight() || TALLEST_SPRITE;
+  let s = Math.floor((usable / nat) * 2) / 2;   // half-step scales
   STAGE_SCALE = Math.max(1, Math.min(SPRITE_SCALE, s));
   return STAGE_SCALE;
+}
+
+// The true-pixel height of whichever foe is on screen right now. Returns 0
+// before the image has decoded, in which case the caller falls back to the
+// worst case and the second sizing pass corrects it.
+function _foeNaturalHeight() {
+  const boss = document.getElementById("screen-boss");
+  const onBoss = boss && boss.classList.contains("active");
+  const el = document.getElementById(onBoss ? "boss-sprite" : "monster-sprite");
+  return el && el.naturalHeight ? el.naturalHeight : 0;
 }
 
 const _spriteNatural = {};
@@ -1013,12 +1103,27 @@ function sizeSprite(el, scale) {
   el.style.height = "auto";
 }
 
+// The foe is scaled to fill the arena, so STAGE_SCALE now changes from room to
+// room with the size of the monster. The HERO must not ride that number: the
+// party would grow and shrink every time a different creature walked in, which
+// looks like a bug even though it isn't. Heroes are all 88 true pixels tall, so
+// they get their own scale aimed at a stable share of the arena instead.
+function heroScale() {
+  const c = document.getElementById("corridor") ||
+            document.getElementById("boss-corridor");
+  const h = c ? c.clientHeight : 0;
+  if (!h) return STAGE_SCALE * HERO_SCALE_BOOST;
+  const target = (h * 0.96 - 88) * 0.82;        // a little shorter than the foe
+  const s = Math.floor((target / 88) * 2) / 2;
+  return Math.max(1, Math.min(SPRITE_SCALE, s));
+}
+
 function fixSpriteWidths() {
   _SCALED_IMGS.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const isHero = id === "hero-sprite" || id === "boss-hero-sprite";
-    sizeSprite(el, STAGE_SCALE * (isHero ? HERO_SCALE_BOOST : 1));
+    sizeSprite(el, isHero ? heroScale() : STAGE_SCALE);
   });
 }
 window.addEventListener("load", fixSpriteWidths);
@@ -1027,7 +1132,7 @@ _SCALED_IMGS.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener("load", () => {
       const isHero = id === "hero-sprite" || id === "boss-hero-sprite";
-      sizeSprite(el, STAGE_SCALE * (isHero ? HERO_SCALE_BOOST : 1));
+      sizeSprite(el, isHero ? heroScale() : STAGE_SCALE);
       refitCurrentStage();
     });
   });

@@ -30,6 +30,39 @@ const COACH_LESSONS = {
           "When it says ON THE NEXT ANSWER you can Brace to block it, or take " +
           "the hit and keep attacking.",
   },
+  // Brace is one of only two real tactical decisions a student makes in a
+  // fight, and until v6.3 nothing in the game ever explained it. The `intent`
+  // card mentions the word in its last sentence and moves on; the button just
+  // sits there saying "Brace (defend)". Worse, Brace spent two versions doing
+  // nothing at all (see test_brace.py), so nobody who played those builds ever
+  // learned what it was for either.
+  //
+  // It fires when the blow is one answer away, because that is the only moment
+  // the decision exists.
+  brace: {
+    banner: "NEW: BRACE",
+    title: "The blow lands on the next answer",
+    effect: "Brace, then answer correctly, and it is blocked",
+    desc: "Bracing does not skip your turn — you still answer the question. " +
+          "A correct answer turns the attack aside and puts the monster's " +
+          "clock back to the start, so you have not lost anything except the " +
+          "damage you would have dealt. Get it wrong and the blow lands " +
+          "anyway. Brace when the hit is big or your hearts are low; keep " +
+          "attacking when it is small.",
+  },
+  // Potions moved into the HUD in v6.2 after four classes never once used one.
+  // Moving the button is not the same as explaining it: a class that does not
+  // know the pack exists will still walk into the boss holding two full heals.
+  potions: {
+    banner: "NEW: THE PACK",
+    title: "You are carrying something you can use",
+    effect: "One item per turn · it costs your attack, not your question",
+    desc: "Tap an item in the bar at the top, or Use an Item in a fight. You " +
+          "still answer the question that turn, so nothing is skipped — you " +
+          "just do not hit the monster. Items are for the moment things go " +
+          "wrong, and a potion saved for a boss you never reach is a potion " +
+          "wasted.",
+  },
   campfire: {
     banner: "NEW: THE CAMPFIRE",
     title: "There is time for one thing only",

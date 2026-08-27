@@ -905,6 +905,14 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
   padding: 5px 14px; font-size: .95rem; font-weight: 900; color: #ffb3c0;
   text-align: center; max-width: 38vw; text-shadow: 0 2px 3px #000;
   box-shadow: 0 4px 14px rgba(0,0,0,.6);
+  /* v6.3: ALWAYS reserve two lines.
+     The info block sits above the sprite and is in flow, so its height feeds
+     back into how large the cast can be drawn. A short telegraph ("ATTACKING -
+     1 damage") is one line; a long one ("CHARGING - 3 damage in 2 more turns")
+     wraps to two. That made the whole cast a quarter smaller on some fights
+     and not others, on the same screen - the sprites visibly changed size
+     between rooms. Reserving the taller case makes the layout deterministic. */
+  min-height: 2.9em; box-sizing: border-box;
 }
 /* when the blow lands, and how long you have to decide about it */
 .intent-when {

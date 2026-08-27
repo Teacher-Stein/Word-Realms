@@ -419,15 +419,24 @@ on("hero-confirm", "click", () => {
   const run = startNewRun(_pendingRealm, _chosenHeroId);
   const hero = heroById(_chosenHeroId);
 
-  // starting kit
+  // The party sets out equipped, but NOT fully rested. This used to call
+  // refillShields(), which handed out a whole campfire Repair before the class
+  // had moved - see START_SHIELDS in config.js for why that turned out to
+  // matter so much.
+  //
+  // The order matters, and it was wrong from v6.2 until v6.3. This line used to
+  // sit BELOW the hero grant, so it did not top the party up - it overwrote
+  // whatever the hero had just handed them. The Storm Knight's entire perk is
+  // "begins armoured with 3 shield points"; a class picking her got exactly the
+  // same 6 as everyone else, and so did anyone holding a meta perk that grants
+  // shields. Nothing looked broken, because 6 shields is a perfectly ordinary
+  // number to start with. test_perks.py is what finally caught it.
+  //
+  // So: lay down the base kit FIRST, then let the hero and the perks add to it.
+  run.shields = CONFIG.START_SHIELDS;
   CONFIG.START_POTIONS.forEach(addPotion);
   const granted = hero.grant ? hero.grant(run) : "";
   const perkNotes = applyRunPerks(run);
-  // The party sets out equipped, but NOT fully rested. This used to call
-  // refillShields(), which handed out a whole campfire Repair before the
-  // class had moved - see START_SHIELDS in config.js for why that turned out
-  // to matter so much.
-  run.shields = CONFIG.START_SHIELDS;
   saveState();
 
   nextStudent();
@@ -1028,6 +1037,12 @@ function askFightQuestion() {
   if (m.isElite) coach("elite");
   if (stakesAvailable(q, defending)) coach("stakes");
   if (m.intent && !m.stunned) coach("intent");
+  // Brace and the pack are taught at the moment they are worth something, not
+  // at the moment they become visible. Brace only matters when the blow is one
+  // answer away; an item only matters when the party is actually holding one.
+  if (m.intent && !m.stunned && !defending && !run.bracing &&
+      m.turnsUntilAct <= 1 && !isFrozen()) coach("brace");
+  if (run.potions.length && !run.potionUsedThisTurn) coach("potions");
 }
 
 // The shared resolution used by fights and the boss.

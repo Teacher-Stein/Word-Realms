@@ -246,7 +246,7 @@ const CONFIG = {
   // a question that cost an evening once already, when a cached index.html
   // and a fresh config.js disagreed and the teacher menu simply stopped
   // accepting any passphrase at all.
-  VERSION: "6.2.1",
+  VERSION: "6.3",
 
   SAVE_KEY: "wordrealms_save_v2",
   DEFAULT_UNLOCKED: [1],

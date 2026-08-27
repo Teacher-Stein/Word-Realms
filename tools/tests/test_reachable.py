@@ -56,6 +56,38 @@ for what, needles in GRANTS.items():
                 fails.append(f'"{n}" appears only {call_sites}x outside '
                              f'items.js — likely defined but never called')
 
+# Coach lessons. Same disease, different system: a lesson written into
+# COACH_LESSONS with no coach("id") call anywhere is a card the class will never
+# see, and a coach("id") call for a lesson that does not exist is a mechanic the
+# game silently declines to explain. Both look completely fine from the outside.
+#
+# This is how Brace went two versions with no card at all - the intent lesson
+# mentions the word once and nothing else does, so nothing was missing in a way
+# any test could notice.
+coach_js = JS.get("coach.js", "")
+m = re.search(r"const COACH_LESSONS = \{(.*?)\n\};", coach_js, re.S)
+if not m:
+    fails.append("could not find COACH_LESSONS in coach.js")
+    lessons = set()
+else:
+    lessons = set(re.findall(r"^  (\w+): \{", m.group(1), re.M))
+called = set(re.findall(r'coach\("([^"]+)"\)', OTHER))
+for lid in sorted(lessons - called):
+    fails.append(f'coach lesson "{lid}" is written but nothing ever shows it '
+                 f'— the class will never read that card')
+for lid in sorted(called - lessons):
+    fails.append(f'the game calls coach("{lid}") but no such lesson exists '
+                 f'— that mechanic is never explained')
+
+# Every real decision the game asks a class to make needs a card. These are the
+# mechanics a student clicks a button for, and a button nobody has explained is
+# a button nobody presses: four classes went a whole lesson without opening the
+# pack once.
+for must in ("brace", "potions", "stakes", "intent"):
+    if must not in lessons:
+        fails.append(f'there is no coach lesson for "{must}", which is a '
+                     f'button students are expected to press')
+
 # The shop must stock every purchasable category.
 state = JS["state.js"]
 m = re.search(r"const stock = \{(.*?)\n  \};", state, re.S)
@@ -70,6 +102,7 @@ print(f"relics       : {len(ids_in('RELICS'))}")
 print(f"enchantments : {len(ids_in('ENCHANTMENTS'))}")
 print(f"gear         : {len(ids_in('WEAPONS')) + len(ids_in('ARMOURS'))}")
 print(f"potions      : {len(ids_in('POTIONS'))}")
+print(f"coach cards  : {len(lessons)}")
 print(f"\nFailures     : {len(fails)}")
 for f in fails: print("   !!", f)
 print("\nRESULT:", "PASS" if not fails else "FAIL")
