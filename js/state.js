@@ -15,6 +15,7 @@ function defaultState() {
     realmPerks: {},        // realmId -> [perkId] — perks are per REALM now
     roster: null,          // { className, students:[name,...] }
     studentStats: {},      // name -> { correct, wrong, monsters, damage, relics, teamups }
+    curriculum: {},        // className -> { runs, questions, items: {cover -> {asked,right}} }
     leaderboard: [],       // completed run records
     perksEnabled: true,    // teacher can switch the Forge off for a class
     coachOn: true,         // in-game explanations, first time only
@@ -71,6 +72,10 @@ function migrateRun(st) {
   if (typeof r.usedLastStand  !== "boolean") r.usedLastStand  = false;
   if (typeof r.usedLastBreath !== "boolean") r.usedLastBreath = false;
   if (typeof r.usedEcho       !== "boolean") r.usedEcho       = false;
+  // v6.4 the teaching record
+  if (!Array.isArray(r.answerLog)) r.answerLog = [];
+  if (typeof r.countedInRecord !== "boolean") r.countedInRecord = false;
+  if (!r.studentRun)               r.studentRun = {};
   // v5.8 events
   if (!Array.isArray(r.missedQs))   r.missedQs   = [];
   if (!Array.isArray(r.eventsSeen)) r.eventsSeen = [];
@@ -209,6 +214,179 @@ function rerollStudent() {
 // ---------------------------------------------------------------------------
 // run lifecycle
 // ---------------------------------------------------------------------------
+// ===========================================================================
+// THE TEACHING RECORD
+//
+// The game has always known whether an answer was right. What it has never
+// known is WHAT THAT ANSWER WAS ABOUT - and that is the difference between a
+// score and a diagnosis. "Your class got 71%" tells a teacher nothing they can
+// act on. "Your class is at 40% on the zero conditional over nineteen
+// attempts" is Monday's lesson.
+//
+// Two things about the shape of this, both learned from the data rather than
+// guessed:
+//
+//   1. ONE RUN IS NOISE. A run asks about forty questions across thirty-two
+//      curriculum items - barely one sample each. A report built on a single
+//      run would announce that a class cannot do comparatives on the strength
+//      of one wrong answer from one child. So the record ACCUMULATES, per
+//      class, across every run that class plays, and every figure it shows is
+//      accompanied by how many attempts it rests on.
+//
+//   2. IT IS CLASS-LEVEL, NOT PER-CHILD. With 24 students and 40 questions,
+//      each child answers under two questions a run. Per-child accuracy on a
+//      named curriculum item would be an empty table for most of a term, and a
+//      misleading one for the rest of it.
+//
+// The record is keyed by class name, because the seven classroom machines each
+// hold one class - but the office desktop holds whatever was last tested on
+// it, and keying by class stops a stray build session polluting a real class's
+// history.
+// ===========================================================================
+
+function curriculumBook() {
+  if (!STATE.curriculum) STATE.curriculum = {};
+  return STATE.curriculum;
+}
+
+function currentClassName() {
+  return (STATE.roster && STATE.roster.className) || "No class set";
+}
+
+function classRecord(name) {
+  const book = curriculumBook();
+  const key = name || currentClassName();
+  if (!book[key]) {
+    book[key] = { startedAt: Date.now(), runs: 0, questions: 0, items: {} };
+  }
+  const rec = book[key];
+  if (!rec.items) rec.items = {};
+  if (typeof rec.runs !== "number") rec.runs = 0;
+  if (typeof rec.questions !== "number") rec.questions = 0;
+  return rec;
+}
+
+// Which question is on screen right now, and has its answer been recorded yet.
+//
+// This exists because a question can be answered down two different roads: by
+// clicking an option, and by a BLIND call, where the options are hidden and the
+// room adjudicates what was said aloud. Both have to be recorded and neither
+// may be recorded twice. renderQuestion() sets this; whichever road gets there
+// first books the answer and the other finds it already booked.
+let _currentAsk = null;
+
+function beginAsk(q) {
+  _currentAsk = q ? { q, logged: false } : null;
+}
+
+// Has the question on screen already been answered, down either road?
+//
+// Used by the record to refuse a duplicate entry, and by renderQuestion to
+// refuse a duplicate ANSWER. Those two have to agree, so they read the same
+// flag rather than each keeping their own.
+function askAnswered(q) {
+  return !!(_currentAsk && _currentAsk.q === q && _currentAsk.logged);
+}
+
+// Record one answered question against its curriculum item.
+//
+// RULE ONE SAFETY: this only ever writes to the record. It returns nothing the
+// game reads, touches no monster, no clock and no question pool, and cannot
+// change whether another question gets asked.
+function logAnswer(q, correct) {
+  if (!q) return;
+  if (!_currentAsk || _currentAsk.q !== q || _currentAsk.logged) return;
+  // Marked answered BEFORE the cover check, and before anything can throw. A
+  // question with no cover key cannot be recorded, but it has still been
+  // answered, and renderQuestion reads this same flag to refuse a second
+  // answer to the same question.
+  _currentAsk.logged = true;
+  if (!q.cover) return;
+
+  const run = STATE.run;
+  if (run) {
+    if (!Array.isArray(run.answerLog)) run.answerLog = [];
+    run.answerLog.push({ cover: q.cover, correct: !!correct, tier: q.tier || 1 });
+    // Per-run, per-student tallies for the end-of-run celebration. The all-time
+    // figures in studentStats cannot do this job - they would crown whoever has
+    // attended the most lessons rather than whoever had the best afternoon.
+    const who = run.currentStudent;
+    if (who) {
+      if (!run.studentRun) run.studentRun = {};
+      const s = run.studentRun[who] || (run.studentRun[who] = { correct: 0, wrong: 0 });
+      if (correct) s.correct++; else s.wrong++;
+    }
+  }
+
+  const rec = classRecord();
+  const item = rec.items[q.cover] || (rec.items[q.cover] = { asked: 0, right: 0 });
+  item.asked++;
+  if (correct) item.right++;
+  item.lastSeen = Date.now();
+  rec.questions++;
+  rec.lastPlayed = Date.now();
+
+  // A run is counted the moment it asks its FIRST question, not when it ends.
+  //
+  // There are six different places that end a run - victory, a wipe, Abandon,
+  // Restart Realm, Reset Run and Play Again - and a seventh will be added one
+  // day. Counting at the end means one of them silently loses the run from the
+  // record, in a way nobody would ever notice. Counting at the start means the
+  // bookkeeping lives beside the thing that triggers it.
+  //
+  // It also gets the definition right for free: a run that was abandoned after
+  // twenty questions genuinely was a lesson, and counts, while a run started
+  // and reset before anyone answered anything was not, and does not.
+  if (run && !run.countedInRecord) {
+    run.countedInRecord = true;
+    rec.runs++;
+  }
+  saveState();
+}
+
+// ---- reading the record back ----------------------------------------------
+
+// One row per curriculum item this class has actually met. Items nobody has
+// been asked about do not appear - an untested item is not a weakness, and
+// padding the table with thirty empty rows would bury the real ones.
+function curriculumRows(className) {
+  const rec = classRecord(className);
+  return Object.keys(rec.items).map(key => {
+    const it = rec.items[key];
+    return {
+      key,
+      label: coverLabel(key),
+      group: coverGroup(key),
+      asked: it.asked,
+      right: it.right,
+      pct: it.asked ? Math.round((it.right / it.asked) * 100) : 0,
+    };
+  }).sort((a, b) => (a.pct - b.pct) || (b.asked - a.asked));
+}
+
+// Group rows, so a report can say "zero conditional" rather than listing three
+// near-identical rows. A group is only worth reporting once it has been asked
+// about a few times.
+function curriculumGroups(className) {
+  const by = {};
+  curriculumRows(className).forEach(r => {
+    const g = by[r.group] || (by[r.group] = { group: r.group, asked: 0, right: 0, items: 0 });
+    g.asked += r.asked; g.right += r.right; g.items++;
+  });
+  return Object.values(by).map(g => Object.assign(g, {
+    pct: g.asked ? Math.round((g.right / g.asked) * 100) : 0,
+  })).sort((a, b) => (a.pct - b.pct) || (b.asked - a.asked));
+}
+
+// How much of the record can be trusted yet. Below this many attempts a
+// percentage is a coin toss wearing a lab coat, and the report says so out
+// loud rather than letting a teacher plan a lesson around one wrong answer.
+const CURRICULUM_MIN_ATTEMPTS = 4;
+
+function curriculumReady(className) {
+  return curriculumRows(className).some(r => r.asked >= CURRICULUM_MIN_ATTEMPTS);
+}
+
 function startNewRun(realmId, heroId) {
   const realm = REALMS[realmId];
   const map = generateMap(realm);
@@ -241,6 +419,9 @@ function startNewRun(realmId, heroId) {
     answeredThisRoom: false, // did this room ask anything? (turn rotation)
     clarityActive: false, // Potion of Clarity trims the next question
     shopStock: {},        // nodeId -> generated stock, so a shop is stable
+    countedInRecord: false, // has this run been counted in the teaching record
+    answerLog: [],         // every answer this run: {cover, correct, tier}
+    studentRun: {},        // per-run tallies for the end-of-run celebration
     coveredKeys: [],       // curriculum items already tested this run
     missedQs: [],          // cover keys the class got WRONG (Echoing Hall)
     eventsSeen: [],        // event ids already offered this run

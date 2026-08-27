@@ -207,6 +207,18 @@ on("btn-scores", "click", () => {
   SFX.click(); renderLeaderboards(); showScreen("screen-scores");
 });
 on("scores-close", "click", () => { SFX.click(); showScreen("screen-menu"); renderMenu(); });
+// The teaching record lives on the Leaderboards screen because that is where
+// the tab machinery already is, but a teacher looking for it will look in the
+// Teacher Menu, so this opens the boards with that tab already selected.
+on("btn-curriculum", "click", () => {
+  SFX.click();
+  renderLeaderboards();
+  document.querySelectorAll(".tab-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.tab === "tab-curriculum"));
+  document.querySelectorAll(".tab-panel").forEach(p =>
+    p.classList.toggle("active", p.id === "tab-curriculum"));
+  showScreen("screen-scores");
+});
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
@@ -875,6 +887,12 @@ function renderQuestion(q, ids, onAnswer) {
   // that can guarantee the answers are actually visible. A Commit hides them,
   // and a Last Stand or a Treasure chest that fired straight afterwards used
   // to inherit the hidden state and leave the class staring at nothing.
+  // The teaching record hangs off this one function for the same reason the
+  // commit-UI clearing above does: every question in the game comes through
+  // here, so a new call site cannot forget to record its answer. Adding one at
+  // each of the eight call sites instead would have worked until the ninth.
+  beginAsk(q);
+
   const side = String(ids.question).startsWith("boss") ? "boss" : "enc";
   // Capture this BEFORE clearCommitUI, which clears the flag.
   const gated = _gatingSide === side;
@@ -920,6 +938,19 @@ function renderQuestion(q, ids, onAnswer) {
     div.textContent = opt;
     div.addEventListener("click", () => {
       if (div.classList.contains("locked") || div.classList.contains("removed")) return;
+      // One question, one answer.
+      //
+      // A blind call is adjudicated by the room clicking Yes or No, and the
+      // option elements are still sitting in the DOM behind the hidden panel
+      // when that happens. They are invisible, so a student cannot reach them -
+      // but nothing STOPPED a second answer being registered for the same
+      // question, and it would have counted twice in run.stats and hit the
+      // monster twice. test_curriculum.py found this by driving a click the
+      // way a script can and a child cannot.
+      //
+      // askAnswered() is the same bookkeeping the teaching record uses, so the
+      // two can never disagree about whether a question has been answered.
+      if (askAnswered(q)) return;
       choicesEl.querySelectorAll(".choice").forEach(c => c.classList.add("locked"));
       const correct = opt === q.answer;
       div.classList.add(correct ? "correct" : "incorrect");
@@ -931,6 +962,9 @@ function renderQuestion(q, ids, onAnswer) {
       const fb = $(ids.feedback);
       fb.textContent = correct ? "Correct!" : `Not quite — the answer was "${q.answer}".`;
       fb.className = "enc-feedback " + (correct ? "good" : "bad");
+      // Recorded BEFORE the game reacts, so an answer still counts toward the
+      // teaching record even if resolving it ends the run.
+      logAnswer(q, correct);
       onAnswer(correct);
     });
     choicesEl.appendChild(div);
@@ -1029,6 +1063,11 @@ function askFightQuestion() {
         renderQuestion(q, ids, correct => resolveFightAnswer(correct, q, isDefendingNow()));
         return;
       }
+      // A blind call never touches a choice, so renderQuestion's click handler
+      // never fires and never records it. Booked here instead - logAnswer()
+      // refuses a second entry for the same ask, so the two roads cannot
+      // double-count a question between them.
+      logAnswer(q, blindResult);
       resolveFightAnswer(blindResult, q, isDefendingNow());
     });
   }
@@ -2537,6 +2576,7 @@ function askBossQuestion() {
           correct => resolveCombatAnswer(bossCtx(), correct, q, isDefendingNow()));
         return;
       }
+      logAnswer(q, blindResult);          // see the note in askFightQuestion
       resolveCombatAnswer(bossCtx(), blindResult, q, isDefendingNow());
     });
   }
@@ -2582,6 +2622,9 @@ function handleVictory() {
   const stats = { ...run.stats };
   const heartsLeft = run.hearts, maxHearts = run.maxHearts;
   const shards = run.shards;
+  // The debrief is built from the run's own answer log, so it has to be copied
+  // out here with everything else.
+  const debrief = runDebriefHtml(run.answerLog, run.studentRun);
   // clearRealm() nulls STATE.run, so everything above is captured first
   const result = clearRealm();
 
@@ -2601,11 +2644,17 @@ function handleVictory() {
     <p>Ember banked: <b>+${result.emberGained}</b></p>
     ${result.nextUnlocked
       ? "<p>The next realm has unlocked.</p>"
-      : "<p>Ask your teacher to unlock the next realm when the class is ready.</p>"}`;
+      : "<p>Ask your teacher to unlock the next realm when the class is ready.</p>"}
+    ${debrief}`;
   showScreen("screen-result");
 }
 
 function handleDeath() {
+  // handleRunDeath() nulls STATE.run, so the log is copied out before it goes.
+  // A party that was wiped still spent a lesson answering questions, and the
+  // class should see what they covered - arguably more than after a win.
+  const run = STATE.run;
+  const debrief = run ? runDebriefHtml(run.answerLog, run.studentRun) : "";
   const outcome = handleRunDeath();
   if (outcome.already) return;      // a second timer arriving late
   SFX.defeat();
@@ -2613,6 +2662,7 @@ function handleDeath() {
   let body = `<p>The storm overwhelms you. The run resets with a brand-new map
               layout — but the journey wasn't wasted.</p>`;
   body += `<p>Their shards were banked as Ember: <b>+${outcome.amount} Ember</b></p>`;
+  body += debrief;
   $("result-body").innerHTML = body;
   showScreen("screen-result");
 }
@@ -2662,7 +2712,8 @@ bootstrap();
 function checkMarkup() {
   // ids that must exist for the game to be usable at all
   const REQUIRED = ["pin-input", "pin-submit", "btn-teacher", "enc-choices",
-                    "btn-distracted", "newpin-save", "hud-potions"];
+                    "btn-distracted", "newpin-save", "hud-potions",
+                    "tab-curriculum", "btn-curriculum"];
   const missing = REQUIRED.filter(id => !document.getElementById(id));
   const staleScript = typeof SHA256 === "undefined";
   const staleConfig = !CONFIG.TEACHER_PIN_SHA256;

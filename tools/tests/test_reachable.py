@@ -88,6 +88,30 @@ for must in ("brace", "potions", "stakes", "intent"):
         fails.append(f'there is no coach lesson for "{must}", which is a '
                      f'button students are expected to press')
 
+# Every curriculum key must have a human label.
+#
+# The teaching report is the one screen a teacher reads to decide what to
+# reteach, and a row saying "g2-form  40%" is useless to anyone who was not
+# holding the question bank when it was written. An unlabelled key does not
+# crash anything - coverLabel() falls back to the de-slugged key - it just
+# quietly makes one row of the report worse than the others, which is exactly
+# the kind of fault nobody reports and nobody fixes.
+content = JS.get("content.js", "")
+q_keys = set(re.findall(r'cover:"([^"]+)"', content))
+m = re.search(r"const COVER_LABELS = \{(.*?)\n\};", content, re.S)
+if not m:
+    fails.append("could not find COVER_LABELS in content.js")
+    labelled = set()
+else:
+    labelled = set(re.findall(r'^  "([^"]+)":', m.group(1), re.M))
+for k in sorted(q_keys - labelled):
+    fails.append(f'curriculum key "{k}" has questions but no entry in '
+                 f'COVER_LABELS — it would appear in the teaching report as a '
+                 f'raw slug')
+for k in sorted(labelled - q_keys):
+    fails.append(f'COVER_LABELS has an entry for "{k}" but no question tests '
+                 f'it — either the key was renamed or the label is a typo')
+
 # The shop must stock every purchasable category.
 state = JS["state.js"]
 m = re.search(r"const stock = \{(.*?)\n  \};", state, re.S)
@@ -103,6 +127,7 @@ print(f"enchantments : {len(ids_in('ENCHANTMENTS'))}")
 print(f"gear         : {len(ids_in('WEAPONS')) + len(ids_in('ARMOURS'))}")
 print(f"potions      : {len(ids_in('POTIONS'))}")
 print(f"coach cards  : {len(lessons)}")
+print(f"curriculum   : {len(q_keys)} keys, {len(labelled)} labelled")
 print(f"\nFailures     : {len(fails)}")
 for f in fails: print("   !!", f)
 print("\nRESULT:", "PASS" if not fails else "FAIL")

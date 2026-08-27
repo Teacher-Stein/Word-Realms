@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 6.3 — Readable on a projector.** Two realms fully playable and
+class. **Version 6.4 — The game now tells you what to reteach.** Two realms fully playable and
 fully illustrated. Realm 1 (Unit 1, Extreme Weather) and Realm 2 (Unit 2, Copycat
 Animals) each have their own cast, boss, guide and three painted backdrops;
 Realms 3–9 appear as locked placeholders using the correct themes from the
@@ -22,6 +22,50 @@ once the page has loaded.
 5. Wait about a minute, then reload your `https://…github.io/word-realms/` link.
 
 If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
+
+---
+
+## v6.4 — every answer is now recorded against what it was testing
+
+The game has always known whether an answer was right. What it has never known
+is *what that answer was about* — and that is the difference between a score and
+a diagnosis. "Your class got 71%" tells a teacher nothing they can act on. "Your
+class is at 44% on question tags over sixteen attempts" is Monday's lesson.
+
+Every question in the game now records the curriculum item it tested, and the
+record builds up **per class, across lessons**. Two things shaped that:
+
+- **One run is noise.** A run asks about forty questions across thirty-two
+  curriculum items — barely one attempt each. A report built on a single run
+  would announce that a class cannot do comparatives on the strength of one
+  wrong answer from one child. So nothing is thrown away at the end of a run,
+  and every figure the report shows is printed beside the number of attempts it
+  rests on. Anything under four attempts is greyed out and labelled *too few*.
+- **It is class-level, not per-child.** With 24 students and 40 questions, each
+  child answers under two questions a run. Per-child accuracy on a named
+  curriculum item would be an empty table for most of a term and a misleading
+  one for the rest of it.
+
+**Where to find it.** Teacher Menu → *What to reteach*, or the third tab on the
+Leaderboards screen. It leads with the weakest **areas** — one weak row is
+noise, five weak rows that are all zero conditional is a lesson — and then lists
+every item, weakest first. **Copy summary** puts a plain-text version on the
+clipboard for pasting straight into a lesson plan; **Download CSV** saves it for
+Excel, which is how you get a class's record off its classroom machine and onto
+your office desktop.
+
+**At the end of a run** the class now sees what the storm asked them: the items
+they had, the ones that caught them out, and who was sharpest that run. No
+percentages there — at one attempt per item a percentage is a lie with a decimal
+point in it. Ties for sharpest are shared, not broken.
+
+**A bug this found.** After a blind call is adjudicated, the answer options are
+still sitting in the DOM behind the hidden panel. They are invisible, so no
+student could reach them — but nothing actually *stopped* a second answer being
+registered against the same question, which would have counted twice in the
+score and struck the monster twice. `test_curriculum.py` drove the click the way
+a script can and a child cannot, and found it. The game now refuses a second
+answer to a question it has already answered.
 
 ---
 

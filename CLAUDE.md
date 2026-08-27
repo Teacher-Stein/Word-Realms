@@ -53,10 +53,11 @@ never be displayed, logged, or exposed in the UI.
 | `js/ui.js` | Rendering, sprite sizing, backdrops. Game flow does **not** live here. |
 | `js/stakes.js` | SAFE / RISKY / blind calls and Focus. |
 | `js/events.js` | Random events. |
+| `js/coach.js` | The first-time-only explanation cards. |
 | `js/music.js`, `js/audio.js` | The procedural score and sound effects. |
 | `js/announce.js` | The arena banner. |
 | `assets/sprites/` | Realm 1's cast. Later realms live in `assets/sprites/realmN/`. |
-| `tools/tests/` | Fifteen suites. See below. |
+| `tools/tests/` | Sixteen suites. See below. |
 | `tools/pipeline/` | The art pipeline: chroma key, split, downscale, palette. |
 
 **Realms 1 and 2 are built and illustrated. Realms 3–9 are locked placeholders**
@@ -86,9 +87,10 @@ python3 -m http.server 8811
 | `test_brace.py` | Brace actually blocks a blow, including cadence 1 |
 | `test_music.py` | every piece sounds, nothing clips, the Boss is loudest, ducking measurably drops the level |
 | `test_announce.py` | the arena banner is big enough, centred, and held long enough |
-| `test_reachable.py` | no item exists that no code path can grant or read; every coach lesson has a trigger and every trigger has a lesson |
+| `test_reachable.py` | no item exists that no code path can grant or read; every coach lesson has a trigger and every trigger has a lesson; every curriculum key has a human label |
 | `test_events.py` | every event option states both sides; no event cuts questions |
 | `test_perks.py` | each hero's perk does what its card promises, and none of them touches monster HP |
+| `test_curriculum.py` | every answered question reaches the teaching record, down both roads; the record never touches anything that decides how many questions get asked |
 | `test_resolution.py` | the cast is big enough to read at 1366x768 and 1920x1080 |
 | `test_art.py` | every sprite exists and fits; no realm borrows another's art; no backdrop is brighter than the heroes |
 | `shot_realm2.py` | walks Realm 2 in a browser, checks rendered sprite aspect against the art |

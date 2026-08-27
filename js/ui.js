@@ -250,6 +250,7 @@ function renderTeacherStudents() {
 
 // ---------------------------- leaderboards ---------------------------------
 function renderLeaderboards() {
+  renderCurriculum();
   // classes: best score per class
   const byClass = {};
   STATE.leaderboard.forEach(r => {
@@ -293,6 +294,266 @@ function renderLeaderboards() {
       <td>${r.monsters}</td><td>${r.damage}</td>
       <td>${r.relics}</td><td>${r.teamups}</td></tr>`).join("")}
   </table>`;
+}
+
+// ---------------------------------------------------------------------------
+// "WHAT TO RETEACH" - the teaching record, read back
+//
+// The one screen in the game that is for the teacher rather than the class. It
+// answers a single question: of everything this class has been asked, what are
+// they actually getting wrong?
+//
+// Three things it does deliberately:
+//
+//   1. It shows the ATTEMPT COUNT beside every percentage, and greys out any
+//      row resting on fewer than CURRICULUM_MIN_ATTEMPTS. A row reading "0% -
+//      1 attempt" is not a weakness, it is one child having a bad afternoon,
+//      and a report that lets a teacher plan a lesson around it is worse than
+//      no report.
+//
+//   2. It leads with GROUPS. One weak row is noise; five weak rows that are
+//      all zero conditional is Monday's lesson. The groups are the finding and
+//      the item table is the evidence.
+//
+//   3. It sorts weakest first. Nobody opens this screen to be told what went
+//      well.
+// ---------------------------------------------------------------------------
+function renderCurriculum() {
+  const el = document.getElementById("tab-curriculum");
+  if (!el) return;
+  const className = currentClassName();
+  const rec = classRecord(className);
+  const rows = curriculumRows(className);
+  const groups = curriculumGroups(className);
+
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty-note">Nothing recorded yet for
+      <b>${escapeHtml(className)}</b>. Play a realm with this class and every
+      question they answer will be logged against the curriculum item it
+      tested.</div>`;
+    return;
+  }
+
+  const thin = rows.filter(r => r.asked < CURRICULUM_MIN_ATTEMPTS).length;
+  const solid = groups.filter(g => g.asked >= CURRICULUM_MIN_ATTEMPTS);
+
+  let html = `<div class="cur-head">
+    <div>
+      <div class="cur-class">${escapeHtml(className)}</div>
+      <div class="cur-sub">${rec.runs} run${rec.runs === 1 ? "" : "s"} ·
+        ${rec.questions} questions answered · ${rows.length} curriculum items met</div>
+    </div>
+    <div class="cur-actions">
+      <button id="cur-copy" class="pixel-btn small">Copy summary</button>
+      <button id="cur-csv" class="pixel-btn small ghost">Download CSV</button>
+    </div>
+  </div>`;
+
+  if (!curriculumReady(className)) {
+    html += `<div class="cur-warn">This class has not played enough yet for any
+      of these figures to mean much. They settle down after three or four runs —
+      until then, read the list, not the percentages.</div>`;
+  }
+
+  // Only areas actually below 80% appear here. A class that is strong across
+  // the board should be told so, not handed a manufactured "weakest area" that
+  // is really a perfectly good 85% wearing a red border.
+  const shaky = solid.filter(g => g.pct < 80).slice(0, 4);
+  if (shaky.length) {
+    html += `<h3 class="inv-head">Weakest areas</h3>
+      <div class="cur-groups">` +
+      shaky.map(g => `<div class="cur-group ${g.pct < 60 ? "weak" : g.pct < 80 ? "mid" : "ok"}">
+        <div class="cur-pct">${g.pct}%</div>
+        <div class="cur-gname">${escapeHtml(g.group)}</div>
+        <div class="cur-gsub">${g.right} of ${g.asked} right</div>
+      </div>`).join("") + `</div>`;
+  } else if (solid.length) {
+    html += `<div class="cur-warn">Nothing is under 80% yet on the items this
+      class has met enough times to judge. Read the table below for the thinner
+      ones.</div>`;
+  }
+
+  html += `<h3 class="inv-head">Every item, weakest first</h3>
+    <table class="board cur-table">
+      <tr><th>Curriculum item</th><th>Area</th><th>Right</th><th>Asked</th><th>Score</th></tr>
+      ${rows.map(r => `<tr class="${r.asked < CURRICULUM_MIN_ATTEMPTS ? "cur-thin" : ""}">
+        <td><b>${escapeHtml(r.label)}</b></td>
+        <td class="cur-area">${escapeHtml(r.group)}</td>
+        <td>${r.right}</td>
+        <td>${r.asked}</td>
+        <td class="${r.asked < CURRICULUM_MIN_ATTEMPTS ? "" :
+                     r.pct < 60 ? "cur-bad" : r.pct < 80 ? "cur-mid" : "cur-good"}">
+          ${r.pct}%${r.asked < CURRICULUM_MIN_ATTEMPTS ? ' <span class="cur-thin-tag">too few</span>' : ""}</td>
+      </tr>`).join("")}
+    </table>`;
+
+  if (thin) {
+    html += `<p class="hint">${thin} item${thin === 1 ? " is" : "s are"} greyed
+      out — fewer than ${CURRICULUM_MIN_ATTEMPTS} attempts, so the percentage is
+      not worth reading yet.</p>`;
+  }
+
+  el.innerHTML = html;
+  const copy = document.getElementById("cur-copy");
+  const csv  = document.getElementById("cur-csv");
+  if (copy) copy.onclick = () => copyCurriculumSummary(className);
+  if (csv)  csv.onclick  = () => downloadCurriculumCsv(className);
+}
+
+// A summary written to be pasted straight into a lesson plan, so it is plain
+// text with no markup and it says what it is resting on.
+function curriculumSummaryText(className) {
+  const rec = classRecord(className);
+  const rows = curriculumRows(className);
+  const groups = curriculumGroups(className).filter(g => g.asked >= CURRICULUM_MIN_ATTEMPTS);
+  const solid = rows.filter(r => r.asked >= CURRICULUM_MIN_ATTEMPTS);
+  const L = [];
+  L.push(`WORD REALMS - what to reteach`);
+  L.push(`${className} · ${rec.runs} run${rec.runs === 1 ? "" : "s"} · ${rec.questions} questions answered`);
+  L.push("");
+  if (!solid.length) {
+    L.push(`Not enough attempts yet. Nothing here has been asked ${CURRICULUM_MIN_ATTEMPTS} times.`);
+    return L.join("\n");
+  }
+  L.push("WEAKEST AREAS");
+  groups.slice(0, 5).forEach(g =>
+    L.push(`  ${String(g.pct + "%").padStart(4)}  ${g.group}  (${g.right}/${g.asked})`));
+  L.push("");
+  L.push(`WORTH A LESSON  (under 60%, at least ${CURRICULUM_MIN_ATTEMPTS} attempts)`);
+  const weak = solid.filter(r => r.pct < 60);
+  if (weak.length) weak.forEach(r =>
+    L.push(`  ${String(r.pct + "%").padStart(4)}  ${r.label}  (${r.right}/${r.asked}) — ${r.group}`));
+  else L.push("  Nothing under 60%. This class is in good shape.");
+  L.push("");
+  L.push("SECURE  (80% or better)");
+  const good = solid.filter(r => r.pct >= 80);
+  L.push(good.length ? "  " + good.map(r => r.label).join(", ") : "  Nothing yet.");
+  return L.join("\n");
+}
+
+function copyCurriculumSummary(className) {
+  const text = curriculumSummaryText(className);
+  const done = () => showPopup({
+    banner: "COPIED", tone: "good", title: "Summary is on the clipboard",
+    desc: "Paste it into your lesson plan.", button: "Good",
+  });
+  // Classroom machines are often on http:// or opened straight off the disk,
+  // where navigator.clipboard does not exist. The textarea fallback is not
+  // legacy cruft - it is the path that will actually run in most of the rooms
+  // this game is played in.
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+  } else {
+    fallbackCopy(text, done);
+  }
+}
+
+function fallbackCopy(text, done) {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.cssText = "position:fixed;top:-1000px;left:0;opacity:0;";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    if (ok) return done();
+  } catch (e) { /* fall through to showing it */ }
+  // Last resort: show the text so it can be copied by hand rather than
+  // silently doing nothing.
+  showPopup({
+    banner: "COPY THIS", tone: "coach", title: "This browser blocked the clipboard",
+    desc: text.slice(0, 900), button: "Close",
+  });
+}
+
+function downloadCurriculumCsv(className) {
+  const rec = classRecord(className);
+  const rows = curriculumRows(className);
+  const esc = v => `"${String(v).replace(/"/g, '""')}"`;
+  const lines = [["class", "area", "curriculum item", "key", "right", "asked", "percent"]
+                   .map(esc).join(",")];
+  rows.forEach(r => lines.push([className, r.group, r.label, r.key,
+                                r.right, r.asked, r.pct].map(esc).join(",")));
+  // The BOM is here so Excel opens the file as UTF-8. Without it the curly
+  // quotes in labels like "going to" arrive as mojibake, on exactly the
+  // Windows machines this is going to be opened on.
+  const blob = new Blob(["﻿" + lines.join("\r\n")],
+                        { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = URL.createObjectURL(blob);
+  a.download = `word-realms-${className.replace(/[^\w-]+/g, "-")}-${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+// ---------------------------------------------------------------------------
+// THE END-OF-RUN DEBRIEF
+//
+// What the class sees on the TV when a run ends, win or lose. It is built from
+// THIS RUN only and deliberately shows no percentages: forty questions across
+// thirty-two curriculum items is about one attempt each, and a percentage built
+// on one attempt is a lie with a decimal point. Lists of "we had this" and "this
+// one caught us" are honest at that sample size. The percentages live in the
+// Teacher Menu, where they rest on every run the class has ever played.
+//
+// It reads a COPY of the run's log rather than STATE.run, because both endings
+// - victory and a wipe - null the run before the result screen is drawn.
+// ---------------------------------------------------------------------------
+function runDebriefHtml(answerLog, studentRun) {
+  answerLog = Array.isArray(answerLog) ? answerLog : [];
+  if (!answerLog.length) return "";
+
+  // An item counts as "had it" only if the class never missed it, and as
+  // "caught us" if they missed it at all. A key answered right once and wrong
+  // once belongs in the second list - that is the one worth another look.
+  const right = new Set(), wrong = new Set();
+  answerLog.forEach(a => (a.correct ? right : wrong).add(a.cover));
+  const clean = [...right].filter(k => !wrong.has(k));
+  const tricky = [...wrong];
+
+  const list = (keys, n) => keys.slice(0, n)
+    .map(k => `<span class="debrief-chip">${escapeHtml(coverLabel(k))}</span>`)
+    .join("");
+  const more = (keys, n) => keys.length > n
+    ? `<span class="debrief-more">and ${keys.length - n} more</span>` : "";
+
+  let html = `<div class="debrief">
+    <h3>What the storm asked you</h3>
+    <p class="debrief-count">${answerLog.length} questions, covering
+       ${new Set(answerLog.map(a => a.cover)).size} things from the unit.</p>`;
+
+  if (clean.length) {
+    html += `<div class="debrief-row good">
+      <div class="debrief-label">You had these</div>
+      <div>${list(clean, 6)}${more(clean, 6)}</div></div>`;
+  }
+  if (tricky.length) {
+    html += `<div class="debrief-row bad">
+      <div class="debrief-label">These caught you out</div>
+      <div>${list(tricky, 6)}${more(tricky, 6)}</div></div>`;
+  }
+
+  // The celebration. Per-RUN, not all-time - the all-time figures would simply
+  // crown whoever has attended the most lessons, which is not an achievement.
+  // Ties are shared rather than broken, because breaking a tie on some hidden
+  // rule in front of the class is worse than naming two winners.
+  const names = Object.keys(studentRun || {});
+  if (names.length) {
+    const best = Math.max(...names.map(n => studentRun[n].correct || 0));
+    if (best > 0) {
+      const heroes = names.filter(n => (studentRun[n].correct || 0) === best);
+      html += `<div class="debrief-row star">
+        <div class="debrief-label">Sharpest of the run</div>
+        <div>${heroes.slice(0, 3).map(n =>
+          `<span class="debrief-chip star">${escapeHtml(n)} · ${best}</span>`).join("")}
+        </div></div>`;
+    }
+  }
+  return html + `</div>`;
 }
 
 function escapeHtml(s) {

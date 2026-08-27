@@ -555,6 +555,115 @@ const REALM1_ELITE_QUESTIONS = [
 // distinct curriculum items this realm must cover before it can be cleared
 const REALM1_COVER_KEYS = [...new Set(REALM1_QUESTIONS.map(q => q.cover))];
 
+// ---------------------------------------------------------------------------
+// WHAT EACH COVER KEY ACTUALLY IS
+//
+// The cover keys are slugs, written to be typed quickly while authoring
+// questions: "g2-form", "as_as_negative", "phonics-eth". They are perfectly
+// clear at 11pm with the question in front of you and completely opaque three
+// weeks later in a staff room.
+//
+// The teaching report is only worth having if a teacher can read a row of it
+// and know what to reteach on Monday, so every key gets a plain-English name
+// and a group. The group is what makes the report actionable: one weak row is
+// noise, but five weak rows that are all zero conditional is a lesson.
+//
+// A key with no entry here is a bug, not a nuisance - it would appear in the
+// report as a raw slug. test_curriculum.py fails if one is missing.
+// ---------------------------------------------------------------------------
+const COVER_LABELS = {
+  // ---- Realm 1, Unit 1: Extreme Weather -----------------------------------
+  "blizzard":        { label: "blizzard",                    group: "Extreme weather words" },
+  "drought":         { label: "drought",                     group: "Extreme weather words" },
+  "flood":           { label: "flood",                       group: "Extreme weather words" },
+  "heat wave":       { label: "heat wave",                   group: "Extreme weather words" },
+  "hurricane":       { label: "hurricane",                   group: "Extreme weather words" },
+  "ice storm":       { label: "ice storm",                   group: "Extreme weather words" },
+  "sandstorm":       { label: "sandstorm",                   group: "Extreme weather words" },
+  "tornado":         { label: "tornado",                     group: "Extreme weather words" },
+  "tropical storm":  { label: "tropical storm",              group: "Extreme weather words" },
+  "lightning":       { label: "lightning",                   group: "Extreme weather words" },
+  "thunder":         { label: "thunder",                     group: "Extreme weather words" },
+  "funnel":          { label: "funnel",                      group: "Extreme weather words" },
+
+  "emergency":       { label: "emergency",                   group: "Staying safe in a storm" },
+  "shelter":         { label: "shelter",                     group: "Staying safe in a storm" },
+  "supplies":        { label: "supplies",                    group: "Staying safe in a storm" },
+  "flashlight":      { label: "flashlight",                  group: "Staying safe in a storm" },
+  "plan":            { label: "plan",                        group: "Staying safe in a storm" },
+  "warn":            { label: "warn",                        group: "Staying safe in a storm" },
+  "instruments":     { label: "instruments",                 group: "Staying safe in a storm" },
+
+  "range":           { label: "range",                       group: "Describing measurements" },
+  "rise":            { label: "rise",                        group: "Describing measurements" },
+  "drop":            { label: "drop",                        group: "Describing measurements" },
+  "speed":           { label: "speed",                       group: "Describing measurements" },
+  "twisted":         { label: "twisted",                     group: "Describing measurements" },
+
+  "g1-statement":    { label: "“going to” — statements",  group: "Talking about the future" },
+  "g1-negative":     { label: "“going to” — negatives",   group: "Talking about the future" },
+  "g1-question":     { label: "“going to” — questions",   group: "Talking about the future" },
+
+  "g2-form":         { label: "zero conditional — building it",  group: "Zero conditional (if + present)" },
+  "g2-verb":         { label: "zero conditional — verb forms",   group: "Zero conditional (if + present)" },
+  "g2-meaning":      { label: "zero conditional — what it means", group: "Zero conditional (if + present)" },
+
+  "phonics-theta":   { label: "the hissy /θ/ — “thanks”", group: "Sounds: th" },
+  "phonics-eth":     { label: "the buzzy /ð/ — “weather”", group: "Sounds: th" },
+
+  // ---- Realm 2, Unit 2: Copycat Animals -----------------------------------
+  "camouflage":      { label: "camouflage",                  group: "How animals stay hidden" },
+  "hide":            { label: "hide",                        group: "How animals stay hidden" },
+  "spot":            { label: "spot",                        group: "How animals stay hidden" },
+  "stripe":          { label: "stripe",                      group: "How animals stay hidden" },
+  "resemble":        { label: "resemble",                    group: "How animals stay hidden" },
+  "imitate":         { label: "imitate",                     group: "How animals stay hidden" },
+  "copy":            { label: "copy",                        group: "How animals stay hidden" },
+  "confuse":         { label: "confuse",                     group: "How animals stay hidden" },
+
+  "predator":        { label: "predator",                    group: "Hunting and escaping" },
+  "prey":            { label: "prey",                        group: "Hunting and escaping" },
+  "hunt":            { label: "hunt",                        group: "Hunting and escaping" },
+  "attack":          { label: "attack",                      group: "Hunting and escaping" },
+  "defend":          { label: "defend",                      group: "Hunting and escaping" },
+  "escape":          { label: "escape",                      group: "Hunting and escaping" },
+  "avoid":           { label: "avoid",                       group: "Hunting and escaping" },
+  "frighten":        { label: "frighten",                    group: "Hunting and escaping" },
+  "poisonous":       { label: "poisonous",                   group: "Hunting and escaping" },
+
+  "species":         { label: "species",                     group: "Sorting and describing animals" },
+  "insect":          { label: "insect",                      group: "Sorting and describing animals" },
+  "characteristic":  { label: "characteristic",              group: "Sorting and describing animals" },
+  "classification":  { label: "classification",              group: "Sorting and describing animals" },
+  "describe_animals":{ label: "describing an animal",        group: "Sorting and describing animals" },
+  "compare_animals": { label: "comparing two animals",       group: "Sorting and describing animals" },
+  "imitation_talk":  { label: "talking about copying",       group: "Sorting and describing animals" },
+
+  "as_as_equal":     { label: "as … as — saying two things match",  group: "Comparing with as … as" },
+  "as_as_negative":  { label: "as … as — the negative form",        group: "Comparing with as … as" },
+  "as_as_meaning":   { label: "as … as — what it means",            group: "Comparing with as … as" },
+
+  "tag_rule":        { label: "question tags — the rule",     group: "Question tags" },
+  "tag_positive":    { label: "question tags — after a positive sentence", group: "Question tags" },
+  "tag_negative":    { label: "question tags — after a negative sentence", group: "Question tags" },
+
+  "dictionary_use":  { label: "using a dictionary",           group: "Reading skills" },
+  "scan_text":       { label: "scanning a text for one fact", group: "Reading skills" },
+};
+
+// The report shows these, never the slug. An unlabelled key is a bug, but it
+// should degrade into something readable rather than an empty cell.
+function coverLabel(key) {
+  const e = COVER_LABELS[key];
+  return e ? e.label : String(key || "").replace(/[-_]/g, " ");
+}
+
+function coverGroup(key) {
+  const e = COVER_LABELS[key];
+  return e ? e.group : "Other";
+}
+
+
 // Both banks answer to a cover key. The boss prefers the harder version when
 // one exists, so the finale tests understanding rather than recall - without
 // changing which curriculum items it sweeps.

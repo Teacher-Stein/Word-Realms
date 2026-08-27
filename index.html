@@ -77,9 +77,11 @@
       <div class="tabs">
         <button class="tab-btn active" data-tab="tab-class">Classes</button>
         <button class="tab-btn" data-tab="tab-students">Warriors</button>
+        <button class="tab-btn" data-tab="tab-curriculum">What to reteach</button>
       </div>
       <div id="tab-class" class="tab-panel active"></div>
       <div id="tab-students" class="tab-panel"></div>
+      <div id="tab-curriculum" class="tab-panel"></div>
       <button id="scores-close" class="pixel-btn">Back</button>
     </div>
   </section>
@@ -136,6 +138,17 @@
           <button id="newpin-clear" class="pixel-btn tiny ghost">Use the one in config.js</button>
         </div>
         <div id="newpin-note" class="hint" style="margin-top:6px;"></div>
+
+        <h3 class="inv-head">Teaching record
+          <span class="inv-note">— what this class keeps getting wrong</span></h3>
+        <p class="hint" style="margin:4px 0 8px;">
+          Every answer is logged against the curriculum item it tested and kept
+          per class, so it builds up across lessons. One run is too few to read
+          anything into; three or four start to mean something.
+        </p>
+        <div class="row-buttons" style="margin-top:2px;">
+          <button id="btn-curriculum" class="pixel-btn small">What to reteach</button>
+        </div>
 
         <h3 class="inv-head">Save file <span class="inv-note">— this is the only copy</span></h3>
         <div class="row-buttons" style="margin-top:6px;">

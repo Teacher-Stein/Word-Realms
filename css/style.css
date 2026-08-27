@@ -569,6 +569,95 @@ textarea { resize: vertical; line-height: 1.5; }
 .stat-tile .v { font-size: 1.7rem; font-weight: 900; color: var(--gold); }
 .stat-tile .k { font-size: .8rem; opacity: .8; text-transform: uppercase; letter-spacing: 1px; }
 
+/* ---- "what to reteach": the teaching record ---------------------------- */
+.cur-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 16px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.cur-class { font-size: 1.35rem; font-weight: 900; color: var(--gold); }
+.cur-sub { opacity: .82; font-size: .92rem; margin-top: 2px; }
+.cur-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.pixel-btn.small { padding: 8px 14px; font-size: .85rem; }
+.cur-warn {
+  border: 2px solid var(--gold); border-radius: 8px;
+  background: rgba(212,160,42,.12); padding: 10px 14px;
+  margin-bottom: 16px; font-size: .95rem;
+}
+.cur-groups {
+  display: grid; grid-template-columns: repeat(auto-fit,minmax(190px,1fr));
+  gap: 10px; margin-bottom: 20px;
+}
+.cur-group {
+  border: 2px solid var(--accent); border-radius: 10px;
+  background: rgba(12,7,20,.5); padding: 12px;
+}
+.cur-group.weak { border-color: #d8654f; }
+.cur-group.mid  { border-color: var(--gold); }
+.cur-group.ok   { border-color: #4fbf72; }
+.cur-pct { font-size: 1.9rem; font-weight: 900; line-height: 1; }
+.cur-group.weak .cur-pct { color: #ff9e8b; }
+.cur-group.mid  .cur-pct { color: var(--gold); }
+.cur-group.ok   .cur-pct { color: #97e6ac; }
+.cur-gname { font-weight: 800; margin-top: 4px; }
+.cur-gsub { opacity: .75; font-size: .85rem; margin-top: 2px; }
+.cur-table td.cur-area { opacity: .72; font-size: .88rem; }
+.cur-bad  { color: #ff9e8b; font-weight: 800; }
+.cur-mid  { color: var(--gold); font-weight: 800; }
+.cur-good { color: #97e6ac; font-weight: 800; }
+/* A row resting on one or two attempts is greyed rather than hidden: the
+   teacher should be able to see it exists without being invited to plan a
+   lesson around it. */
+.cur-table tr.cur-thin { opacity: .45; }
+.cur-thin-tag {
+  font-size: .7rem; text-transform: uppercase; letter-spacing: 1px;
+  opacity: .8; font-weight: 700;
+}
+
+/* ---- the end-of-run debrief -------------------------------------------
+   Read from the back of a classroom on a 1366x768 projector, so the chips
+   are large and the two rows are separated by colour rather than by a
+   heading a child at the back cannot resolve. Green is "we had this", red
+   is "this one caught us"; nothing here is a percentage, because one run
+   is one attempt per item and a percentage on one attempt is a lie with a
+   decimal point in it. */
+.debrief {
+  margin-top: 22px; padding-top: 18px;
+  border-top: 2px solid var(--accent);
+  text-align: left;
+}
+.debrief h3 {
+  margin: 0 0 4px; font-size: 1.25rem; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--gold);
+}
+.debrief-count { margin: 0 0 14px; opacity: .85; font-size: .95rem; }
+.debrief-row {
+  display: flex; gap: 14px; align-items: baseline;
+  padding: 10px 0; border-top: 1px solid rgba(255,255,255,.09);
+  flex-wrap: wrap;
+}
+.debrief-label {
+  flex: 0 0 190px; font-size: .82rem; text-transform: uppercase;
+  letter-spacing: 1.2px; opacity: .8; font-weight: 800;
+}
+.debrief-row > div:last-child { flex: 1 1 320px; }
+.debrief-chip {
+  display: inline-block; margin: 0 8px 8px 0; padding: 6px 12px;
+  border-radius: 999px; font-size: 1.05rem; font-weight: 700;
+  background: rgba(12,7,20,.55); border: 2px solid var(--accent);
+}
+.debrief-row.good .debrief-chip { border-color: #4fbf72; color: #b9f2c9; }
+.debrief-row.bad  .debrief-chip { border-color: #d8654f; color: #ffcfc4; }
+.debrief-chip.star { border-color: var(--gold); color: var(--gold); }
+.debrief-more { opacity: .7; font-size: .95rem; }
+
+@media (max-height: 800px) {
+  /* On the classroom projector the result card has to fit without scrolling,
+     so the debrief tightens rather than pushing the buttons off the screen. */
+  .debrief { margin-top: 14px; padding-top: 12px; }
+  .debrief-chip { font-size: .95rem; padding: 5px 10px; margin-bottom: 6px; }
+  .debrief-row { padding: 7px 0; }
+}
+
 .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
 .tab-btn {
   font-family: inherit; font-size: 1rem; font-weight: 800; text-transform: uppercase;
