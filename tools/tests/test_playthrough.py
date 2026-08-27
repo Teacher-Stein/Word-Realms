@@ -71,6 +71,28 @@ def play(page, accuracy, budget, log):
             except Exception:
                 pass
 
+        # ---- the Chorus -----------------------------------------------------
+        # A room the walker did not know about is a room the walker gets stuck
+        # in for the rest of its budget, and every question it would have
+        # answered afterwards goes unmeasured. That is what happened when the
+        # Chorus landed: the run reported "questions answered 0".
+        if visible(page, '#cho-judge'):
+            lvl = ('good' if rng.random() < accuracy
+                   else ('half' if rng.random() < 0.5 else 'poor'))
+            try:
+                page.click(f'#cho-judge .pixel-btn[data-level="{lvl}"]', timeout=1200)
+                answered += 1
+                page.wait_for_timeout(380)
+            except Exception:
+                pass
+            continue
+        if visible(page, '#cho-next'):
+            try:
+                page.click('#cho-next', timeout=1200); page.wait_for_timeout(420)
+            except Exception:
+                pass
+            continue
+
         # ---- the stake gate -------------------------------------------------
         for side in ('enc', 'boss'):
             gate = f'#{side}-stake-gate'
@@ -177,6 +199,55 @@ def play(page, accuracy, budget, log):
             box = page.query_selector(f'#{side}-choices')
             if not box or not box.is_visible():
                 continue
+
+            # v6.5 formats. This walker only ever knew how to click a `.choice`,
+            # and when the new formats landed it simply stopped answering: the
+            # run reported "questions answered 0" and the suite still said PASS,
+            # because nothing here asserted that it had answered anything.
+            #
+            # Both halves of that were bugs. This handles every format the game
+            # can render; the floor at the bottom of the file makes a walk that
+            # answers nothing a failure instead of a quiet success.
+            fmt = page.evaluate("(s) => {"
+                                " const el = document.getElementById(s + '-choices');"
+                                " const c = [...el.classList].find(x => x.startsWith('fmt-'));"
+                                " return c ? c.slice(4) : 'choice'; }", side)
+            if fmt in ('error', 'order'):
+                want_right = rng.random() < accuracy
+                did = page.evaluate("""([s, right]) => {
+                  const el = document.getElementById(s + '-choices');
+                  const bare = w => w.replace(/[.,!?;:'"]+$/g, '');
+                  const run = STATE.run;
+                  const m = s === 'boss' ? run.boss : run.encounter;
+                  const q = m && m.currentQ;
+                  if (!q) return false;
+                  if (q.format === 'error') {
+                    const words = [...el.querySelectorAll('.err-word:not(.locked):not(.ruled-out)')];
+                    if (!words.length) return false;
+                    const hit = right ? words.find(w => bare(w.textContent) === q.answer)
+                                      : words.find(w => bare(w.textContent) !== q.answer);
+                    (hit || words[0]).click();
+                    return true;
+                  }
+                  if (q.format === 'order') {
+                    const order = right ? q.parts : q.parts.slice().reverse();
+                    let moved = false;
+                    order.forEach(t => {
+                      const c = [...el.querySelectorAll('.order-pool .order-chip')]
+                        .find(x => x.textContent === t);
+                      if (c) { c.click(); moved = true; }
+                    });
+                    return moved;
+                  }
+                  return false;
+                }""", [side, want_right])
+                if did:
+                    answered += 1
+                    clicked = True
+                    page.wait_for_timeout(700)
+                    break
+                continue
+
             opts = [c for c in box.query_selector_all('.choice')
                     if 'locked' not in (c.get_attribute('class') or '')]
             if not opts:
@@ -259,6 +330,20 @@ with sync_playwright() as pw:
             pass
         for l in log[:8]:
             print(l)
+        # A FLOOR ON THE MEASUREMENT ITSELF.
+        #
+        # Every check above is of the form "nothing went wrong", and a walk that
+        # answers no questions passes all of them perfectly. That is exactly
+        # what happened when the v6.5 formats landed: the walker could not click
+        # them, answered nothing all run, and the suite reported PASS on a run
+        # in which it had tested nothing at all.
+        #
+        # An accuracy level that never gets a question in front of it has not
+        # been tested, and saying so is the whole job.
+        if r['answered'] < 5:
+            print(f'  !! only {r["answered"]} questions were answered — this '
+                  f'run tested almost nothing')
+            fails += 1
         if (r['clock_bad'] or r['blind_on_closed'] or errors
                 or r['distracted_ate_question']):
             fails += 1

@@ -147,6 +147,25 @@ function runOne(acc, S) {
       else if (p.shields < CONFIG.REST_SHIELDS * 0.5) p.shields = CONFIG.REST_SHIELDS;
       else { p.maxHearts++; p.hearts++; }
     }
+    // A Chorus room asks CHORUS_QUESTIONS of the WHOLE CLASS and cannot cost a
+    // heart. It is modelled here because v6.5 paid for it out of the map's
+    // `safe` and `treasure` weight, which lowered the share of fights - and a
+    // change that lowers the share of fights has to be shown NOT to lower the
+    // number of questions, rather than assumed not to.
+    if (nn.type === 'chorus') {
+      const n = CONFIG.CHORUS_QUESTIONS;
+      q += n; S.chorusQ += n;
+      // The room answers together, so the shard payout follows the class's
+      // accuracy rather than one child's. No damage, ever.
+      // Rolled PER QUESTION, not once for the room. Rolling once and
+      // multiplying made a good room pay three times over and overstated the
+      // shields a Chorus hands out.
+      for (let i = 0; i < n; i++) {
+        const lvl = Math.random() < acc - 0.1 ? 'good'
+                  : Math.random() < 0.6 ? 'half' : 'poor';
+        p.shields += CONFIG.CHORUS_REWARD[lvl].shields;
+      }
+    }
     if (nn.type === 'fight' || nn.type === 'elite') {
       const isE = nn.type === 'elite';
       const pool = isE ? REALM1_ELITES : REALM1_MONSTERS;
@@ -194,12 +213,13 @@ function shape(label, opt) {
   const cells = [];
   for (const acc of [0.95, 0.85, 0.75]) {
     const S = { f:0, fNoHeart:0, fNoAim:0, fq:0, e:0, eq:0, acts:0,
-                focus:0, stunTicks:0, wrongDmg:0, clockDmg:0, riskWins:0, eventQ:0 };
+                focus:0, stunTicks:0, wrongDmg:0, clockDmg:0, riskWins:0,
+                eventQ:0, chorusQ:0 };
     let q = 0, d = 0, r = 0; const N = 2500;
     for (let i = 0; i < N; i++) { const x = runOne(acc, S); q += x.q; r += x.rooms; if (x.dead) d++; }
     if (acc === 0.85) {
       const tot = S.wrongDmg + S.clockDmg;
-      cells.push(`q ${(q/N).toFixed(0)} (ev ${(S.eventQ/N).toFixed(1)}) · q/fight ${(S.fq/S.f).toFixed(1)} · painless ${(S.fNoHeart/S.f*100).toFixed(0)}% · acts/fight ${(S.acts/(S.f+S.e)).toFixed(1)} · wrong=${(S.wrongDmg/tot*100).toFixed(0)}% of dmg`);
+      cells.push(`q ${(q/N).toFixed(0)} (ev ${(S.eventQ/N).toFixed(1)} · cho ${(S.chorusQ/N).toFixed(1)}) · q/fight ${(S.fq/S.f).toFixed(1)} · painless ${(S.fNoHeart/S.f*100).toFixed(0)}% · acts/fight ${(S.acts/(S.f+S.e)).toFixed(1)} · wrong=${(S.wrongDmg/tot*100).toFixed(0)}% of dmg`);
     }
     cells.push(`${(acc*100)|0}%: ${(d/N*100).toFixed(0)}%`);
   }
@@ -253,3 +273,18 @@ shape('  the Ranger (+1 countdown)', { riskRate: 0.30, cadenceBonus: 1 });
 console.log('\n=== v6.3: permanent bonus vs opening-only ===');
 shape('  the Ranger, every countdown', { riskRate: 0.30, cadenceBonus: 1 });
 shape('  the Ranger, opening only', { riskRate: 0.30, cadenceBonus: 1, cadenceFirstOnly: true });
+
+console.log('\n=== v6.5: does the Chorus cost the game any questions? ===');
+console.log('The Chorus took its map weight out of `safe` and `treasure`, which');
+console.log('lowers the share of FIGHTS. RULE ONE says the total must not fall.');
+trio('with the Chorus (v6.5)', {});
+
+// Isolating WHERE the v6.5 softening came from. Raising the fight weight barely
+// moved it, so the fight SHARE was not the cause - which meant the answer had
+// to be the shields the Chorus hands out, or the extra questions themselves.
+console.log('\n=== v6.5: isolating the softening ===');
+const _pay = JSON.parse(JSON.stringify(CONFIG.CHORUS_REWARD));
+shape('  Chorus as shipped', { riskRate: 0.30 });
+CONFIG.CHORUS_REWARD = { good:{shards:3,shields:0}, half:{shards:2,shields:0}, poor:{shards:1,shields:0} };
+shape('  Chorus paying NO shields', { riskRate: 0.30 });
+CONFIG.CHORUS_REWARD = _pay;

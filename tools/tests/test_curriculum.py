@@ -137,6 +137,54 @@ def play(p, steps=260):
                 except Exception:
                     pass
             continue
+        # A Chorus room. The walker has to know how to leave every room the
+        # game can put it in, or it spends the rest of its budget stuck in the
+        # one it does not recognise - and every question after that goes
+        # unmeasured while the suite still reports success.
+        if vis(p, '#cho-judge'):
+            try:
+                p.click('#cho-judge .pixel-btn[data-level="good"]', timeout=1000)
+                answered += 1
+                p.wait_for_timeout(360)
+                snap = sample(p)
+                if snap and snap['log'] != snap['stats']:
+                    worst = snap
+                    break
+                if snap:
+                    seen.append(snap)
+            except Exception:
+                pass
+            continue
+        if vis(p, '#cho-next'):
+            try:
+                p.click('#cho-next', timeout=1000)
+                p.wait_for_timeout(400)
+            except Exception:
+                pass
+            continue
+
+        # Spot-the-error and put-it-in-order have no `.choice` elements at all,
+        # so a walker that only clicks those simply stops answering.
+        did_fmt = p.evaluate("""() => {
+          const el = document.getElementById('enc-choices');
+          if (!el || !el.offsetParent) return false;
+          const w = el.querySelector('.err-word:not(.locked):not(.ruled-out)');
+          if (w) { w.click(); return true; }
+          const chips = [...el.querySelectorAll('.order-pool .order-chip')];
+          if (chips.length) { chips.forEach(c => c.click()); return true; }
+          return false;
+        }""")
+        if did_fmt:
+            answered += 1
+            p.wait_for_timeout(420)
+            snap = sample(p)
+            if snap and snap['log'] != snap['stats']:
+                worst = snap
+                break
+            if snap:
+                seen.append(snap)
+            continue
+
         # A BLIND call waiting to be adjudicated. This is the second road into
         # the record - the options are hidden, the student says the answer out
         # loud and the room rules on it, so no choice element is ever clicked

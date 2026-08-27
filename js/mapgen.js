@@ -21,7 +21,21 @@ const NODE_WEIGHTS = [
   // v5.8: events raised 4 -> 6. They used to be a 62/38 coin flip worth 4
   // shards; now every one is a stated trade and several of them ADD
   // questions, so they are worth stopping at. ~2.25 -> ~3 walked per run.
-  ["fight", 12], ["event", 6], ["rest", 3], ["treasure", 3], ["safe", 3],
+  //
+  // v6.5 added the Chorus at weight 5, paid for out of `safe` and `treasure`
+  // rather than out of `fight`. That direction matters: a Safe Path asks
+  // NOTHING and a Chorus asks three questions of every child in the room, so
+  // the trade strictly increases review volume. Taking it out of fights would
+  // have cut questions, which RULE ONE forbids.
+  //
+  // The fight weight stayed at 12 after being measured at 13, 14 and 15. It is
+  // tempting to raise it to win back the share the new room dilutes, but
+  // balance_sim says the dilution costs about two points of painless-fight
+  // rate and the Chorus REWARD was costing eight - so the fix belonged in
+  // CONFIG.CHORUS_REWARD, not here. At 12, with the Chorus paying shards only,
+  // the run comes out at v6.4's difficulty with four more questions in it.
+  ["fight", 12], ["event", 6], ["chorus", 5], ["rest", 3], ["treasure", 2],
+  ["safe", 1],
 ];
 
 function weightedNodeType() {

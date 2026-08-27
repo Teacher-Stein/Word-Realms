@@ -10,6 +10,7 @@ distinct monster it meets along with the rendered-vs-natural aspect ratio.
 """
 import sys, pathlib
 from playwright.sync_api import sync_playwright
+from walk import answer_any, clear_rooms
 
 URL = 'http://localhost:8811/index.html'
 OUT = pathlib.Path('/home/claude/realm2/shots'); OUT.mkdir(parents=True, exist_ok=True)
@@ -90,10 +91,16 @@ def main():
             drain(page)
             return True
 
-        for step in range(700):
+        # 900 rather than 700 since v6.5. The Chorus adds a room type that
+        # costs several steps to walk through, and this run came in at exactly
+        # the four-sprite floor - a pass, but one bad map away from a failure
+        # that would have had nothing to do with the art.
+        for step in range(900):
             drain(page)
             if step % 12 == 0:
                 restart_if_dead()
+            if clear_rooms(page):
+                continue
             if visible(page, '#btn-move-on'):
                 try:
                     page.click('#btn-move-on', timeout=800); page.wait_for_timeout(350)
@@ -138,16 +145,12 @@ def main():
                 except Exception:
                     pass
 
-            clicked = page.evaluate("""() => {
-              for (const box of ['#enc-choices', '#boss-choices']) {
-                const el = document.querySelector(box);
-                if (!el || !el.offsetParent) continue;
-                const opts = [...el.querySelectorAll('.choice')]
-                               .filter(c => !c.classList.contains('locked'));
-                if (opts.length) { opts[0].click(); return true; }
-              }
-              return false;
-            }""")
+            # answer_any() rather than a hand-rolled `.choice` click. The
+            # inline version could only answer three-option questions, so when
+            # v6.5's spot-the-error and put-it-in-order arrived this walk parked
+            # on the first one it met and photographed a single sprite out of
+            # eight - for the whole 900-step budget. See walk.py.
+            clicked = answer_any(page, 'enc') or answer_any(page, 'boss')
             page.wait_for_timeout(300 if clicked else 120)
 
             if not clicked:

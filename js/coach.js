@@ -63,6 +63,18 @@ const COACH_LESSONS = {
           "wrong, and a potion saved for a boss you never reach is a potion " +
           "wasted.",
   },
+  // The Chorus changes what the class is being asked to DO, which is a bigger
+  // change than any other room makes, and a room full of children who think one
+  // person is about to answer will sit on their hands.
+  chorus: {
+    banner: "NEW: THE CHORUS",
+    title: "This one is for everybody",
+    effect: "The whole class answers at once",
+    desc: "Nobody is picked. Everyone answers together — hands up, fingers " +
+          "out, or write it on a board — and your teacher says how the room " +
+          "did. There is no damage here whatever happens, so there is nothing " +
+          "to lose by having a go.",
+  },
   campfire: {
     banner: "NEW: THE CAMPFIRE",
     title: "There is time for one thing only",

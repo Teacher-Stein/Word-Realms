@@ -26,22 +26,71 @@ function checkBank(realmName, standard, elite) {
               `total ${all.length} · keys ${stdKeys.size}`);
 
   // --- every question must be structurally sound -------------------------
+  //
+  // v6.5 added four formats, and each one carries different fields. A shared
+  // check would have to be so loose it caught nothing, so the common rules run
+  // for everything and then each format is checked on its own terms.
   all.forEach((q, i) => {
-    const where = `${realmName} #${i} (${q.cover})`;
+    const where = `${realmName} #${i} (${q.cover}${q.format ? "/" + q.format : ""})`;
     if (!q.cover)  bad(`${where}: no cover key`);
     if (!q.clue)   bad(`${where}: no clue`);
-    if (!q.answer) bad(`${where}: no answer`);
-    if (!Array.isArray(q.choices) || q.choices.length < 3)
-      bad(`${where}: fewer than 3 choices`);
-    if (q.choices && !q.choices.includes(q.answer))
-      bad(`${where}: the answer "${q.answer}" is not among its own choices`);
-    if (q.choices && new Set(q.choices).size !== q.choices.length)
-      bad(`${where}: duplicate choices — one distractor is the answer twice`);
     if (typeof q.open !== "boolean")
       bad(`${where}: no open flag, so the stake gate cannot decide about it`);
     if (![1, 2, 3, 4].includes(q.tier))
       bad(`${where}: tier ${q.tier} is outside 1-4`);
     if (!q.type) bad(`${where}: no type label`);
+
+    const fmt = q.format || "choice";
+    if (!["choice", "odd", "error", "order"].includes(fmt))
+      bad(`${where}: format "${fmt}" is not one the game can render`);
+
+    // Only the two selection formats can go blind, because a blind call means
+    // the OPTIONS come off the screen and the class says the answer aloud.
+    // There is nothing sayable about a half-built sentence or a mistake nobody
+    // can see, so tagging one open would offer the room a call it cannot make.
+    if (q.open && !["choice", "odd"].includes(fmt))
+      bad(`${where}: a "${fmt}" question cannot be answered blind, so it must ` +
+          `not be tagged open`);
+
+    if (fmt === "choice" || fmt === "odd") {
+      if (!q.answer) bad(`${where}: no answer`);
+      const want = fmt === "odd" ? 4 : 3;
+      if (!Array.isArray(q.choices) || q.choices.length < want)
+        bad(`${where}: fewer than ${want} choices`);
+      if (q.choices && !q.choices.includes(q.answer))
+        bad(`${where}: the answer "${q.answer}" is not among its own choices`);
+      if (q.choices && new Set(q.choices).size !== q.choices.length)
+        bad(`${where}: duplicate choices — one distractor is the answer twice`);
+    }
+
+    if (fmt === "error") {
+      const bare = w => w.replace(/[.,!?;:'"]+$/g, "");
+      if (!q.sentence) bad(`${where}: no sentence to find the mistake in`);
+      if (!q.answer)   bad(`${where}: no answer, so no word is the mistake`);
+      if (!q.fix)      bad(`${where}: no fix, so the class is told it is wrong ` +
+                           `and never told what is right`);
+      const words = String(q.sentence || "").split(/\s+/).map(bare);
+      // THE trap of this format: the mistake has to actually be in the
+      // sentence, spelled the same way. A typo here makes a question nobody
+      // can answer, and it looks completely fine in the source.
+      if (q.answer && !words.includes(q.answer))
+        bad(`${where}: the mistake "${q.answer}" does not appear in the ` +
+            `sentence "${q.sentence}"`);
+      if (q.answer && words.filter(w => w === q.answer).length > 1)
+        bad(`${where}: "${q.answer}" appears twice in the sentence, so there ` +
+            `are two right taps and only one of them counts`);
+      if (q.answer && q.fix && q.answer === q.fix)
+        bad(`${where}: the mistake and the fix are the same word`);
+    }
+
+    if (fmt === "order") {
+      if (!Array.isArray(q.parts) || q.parts.length < 3)
+        bad(`${where}: fewer than 3 pieces to put in order`);
+      if (q.parts && new Set(q.parts).size !== q.parts.length)
+        bad(`${where}: two pieces are identical, so one correct order marks ` +
+            `as wrong depending on which was tapped`);
+    }
+
   });
 
   // --- the rule the whole stake system rests on --------------------------
@@ -62,7 +111,7 @@ function checkBank(realmName, standard, elite) {
   // the answer? That is the shape that cannot be answered blind.
   const norml = s => String(s).toLowerCase().replace(/[^a-z0-9 ]/g, " ")
                               .replace(/\s+/g, " ").trim();
-  all.filter(q => q.open).forEach(q => {
+  all.filter(q => q.open && q.answer).forEach(q => {
     const clueHasAnswer = norml(q.clue).includes(norml(q.answer));
     if (REFERS_TO_OPTIONS.test(q.clue) && !clueHasAnswer)
       bad(`${realmName} "${q.cover}" is tagged open but its clue points at the ` +
@@ -110,10 +159,17 @@ function checkBank(realmName, standard, elite) {
   // questions legitimately share the clue "Choose the correct sentence:" -
   // the options ARE the question - so flagging on the clue alone reported
   // twenty false positives on a perfectly healthy bank.
+  //
+  // v6.5: the new formats share a generic clue on purpose - "One word is wrong.
+  // Tap the mistake." is the instruction, and the SENTENCE is the question.
+  // Keying on clue+choices alone reported every one of them as a duplicate of
+  // every other, which would have trained whoever ran this to ignore it.
   const seen = {};
   all.forEach(q => {
-    const k = (q.clue + "||" + [...(q.choices || [])].sort().join("|"))
-      .trim().toLowerCase();
+    const payload = q.format === "error" ? q.sentence
+                  : q.format === "order" ? (q.parts || []).join("|")
+                  : [...(q.choices || [])].sort().join("|");
+    const k = (q.clue + "||" + payload).trim().toLowerCase();
     if (seen[k])
       bad(`${realmName}: two identical questions — "${q.clue.slice(0, 50)}..." ` +
           `with the same options`);

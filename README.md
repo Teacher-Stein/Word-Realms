@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 6.4 — The game now tells you what to reteach.** Two realms fully playable and
+class. **Version 6.5 — The whole class answers.** Two realms fully playable and
 fully illustrated. Realm 1 (Unit 1, Extreme Weather) and Realm 2 (Unit 2, Copycat
 Animals) each have their own cast, boss, guide and three painted backdrops;
 Realms 3–9 appear as locked placeholders using the correct themes from the
@@ -22,6 +22,74 @@ once the page has loaded.
 5. Wait about a minute, then reload your `https://…github.io/word-realms/` link.
 
 If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
+
+---
+
+## v6.5 — the whole class answers, and questions come in four shapes
+
+**The Chorus.** A new room, two or three a run, plus one moment in every boss
+fight. The question goes to the *whole class* — hands, fingers, mini whiteboards,
+whatever you already use — and you tap one of three buttons for how the room did:
+nearly everyone, about half, only a few. One tap scores it and reveals the answer
+together, because two taps per question with twenty-four children waiting is one
+too many.
+
+This exists for an uncomfortable piece of arithmetic. A lesson is about forty
+questions and a class is twenty-four children, so each child answers under two
+questions and watches somebody else think for the other thirty-eight. Rule 1
+says review volume is the whole point of the game, and the ordinary loop was
+collecting one twenty-fourth of the volume in the room. Three Chorus questions a
+room turns roughly six answers a run into roughly a hundred and forty.
+
+A Chorus **cannot cost a heart**. Making a class wrong together hurt would teach
+them to dread the one room designed to get everybody answering.
+
+**Three new question formats.** Everything used to be a clue and three options,
+forty times a lesson. Now about one question in seven is one of:
+
+- **Spot the error** — a sentence with one word wrong; tap the mistake. The
+  closest the game gets to asking a child to produce language rather than
+  recognise it.
+- **Put it in order** — tap the fragments into place. Realm 1's "going to" and
+  zero conditional and Realm 2's question tags and *as … as* are all word-order
+  problems, so this tests them more directly than choosing between three
+  finished sentences. The last piece can be taken back, because a misclick on a
+  classroom TV should not cost a heart.
+- **Odd one out** — four options in a grid, tap the one that does not fit.
+
+A fourth, match-the-pairs, was built and cut: three pairs need six rows of text,
+and on a 1366x768 projector that squeezed the arena until the monster was a
+thumbnail.
+
+**Who has actually had a turn.** A small row on the map screen showing how many
+questions each child has answered this run. Turn rotation is meant to be even,
+but Reroll, absences and the Distracted button all move turns around, and in a
+class of twenty-four a child who has not been asked anything in twenty minutes
+looked exactly like a child who has. A name lights up only when it is two or more
+turns *below the class average* — comparing against the busiest child instead
+flagged five children out of eight, and a warning that lights up for most of the
+class is one you learn to ignore.
+
+### Two things measurement caught that judgement would not have
+
+**The Chorus was quietly making the game easier.** The first version paid three
+shields for a clean answer — nine a room, about twenty-three a run, twice a
+campfire Repair, handed out in the one room that cannot cost a heart. Painless
+fights went from 70% to 85%. Cutting it to one shield still left it at 78%.
+Raising the fight weight to win back the map share the new room diluted moved it
+two points, so the map mix was never the cause. Setting shields to **zero** put
+the difficulty back exactly where v6.4 had it — with seven more questions a run.
+One shield per correct answer, in a room with no risk, is worth eight points of
+painless-fight rate.
+
+**Six test suites broke, and one of them passed anyway.** Adding a room type and
+three formats broke six suites in six different ways, none of them in the game
+code: walkers that only knew how to click one kind of option simply stopped
+answering. The serious one was `test_playthrough`, which answered **zero
+questions and still reported PASS** — every assertion it had was "nothing went
+wrong", and a walk that answers nothing passes all of those perfectly. It now
+fails if it answers fewer than five, and the shared walking helpers live in
+`tools/tests/walk.py` so the next new room is one change instead of six.
 
 ---
 

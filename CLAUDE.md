@@ -54,10 +54,11 @@ never be displayed, logged, or exposed in the UI.
 | `js/stakes.js` | SAFE / RISKY / blind calls and Focus. |
 | `js/events.js` | Random events. |
 | `js/coach.js` | The first-time-only explanation cards. |
+| `js/chorus.js` | The Chorus — the whole class answers, the teacher judges. |
 | `js/music.js`, `js/audio.js` | The procedural score and sound effects. |
 | `js/announce.js` | The arena banner. |
 | `assets/sprites/` | Realm 1's cast. Later realms live in `assets/sprites/realmN/`. |
-| `tools/tests/` | Sixteen suites. See below. |
+| `tools/tests/` | Eighteen suites. See below. |
 | `tools/pipeline/` | The art pipeline: chroma key, split, downscale, palette. |
 
 **Realms 1 and 2 are built and illustrated. Realms 3–9 are locked placeholders**
@@ -91,11 +92,30 @@ python3 -m http.server 8811
 | `test_events.py` | every event option states both sides; no event cuts questions |
 | `test_perks.py` | each hero's perk does what its card promises, and none of them touches monster HP |
 | `test_curriculum.py` | every answered question reaches the teaching record, down both roads; the record never touches anything that decides how many questions get asked |
+| `test_formats.py` | every question format can be answered, reaches the record, books exactly one attempt, and still gets help from a Potion of Clarity |
+| `test_chorus.py` | a Chorus adds questions, can never cost a heart, never pays shields, and the boss demands one exactly once |
 | `test_resolution.py` | the cast is big enough to read at 1366x768 and 1920x1080 |
 | `test_art.py` | every sprite exists and fits; no realm borrows another's art; no backdrop is brighter than the heroes |
 | `shot_realm2.py` | walks Realm 2 in a browser, checks rendered sprite aspect against the art |
 | `check_content.js` | every ready realm's question bank is sound |
 | `balance_sim.js` | wipe rates by accuracy, questions per run, damage sources |
+
+**The suites each keep their own walker, and that is a standing hazard.**
+v6.5 added one room type and three question formats, and broke six suites in
+six different ways — none of them in the code under test. `test_playthrough`
+answered zero questions *and still reported PASS*, because every assertion it
+had was of the form "nothing went wrong", and a walk that answers nothing
+passes all of those perfectly. It now fails if it answers fewer than five.
+
+`tools/tests/walk.py` holds the shared `answer_any()` and `clear_rooms()`.
+**Teach a new question format to `answer_any` and a new room to `clear_rooms`,
+and check the suites that still carry their own copy** — `test_playthrough`,
+`test_curriculum`, `test_brace` and `test_announce` were left on their own
+walkers rather than rewritten at the end of a long build, and should move over
+next time one of them is touched.
+
+**Any suite whose assertions are all "nothing went wrong" needs a floor.**
+Assert that it measured something, or it will pass while testing nothing.
 
 **A flaky harness is worse than no harness.** If a test fails, reproduce it on a
 quiet machine before believing it — `test_brace.py` once failed three times

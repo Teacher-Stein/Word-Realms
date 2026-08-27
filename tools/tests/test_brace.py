@@ -33,18 +33,65 @@ def drain(p):
         else: break
 
 def answer_correct(p):
+    """Answer the question on screen correctly, whatever format it is in.
+
+    This used to click a `.choice` and nothing else. When v6.5 added spot-the-
+    error and put-it-in-order, two questions in every fifteen simply could not
+    be answered - the run stopped progressing, the Frozen debuff never cleared,
+    and this suite reported that Brace was disabled in eight scenarios out of
+    eight. Brace was fine; the walker had gone blind.
+    """
     box = p.query_selector('#enc-choices')
-    if not box or not box.is_visible(): return False
-    ans = p.evaluate("STATE.run.encounter&&STATE.run.encounter.currentQ?STATE.run.encounter.currentQ.answer:null")
-    for c in box.query_selector_all('.choice'):
-        if c.inner_text().strip() == ans:
-            try: c.click(timeout=1500); return True
-            except Exception: return False
-    return False
+    if not box or not box.is_visible():
+        return False
+    return p.evaluate("""() => {
+      const el = document.getElementById('enc-choices');
+      const m = STATE.run && STATE.run.encounter;
+      const q = m && m.currentQ;
+      const bare = w => w.replace(/[.,!?;:'"]+$/g, '');
+
+      if (q && q.format === 'error') {
+        const w = [...el.querySelectorAll('.err-word:not(.locked):not(.ruled-out)')]
+          .find(x => bare(x.textContent) === q.answer);
+        if (w) { w.click(); return true; }
+        return false;
+      }
+      if (q && q.format === 'order') {
+        let moved = false;
+        q.parts.forEach(t => {
+          const c = [...el.querySelectorAll('.order-pool .order-chip')]
+            .find(x => x.textContent === t);
+          if (c) { c.click(); moved = true; }
+        });
+        return moved;
+      }
+      // Selection formats, and the treasure/event rooms that have a question
+      // on screen but no live encounter to read the answer from.
+      const want = q ? q.answer : null;
+      const opts = [...el.querySelectorAll('.choice:not(.locked):not(.removed)')];
+      const hit = want ? opts.find(c => c.textContent.trim() === want) : opts[0];
+      if (hit) { hit.click(); return true; }
+      return false;
+    }""")
 
 def reach_fight(p, tries=80):
     for _ in range(tries):
         drain(p)
+        # The Chorus is a room this walker had never heard of, and a walker
+        # parks in a room it does not recognise until its tries run out.
+        if vis(p, '#cho-judge'):
+            try:
+                p.click('#cho-judge .pixel-btn[data-level="good"]', timeout=1000)
+                p.wait_for_timeout(350)
+            except Exception:
+                pass
+            continue
+        if vis(p, '#cho-next'):
+            try:
+                p.click('#cho-next', timeout=1000); p.wait_for_timeout(400)
+            except Exception:
+                pass
+            continue
         if vis(p, '#btn-move-on'):
             try: p.click('#btn-move-on', timeout=800); p.wait_for_timeout(350)
             except Exception: pass

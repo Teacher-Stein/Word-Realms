@@ -116,6 +116,37 @@ const CONFIG = {
   // NO DAMAGE AT ALL in 91% of fights. The monster was swinging 1.9 times a
   // fight and landing every one, and the shields ate the lot - so the whole
   // point of v6.1 was being absorbed.
+  // ---- THE CHORUS ---------------------------------------------------------
+  // The whole room answers at once and the teacher taps how it went. Its
+  // entire purpose is REVIEW VOLUME: an ordinary question is answered by one
+  // child out of twenty-four, and a Chorus question is answered by all of
+  // them. Three questions a room turns ~6 answers a run into ~144.
+  //
+  // The rewards are deliberately modest. A Chorus is safe - it cannot cost a
+  // heart - so if it paid like a fight nobody would ever walk into one again,
+  // and the map would stop being a decision.
+  CHORUS_QUESTIONS: 3,       // per Chorus room
+  CHORUS_BOSS_QUESTIONS: 2,  // the boss demands one at half health
+  // THE CHORUS PAYS NO SHIELDS. This took three measurements to get right and
+  // the answer was not the one to guess at.
+  //
+  // The first draft paid 3 shields for a clean answer - 9 a room, ~23 a run,
+  // twice a campfire Repair - and painless fights went 70% -> 85%. Cutting it
+  // to ONE shield still left it at 78%. Raising the fight weight to win back
+  // the share the new room had diluted moved it by two points, so the map mix
+  // was never the cause. Setting shields to zero put painless back to exactly
+  // 70% and the wipe rate to 69% against v6.4's 68% - difficulty untouched,
+  // with seven more questions a run.
+  //
+  // One shield per correct answer, in a room that cannot cost a heart, is
+  // worth eight points of painless-fight rate. Shields are the currency that
+  // decides whether the game is hard, and nothing that cannot be lost should
+  // hand them out. RULE THREE.
+  CHORUS_REWARD: {
+    good: { shards: 3, shields: 0 },   // nearly everyone
+    half: { shards: 2, shields: 0 },   // about half
+    poor: { shards: 1, shields: 0 },   // only a few - still paid for trying
+  },
   REST_SHIELDS: 12,          // campfire "Repair"
 
   // What the party sets out with. This is NOT the same as a Repair, and the
@@ -246,7 +277,7 @@ const CONFIG = {
   // a question that cost an evening once already, when a cached index.html
   // and a fresh config.js disagreed and the teacher menu simply stopped
   // accepting any passphrase at all.
-  VERSION: "6.4",
+  VERSION: "6.5",
 
   SAVE_KEY: "wordrealms_save_v2",
   DEFAULT_UNLOCKED: [1],

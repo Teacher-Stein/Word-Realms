@@ -542,6 +542,170 @@ textarea { resize: vertical; line-height: 1.5; }
   border-color: var(--bad); box-shadow: 0 0 18px rgba(255,84,112,.65);
   background: linear-gradient(#803949,#591626);
 }
+/* ---- who has actually had a turn --------------------------------------
+   Sits on the map screen, between rooms. Deliberately quiet: it is for the
+   teacher's glance, and it must never pull the room's eye away from the
+   question. A name is highlighted only when that child is two or more turns
+   behind the busiest - one turn of difference is just where the rotation
+   happens to be standing. */
+.turn-tally {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  justify-content: center; margin: 6px 0 2px;
+}
+.tally-chip {
+  font-size: .78rem; font-weight: 700; letter-spacing: .5px;
+  padding: 3px 8px; border-radius: 999px;
+  border: 1px solid rgba(155,124,232,.35);
+  background: rgba(12,7,20,.4); opacity: .62;
+}
+.tally-chip b { margin-left: 6px; opacity: .85; }
+.tally-chip[data-now] { opacity: 1; border-color: var(--gold); color: var(--gold); }
+.tally-chip.behind {
+  opacity: 1; border-color: #d8654f; color: #ffcfc4;
+  background: rgba(216,101,79,.14);
+}
+.tally-chip.away { opacity: .3; text-decoration: line-through; }
+
+/* ---- THE CHORUS -------------------------------------------------------
+   The whole room is reading this at once from the back of a classroom, so
+   the question and the options are larger here than anywhere else in the
+   game, and the three judge buttons are big enough to hit without looking
+   at the screen. */
+/* The card is centred in what is left below the HUD rather than sitting at
+   the top of it. Left top-aligned it floated with three hundred empty pixels
+   underneath, which reads as a screen that failed to finish loading - and this
+   is the one screen the whole room is looking at together. */
+#screen-chorus .chorus-card {
+  max-width: 1180px; width: 100%;
+  margin: auto; align-self: center;
+}
+#screen-chorus { justify-content: center; }
+/* Everyone in the room is reading this at once, including the back row, so the
+   question and its options are the largest type in the game. */
+#cho-question { font-size: clamp(1.6rem, 2.1vw, 2.4rem); line-height: 1.25; }
+.chorus-option { font-size: clamp(1.5rem, 1.9vw, 2.1rem); padding: 20px 14px; }
+.chorus-banner {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 16px; margin-bottom: 6px;
+}
+.chorus-mark {
+  font-size: 1.1rem; font-weight: 900; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--gold);
+}
+.chorus-count { opacity: .75; font-weight: 800; letter-spacing: 1px; }
+.chorus-lead { opacity: .9; margin-bottom: 14px; font-size: 1.05rem; }
+.choices.chorus-choices { gap: 12px; }
+/* Shown, never offered. There is nothing to click - every child in the room
+   is answering at once, and a clickable option would invite exactly the
+   one-student answer the Chorus exists to replace. */
+.chorus-option { cursor: default; }
+.chorus-option.correct {
+  border-color: var(--good); box-shadow: 0 0 18px rgba(99,230,160,.65);
+  background: linear-gradient(#2f6a5c,#1c4238);
+}
+.chorus-judge { margin-top: 20px; }
+.chorus-ask {
+  text-align: center; text-transform: uppercase; letter-spacing: 2px;
+  font-weight: 800; opacity: .8; margin-bottom: 10px;
+}
+.chorus-buttons { display: flex; gap: 14px; flex-wrap: wrap; }
+.chorus-buttons .pixel-btn {
+  flex: 1; min-width: 210px; font-size: 1.15rem; padding: 18px 12px;
+}
+.chorus-good { border-color: #4fbf72; }
+.chorus-half { border-color: var(--gold); }
+.chorus-poor { border-color: #d8654f; }
+.chorus-result {
+  margin-top: 18px; font-size: 1.15rem; line-height: 1.5;
+  border-left: 4px solid var(--accent); padding-left: 14px;
+}
+.chorus-result.good { border-color: #4fbf72; }
+.chorus-result.half { border-color: var(--gold); }
+.chorus-result.poor { border-color: #d8654f; }
+.chorus-pay { display: block; margin-top: 4px; color: var(--gold); font-weight: 800; }
+
+@media (max-height: 800px) {
+  .chorus-lead { margin-bottom: 8px; font-size: .95rem; }
+  .chorus-buttons .pixel-btn { padding: 13px 10px; font-size: 1rem; }
+  .chorus-judge { margin-top: 12px; }
+  .chorus-result { margin-top: 12px; font-size: 1.02rem; }
+}
+
+/* =======================================================================
+   v6.5 QUESTION FORMATS
+   Everything here has to be legible from the back of a classroom on a
+   1366x768 projector, which is why the type is large and the tap targets
+   are generous. The container keeps its .choices class in every format -
+   see the note in renderQuestion about why that matters.
+   ======================================================================= */
+
+/* ---- odd one out: four options read better as a grid than a row ------- */
+.choices.fmt-odd { display: grid; grid-template-columns: repeat(2, 1fr); }
+.choices.fmt-odd .choice { min-width: 0; }
+
+/* ---- spot the error --------------------------------------------------- */
+.choices.fmt-error { display: block; }
+.err-sentence {
+  display: flex; flex-wrap: wrap; gap: 6px 8px;
+  align-items: center; justify-content: center;
+  font-size: clamp(1.5rem, 1.9vw, 2.1rem); line-height: 1.3;
+}
+/* The words need to LOOK tappable from the back of the room. With a
+   transparent border they read as ordinary text and the class waits for
+   something to happen. */
+.err-word {
+  padding: 6px 10px; border-radius: 8px; cursor: pointer; font-weight: 800;
+  border: 3px solid rgba(155,124,232,.35); background: rgba(76,57,128,.30);
+  transition: transform .06s ease, filter .1s ease, border-color .1s ease;
+}
+.err-word:hover:not(.locked):not(.ruled-out) {
+  border-color: var(--accent-light); filter: brightness(1.25);
+  transform: translateY(-2px);
+}
+.err-word.locked { cursor: default; }
+/* Clarity greys a word that is NOT the mistake. It narrows the hunt and
+   never points at the answer. */
+.err-word.ruled-out { opacity: .3; cursor: default; }
+.err-word.correct, .err-word.reveal-correct {
+  border-color: var(--good); background: rgba(99,230,160,.22);
+}
+.err-word.incorrect {
+  border-color: var(--bad); background: rgba(255,84,112,.22);
+}
+
+/* ---- put it in order -------------------------------------------------- */
+.choices.fmt-order { display: block; }
+.order-wrap { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.order-built {
+  min-height: 62px; width: 100%;
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center;
+  border: 3px dashed var(--accent); border-radius: 10px; padding: 10px;
+  background: rgba(12,7,20,.4);
+}
+.order-empty { opacity: .5; font-size: 1.1rem; }
+.order-pool { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.order-chip {
+  padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 800;
+  font-size: clamp(1.35rem, 1.7vw, 1.9rem);
+  background: linear-gradient(#4c3980,#2f2159);
+  border: 3px solid var(--accent-light);
+  transition: transform .06s ease, filter .1s ease;
+}
+.order-chip:hover { filter: brightness(1.2); transform: translateY(-2px); }
+.order-chip.placed { cursor: default; }
+.order-chip.correct { border-color: var(--good); background: linear-gradient(#2f6a5c,#1c4238); }
+.order-chip.incorrect { border-color: var(--bad); background: linear-gradient(#803949,#591626); }
+.order-undo { align-self: center; }
+.order-undo:disabled { opacity: .35; cursor: default; }
+
+@media (max-height: 800px) {
+  /* The projector. Formats shrink rather than pushing the arena off screen. */
+  .err-sentence { font-size: clamp(1.2rem, 1.55vw, 1.6rem); }
+  .order-chip { font-size: clamp(1.1rem, 1.4vw, 1.5rem); padding: 9px 12px; }
+  .order-built { min-height: 50px; }
+  .choices.fmt-odd .choice { padding: 10px 8px; }
+}
+
 .panel-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 8px; flex-wrap: wrap; }
 /* v5.6: the narration moved into the arena (see js/announce.js). This node
    still exists and is still written to by all 46 call sites - the announcer

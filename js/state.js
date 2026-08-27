@@ -293,7 +293,7 @@ function askAnswered(q) {
 // RULE ONE SAFETY: this only ever writes to the record. It returns nothing the
 // game reads, touches no monster, no clock and no question pool, and cannot
 // change whether another question gets asked.
-function logAnswer(q, correct) {
+function logAnswer(q, correct, choralLevel) {
   if (!q) return;
   if (!_currentAsk || _currentAsk.q !== q || _currentAsk.logged) return;
   // Marked answered BEFORE the cover check, and before anything can throw. A
@@ -306,7 +306,8 @@ function logAnswer(q, correct) {
   const run = STATE.run;
   if (run) {
     if (!Array.isArray(run.answerLog)) run.answerLog = [];
-    run.answerLog.push({ cover: q.cover, correct: !!correct, tier: q.tier || 1 });
+    run.answerLog.push({ cover: q.cover, correct: !!correct, tier: q.tier || 1,
+                         choral: choralLevel || null });
     // Per-run, per-student tallies for the end-of-run celebration. The all-time
     // figures in studentStats cannot do this job - they would crown whoever has
     // attended the most lessons rather than whoever had the best afternoon.
@@ -322,6 +323,17 @@ function logAnswer(q, correct) {
   const item = rec.items[q.cover] || (rec.items[q.cover] = { asked: 0, right: 0 });
   item.asked++;
   if (correct) item.right++;
+  // A Chorus answer is worth more than an ordinary one, because it reflects the
+  // whole room rather than one child's guess - but it is still ONE attempt.
+  // Booking it as four, to "represent" twenty-four children, would be inventing
+  // data that nobody actually collected. Instead the levels are kept alongside,
+  // so the report can say "and 3 of 4 whole-class checks went well" without
+  // pretending to a precision it does not have.
+  if (choralLevel) {
+    const ch = item.choral || (item.choral = { asked: 0, good: 0, half: 0, poor: 0 });
+    ch.asked++;
+    ch[choralLevel] = (ch[choralLevel] || 0) + 1;
+  }
   item.lastSeen = Date.now();
   rec.questions++;
   rec.lastPlayed = Date.now();
@@ -476,6 +488,23 @@ function markCovered(cover) {
 // `elite` mixes in the tier-4 bank: harder questions that ask students to USE
 // the language rather than recognise it. Only Elite rooms and the Boss ever
 // pass it, so an ordinary Fight stays within reach of the whole class.
+// A Chorus needs a question the WHOLE ROOM can answer at once, on fingers or a
+// whiteboard. That rules out the formats where answering means a sequence of
+// taps: twenty-four children cannot each put four fragments in order. Selection
+// formats only.
+function drawChorusQuestion(realm) {
+  for (let tries = 0; tries < 12; tries++) {
+    const q = drawQuestion(realm);
+    if (!q) return null;
+    const fmt = q.format || "choice";
+    if (fmt === "choice" || fmt === "odd") return q;
+  }
+  // Twelve draws without a selection question means the bank is almost all
+  // sequence formats, which would be a content problem rather than a bug here.
+  // Fall back to anything rather than leaving the room with no question.
+  return drawQuestion(realm);
+}
+
 function drawQuestion(realm, elite = false) {
   const run = STATE.run;
   // A run can end between a turn being scheduled and the question being drawn

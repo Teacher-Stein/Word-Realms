@@ -51,6 +51,24 @@ with sync_playwright() as pw:
     got = False
     for _ in range(80):
         drain(p)
+        # The Chorus is a room, and a walker that does not know how to leave a
+        # room parks in it until its budget runs out. v6.5 broke four separate
+        # suites this way - each one keeps its own hand-rolled walker, so one
+        # new room type had to be taught to all of them. See the note in
+        # CLAUDE.md about giving the suites a shared walker.
+        if vis(p, '#cho-judge'):
+            try:
+                p.click('#cho-judge .pixel-btn[data-level="good"]', timeout=1000)
+                p.wait_for_timeout(350)
+            except Exception:
+                pass
+            continue
+        if vis(p, '#cho-next'):
+            try:
+                p.click('#cho-next', timeout=1000); p.wait_for_timeout(400)
+            except Exception:
+                pass
+            continue
         if vis(p, '#btn-move-on'):
             try: p.click('#btn-move-on', timeout=800); p.wait_for_timeout(350)
             except Exception: pass

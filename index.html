@@ -290,6 +290,10 @@
         <span class="student-name" id="map-student">—</span>
         <button id="btn-reroll" class="pixel-btn tiny">Reroll (absent)</button>
       </div>
+      <!-- Who has actually had a turn. With Reroll, absences and the
+           Distracted button, the rotation can drift badly toward the confident
+           few, and nothing in the game showed it. -->
+      <div class="turn-tally" id="turn-tally"></div>
       <div class="turn-hint" id="turn-hint">Pick a glowing room to enter</div>
       <div class="map-footer">
         <button id="btn-inventory" class="pixel-btn tiny">Inventory</button>
@@ -389,6 +393,59 @@
         <button id="btn-use-item" class="pixel-btn tiny" style="display:none;">Use an Item</button>
         <button id="btn-brace" class="pixel-btn tiny brace">Brace</button>
         <button id="btn-teamup" class="pixel-btn tiny teamup">Team Up (+1 monster HP)</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== THE CHORUS =====================
+       The whole class answers at once - fingers, whiteboards, hands - and the
+       teacher taps how it went. Its own screen rather than the fight screen,
+       because none of the fight's furniture applies: there is no monster to
+       Brace against, no stake to take, and the options are shown to be read by
+       the room rather than clicked by one child. -->
+  <section id="screen-chorus" class="screen">
+    <div class="hud-top">
+      <div class="hud-block hud-left">
+        <div class="portrait" id="cho-portrait"><img alt=""></div>
+        <div class="hud-ident">
+          <div class="hero-title" id="cho-hero-name">—</div>
+          <div class="party-title" id="cho-party-name">—</div>
+          <div class="hearts" id="cho-hearts"></div>
+        </div>
+      </div>
+      <div class="hud-block hud-mid">
+        <div class="realm-name" id="cho-realm-name"></div>
+        <div class="relic-strip" id="cho-relic-strip"></div>
+      </div>
+      <div class="hud-block currency">
+        <span class="badge"><span class="icon-shard"></span><span id="cho-shards">0</span></span>
+        <span class="badge ember"><span class="icon-ember"></span><span id="cho-ember">0</span></span>
+        <div class="potion-row" id="cho-potions"></div>
+      </div>
+    </div>
+
+    <div class="panel-card chorus-card">
+      <div class="chorus-banner">
+        <span class="chorus-mark">THE CHORUS</span>
+        <span class="chorus-count" id="cho-progress"></span>
+      </div>
+      <div class="chorus-lead" id="cho-lead">Everyone answers this one.</div>
+      <div class="enc-question" id="cho-question"></div>
+      <div class="choices" id="cho-choices"></div>
+
+      <div class="chorus-judge" id="cho-judge">
+        <div class="chorus-ask">How did the room do?</div>
+        <div class="chorus-buttons">
+          <button class="pixel-btn chorus-good" data-level="good">Nearly everyone</button>
+          <button class="pixel-btn chorus-half" data-level="half">About half</button>
+          <button class="pixel-btn chorus-poor" data-level="poor">Only a few</button>
+        </div>
+      </div>
+
+      <div class="chorus-result" id="cho-result"></div>
+      <div class="panel-foot">
+        <div class="enc-feedback" id="cho-feedback"></div>
+        <button id="cho-next" class="pixel-btn" style="display:none;">Move on</button>
       </div>
     </div>
   </section>
@@ -578,6 +635,7 @@
 <script src="js/stakes.js"></script>
 <script src="js/events.js"></script>
 <script src="js/coach.js"></script>
+<script src="js/chorus.js"></script>
 <script src="js/content.js"></script>
 <script src="js/mapgen.js"></script>
 <script src="js/combat.js"></script>

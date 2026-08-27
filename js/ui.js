@@ -10,12 +10,14 @@ const NODE_ART = {
   rest:     "assets/nodes/node_rest.png",
   treasure: "assets/nodes/node_treasure.png",
   safe:     "assets/nodes/node_safe.png",
+  chorus:   "assets/nodes/node_chorus.png",
   shop:     "assets/nodes/node_shop.png",
   boss:     "assets/nodes/node_boss.png",
 };
 const NODE_LABEL = {
   start: "Entrance", fight: "Fight", elite: "Elite", event: "Event",
-  rest: "Campfire", treasure: "Treasure", safe: "Safe Path", shop: "Shop", boss: "BOSS",
+  rest: "Campfire", treasure: "Treasure", safe: "Safe Path", shop: "Shop",
+  chorus: "Chorus", boss: "BOSS",
 };
 
 // map layout constants
@@ -582,6 +584,11 @@ function renderMap() {
   const run = STATE.run;
   const canvas = document.getElementById("map-canvas");
   canvas.innerHTML = "";
+  // Hung off renderMap rather than added at the five places that call it. The
+  // sixth call site is the one that forgets, and a tally that silently stops
+  // updating is worse than no tally - it would say a child had had four turns
+  // long after they had had nine.
+  renderTurnTally();
 
   const geo = mapLayout(run.map);
   MAP_GEO = geo;
@@ -843,6 +850,52 @@ function renderRelicStrip(prefix) {
       <b>${escapeHtml(item.name)}</b>${escapeHtml(item.effect || "")}</span>`;
     el.appendChild(d);
   });
+}
+
+// Who has answered how many times this run.
+//
+// The game rotates turns from a shuffled queue, so in theory everyone gets an
+// even share. In practice Reroll, absences and the Distracted button all move
+// turns around, and a class of twenty-four hides the drift completely: a child
+// who has not been asked anything in twenty minutes looks exactly like a child
+// who has. Nothing in the game showed it, so nobody could act on it.
+//
+// This is deliberately on the MAP screen and not in a fight - it is for the
+// gap between rooms, when a teacher has a second to look, and it must never
+// compete with the question for attention.
+function renderTurnTally() {
+  const el = document.getElementById("turn-tally");
+  if (!el) return;
+  const run = STATE.run, roster = STATE.roster;
+  if (!run || !roster || !roster.students.length) { el.innerHTML = ""; return; }
+
+  const sr = run.studentRun || {};
+  const turns = n => {
+    const s = sr[n];
+    return s ? (s.correct || 0) + (s.wrong || 0) : 0;
+  };
+  const present = roster.students.filter(n => !(run.absent || []).includes(n));
+  const counts = present.map(turns);
+  const total = counts.reduce((a, b) => a + b, 0);
+  // Nothing to say before the class has played enough for a gap to be real.
+  if (total < present.length) { el.innerHTML = ""; return; }
+
+  // Compared against the AVERAGE, not the busiest child.
+  //
+  // Measuring against the maximum flagged five children out of eight on the
+  // first test - one child had a lucky run of turns and everybody else was
+  // suddenly "behind". That is noise, and a warning that lights up for most of
+  // the class is a warning a teacher learns to ignore. Two turns below average
+  // picks out the two who have genuinely been missed and leaves the rest alone.
+  const avg = total / Math.max(1, present.length);
+  el.innerHTML = roster.students.map(n => {
+    const t = turns(n);
+    const absent = (run.absent || []).includes(n);
+    const behind = !absent && t <= avg - 2;
+    return `<span class="tally-chip${behind ? " behind" : ""}` +
+           `${absent ? " away" : ""}"${run.currentStudent === n ? ' data-now="1"' : ""}>` +
+           `${escapeHtml(n)}<b>${absent ? "—" : t}</b></span>`;
+  }).join("");
 }
 
 function renderStudentChips() {

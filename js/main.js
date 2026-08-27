@@ -576,6 +576,7 @@ window.travelToNode = function (nodeId) {
         case "rest":     enterRest();       break;
         case "treasure": enterTreasure();   break;
         case "safe":     enterSafe();       break;
+        case "chorus":   enterChorusRoom(); break;
         case "shop":     enterShop(nodeId);  break;
         case "boss":     startBoss();       break;
         default:         backToMap(false);
@@ -882,6 +883,53 @@ function flashScreen() {
 }
 
 // ===================== SHARED QUESTION RENDERER =====================
+//
+// v6.5 added four more ways to ask a question. Every one of them renders into
+// the SAME container - `#{side}-choices` - and that is not a stylistic choice.
+// The stake gate hides that element to make a blind call, clearStakeUI shows it
+// again, and the Potion of Clarity reaches into it. A format that drew itself
+// anywhere else would work perfectly until the first time a class pressed
+// RISKY, and then the question would still be sitting on screen behind a gate
+// that thought it had hidden it.
+//
+// The formats:
+//
+//   (none) / "choice"  three options, the original
+//   "odd"              four options in a grid - pick the one that fits worst
+//   "error"            a sentence, one word wrong; tap the wrong word
+//   "order"            fragments; tap them into the right order
+//
+// A fifth, match-the-pairs, was built and then cut. Three pairs need six rows
+// of text, and on a 1366x768 projector that pushed the arena down until the
+// monster was a thumbnail - Stein spotted it in the first screenshot. The
+// question panel and the corridor share one screen, so any format has to earn
+// its height, and pairs did not.
+//
+// None of them can hide the correct answer, which is RULE TWO. Ordering shows
+// every fragment from the start; spot-the-error shows the whole sentence;
+// odd-one-out is an ordinary selection. And none of them changes how
+// many questions get asked, which is RULE ONE - one question is still one
+// answer however many taps it took to give it.
+//
+// All four are `open: false`, so RISKY on them raises the stakes without going
+// blind. "Say the sentence out loud with nothing on screen" is a fine idea for
+// ordering, but the clue would have to list the fragments to be answerable,
+// which defeats the format.
+
+// Everything that must happen exactly once when a question is answered, no
+// matter which format answered it. Formats differ in how the class chooses;
+// they must not differ in what answering MEANS.
+function finishAnswer(q, ids, onAnswer, correct, message) {
+  if (askAnswered(q)) return;
+  const fb = $(ids.feedback);
+  fb.textContent = message;
+  fb.className = "enc-feedback " + (correct ? "good" : "bad");
+  // Recorded BEFORE the game reacts, so an answer still counts toward the
+  // teaching record even if resolving it ends the run.
+  logAnswer(q, correct);
+  onAnswer(correct);
+}
+
 function renderQuestion(q, ids, onAnswer) {
   // Every question in the game funnels through here, so this is the one place
   // that can guarantee the answers are actually visible. A Commit hides them,
@@ -901,35 +949,73 @@ function renderQuestion(q, ids, onAnswer) {
     `<span class="q-type">${q.type}</span>${escapeHtml(q.clue)}`;
   const choicesEl = $(ids.choices);
   choicesEl.innerHTML = "";
+  // The `choices` class MUST survive this. The stake gate hides the options
+  // for a blind call with `classList.add("hidden")`, and the rule that makes
+  // that work is `.choices.hidden { display: none }`. Writing className
+  // wholesale without `choices` in it left the element visible through the
+  // gate - which would have shown the class the options during a blind call,
+  // breaking RULE TWO in the one place the rule exists to protect.
+  choicesEl.className = "choices fmt-" + (q.format || "choice");
   $(ids.feedback).textContent = "";
   $(ids.feedback).className = "enc-feedback";
 
-  // Grey out one WRONG option before anyone answers. Two things can do this:
-  // the Potion of Clarity, and the Echo Shard relic, which fires itself once
-  // per run on the first grammar question. Neither ever touches the correct
-  // answer - removing a wrong option helps, it never punishes knowing.
+  // Give ONE piece of help before anyone answers. Two things can do this: the
+  // Potion of Clarity, and the Echo Shard relic, which fires itself once per
+  // run on the first grammar question. Neither ever touches the correct answer
+  // - helping is fine, punishing someone who knew it is not.
+  //
   // These are consumed HERE, at render time - and askFightQuestion renders the
   // question once before the stake gate hides it, then again when the class
   // picks SAFE. That first render is invisible, so a Potion of Clarity and the
   // once-per-run Echo Shard were both being eaten with nothing on screen.
   // Skip the consumption entirely while the choices are about to be hidden.
-  let trimmed = null, trimSource = "";
-  if (gated) {
-    // fall through with no trim; the real render will do it
-  } else if (STATE.run && STATE.run.clarityActive) {
+  //
+  // v6.5: what "help" MEANS now depends on the format. On a format with no
+  // options to remove, the old code would have found nothing to trim and the
+  // potion would have been eaten for nothing - silently, which is exactly the
+  // shape of bug this project keeps finding six versions late. Every format
+  // owns a hint of its own instead.
+  let helper = "";
+  if (!gated && STATE.run && STATE.run.clarityActive) {
+    helper = "Potion of Clarity";
+    STATE.run.clarityActive = false;
+    saveState();
+  } else if (!gated && STATE.run && q.tier === 3 && !STATE.run.usedEcho &&
+             hasRelic("echo_shard")) {
+    helper = "Echo Shard";
+    STATE.run.usedEcho = true;
+    saveState();
+  }
+
+  const done = (correct, message) =>
+    finishAnswer(q, ids, onAnswer, correct, message);
+
+  switch (q.format) {
+    case "error": renderErrorQuestion(q, choicesEl, ids, done, helper); break;
+    case "order": renderOrderQuestion(q, choicesEl, ids, done, helper); break;
+    default:      renderChoiceQuestion(q, choicesEl, ids, done, helper); break;
+  }
+
+  // The question panel and the corridor share the screen, so a long question
+  // with four long options shortens the corridor. Re-fit the foe now that the
+  // panel's real height is known, or a tall monster is cut off at the top.
+  refitCurrentStage();
+  requestAnimationFrame(refitCurrentStage);
+}
+
+function helperNote(ids, helper, what) {
+  if (!helper) return;
+  const fb = $(ids.feedback);
+  fb.textContent = `${helper} ${what}`;
+  fb.className = "enc-feedback good";
+}
+
+// ---- three (or four) options: the original, and odd-one-out ----------------
+function renderChoiceQuestion(q, choicesEl, ids, done, helper) {
+  let trimmed = null;
+  if (helper) {
     const wrongs = q.choices.filter(c => c !== q.answer);
     if (wrongs.length) trimmed = pick(wrongs);
-    STATE.run.clarityActive = false;
-    trimSource = "Potion of Clarity";
-    saveState();
-  } else if (STATE.run && q.tier === 3 && !STATE.run.usedEcho && hasRelic("echo_shard")) {
-    const wrongs = q.choices.filter(c => c !== q.answer);
-    if (wrongs.length) {
-      trimmed = pick(wrongs);
-      STATE.run.usedEcho = true;
-      trimSource = "Echo Shard";
-      saveState();
-    }
   }
 
   shuffle(q.choices).forEach(opt => {
@@ -947,9 +1033,6 @@ function renderQuestion(q, ids, onAnswer) {
       // question, and it would have counted twice in run.stats and hit the
       // monster twice. test_curriculum.py found this by driving a click the
       // way a script can and a child cannot.
-      //
-      // askAnswered() is the same bookkeeping the teaching record uses, so the
-      // two can never disagree about whether a question has been answered.
       if (askAnswered(q)) return;
       choicesEl.querySelectorAll(".choice").forEach(c => c.classList.add("locked"));
       const correct = opt === q.answer;
@@ -959,26 +1042,144 @@ function renderQuestion(q, ids, onAnswer) {
           if (c.textContent === q.answer) c.classList.add("reveal-correct");
         });
       }
-      const fb = $(ids.feedback);
-      fb.textContent = correct ? "Correct!" : `Not quite — the answer was "${q.answer}".`;
-      fb.className = "enc-feedback " + (correct ? "good" : "bad");
-      // Recorded BEFORE the game reacts, so an answer still counts toward the
-      // teaching record even if resolving it ends the run.
-      logAnswer(q, correct);
-      onAnswer(correct);
+      done(correct, correct ? "Correct!"
+                            : `Not quite — the answer was "${q.answer}".`);
     });
     choicesEl.appendChild(div);
   });
-  if (trimmed) {
-    const fb = $(ids.feedback);
-    fb.textContent = `${trimSource} removed a wrong answer!`;
-    fb.className = "enc-feedback good";
+  if (trimmed) helperNote(ids, helper, "removed a wrong answer!");
+}
+
+// ---- spot the error --------------------------------------------------------
+// The sentence is shown in full and every word is tappable. Nothing is hidden,
+// so a student who can see the mistake can always point at it.
+function renderErrorQuestion(q, choicesEl, ids, done, helper) {
+  const words = String(q.sentence).split(/\s+/).filter(Boolean);
+  const bare = w => w.replace(/[.,!?;:'"]+$/g, "");
+
+  // Clarity here greys out a word that is NOT the mistake, which narrows the
+  // hunt without ever pointing at the answer.
+  let safe = null;
+  if (helper) {
+    const others = words.filter(w => bare(w) !== q.answer && bare(w).length > 2);
+    if (others.length) safe = pick(others);
   }
-  // The question panel and the corridor share the screen, so a long question
-  // with four long options shortens the corridor. Re-fit the foe now that the
-  // panel's real height is known, or a tall monster is cut off at the top.
-  refitCurrentStage();
-  requestAnimationFrame(refitCurrentStage);
+
+  const line = document.createElement("div");
+  line.className = "err-sentence";
+  words.forEach(w => {
+    const chip = document.createElement("span");
+    chip.className = "err-word" + (w === safe ? " ruled-out" : "");
+    chip.textContent = w;
+    chip.addEventListener("click", () => {
+      if (askAnswered(q) || chip.classList.contains("ruled-out")) return;
+      line.querySelectorAll(".err-word").forEach(c => c.classList.add("locked"));
+      const correct = bare(w) === q.answer;
+      chip.classList.add(correct ? "correct" : "incorrect");
+      if (!correct) {
+        line.querySelectorAll(".err-word").forEach(c => {
+          if (bare(c.textContent) === q.answer) c.classList.add("reveal-correct");
+        });
+      }
+      done(correct,
+           correct ? `Yes — "${q.answer}" is wrong. It should be "${q.fix}".`
+                   : `Not that one — "${q.answer}" is the mistake. It should be "${q.fix}".`);
+    });
+    line.appendChild(chip);
+  });
+  choicesEl.appendChild(line);
+  if (safe) helperNote(ids, helper, "ruled out a word that is fine.");
+}
+
+// ---- put it in order -------------------------------------------------------
+// Fragments are laid out shuffled; tapping one moves it into the sentence being
+// built. The class can take back the last piece, once, because a misclick on a
+// classroom TV should not cost a heart - but they cannot fiddle indefinitely,
+// which would turn one question into a two-minute puzzle.
+function renderOrderQuestion(q, choicesEl, ids, done, helper) {
+  const parts = q.parts.slice();
+  const built = [];
+
+  const wrap = document.createElement("div");
+  wrap.className = "order-wrap";
+  const slot = document.createElement("div");
+  slot.className = "order-built";
+  const pool = document.createElement("div");
+  pool.className = "order-pool";
+  const undo = document.createElement("button");
+  undo.className = "pixel-btn small ghost order-undo";
+  undo.textContent = "Take back the last piece";
+  undo.disabled = true;
+  wrap.appendChild(slot); wrap.appendChild(pool); wrap.appendChild(undo);
+  choicesEl.appendChild(wrap);
+
+  // Clarity places the FIRST fragment for them. It is the hardest one to be
+  // sure of and it never hides anything.
+  const freebie = helper ? parts[0] : null;
+
+  const draw = () => {
+    slot.innerHTML = "";
+    built.forEach(t => {
+      const c = document.createElement("span");
+      c.className = "order-chip placed";
+      c.textContent = t;
+      slot.appendChild(c);
+    });
+    if (!built.length) {
+      const hint = document.createElement("span");
+      hint.className = "order-empty";
+      hint.textContent = "Tap the pieces in order…";
+      slot.appendChild(hint);
+    }
+    undo.disabled = built.length === 0 || askAnswered(q);
+  };
+
+  const place = (t, chip) => {
+    if (askAnswered(q)) return;
+    built.push(t);
+    chip.remove();
+    draw();
+    if (!pool.querySelector(".order-chip")) judge();
+  };
+
+  const judge = () => {
+    const correct = built.join(" ") === q.parts.join(" ");
+    slot.querySelectorAll(".order-chip").forEach((c, i) => {
+      c.classList.add(built[i] === q.parts[i] ? "correct" : "incorrect");
+    });
+    undo.disabled = true;
+    done(correct, correct ? "Correct!"
+                          : `Not quite — it should be "${q.parts.join(" ")}".`);
+  };
+
+  shuffle(parts).forEach(t => {
+    const chip = document.createElement("span");
+    chip.className = "order-chip";
+    chip.textContent = t;
+    chip.addEventListener("click", () => place(t, chip));
+    pool.appendChild(chip);
+  });
+
+  undo.addEventListener("click", () => {
+    if (!built.length || askAnswered(q)) return;
+    const t = built.pop();
+    const chip = document.createElement("span");
+    chip.className = "order-chip";
+    chip.textContent = t;
+    chip.addEventListener("click", () => place(t, chip));
+    pool.appendChild(chip);
+    draw();
+  });
+
+  draw();
+  if (freebie) {
+    const chip = [...pool.querySelectorAll(".order-chip")]
+      .find(c => c.textContent === freebie);
+    if (chip) {
+      place(freebie, chip);
+      helperNote(ids, helper, "placed the first piece for you.");
+    }
+  }
 }
 
 // ===================== FIGHT / ELITE =====================
@@ -2546,6 +2747,31 @@ function askBossQuestion() {
   if (!run || !realm) return;
   const m = run.boss;
   if (!m) return;
+
+  // THE BOSS CHORUS.
+  //
+  // Once, when the boss is down to half, it stops asking one child and demands
+  // the whole room. It fires here rather than in the damage code because this
+  // is the moment a question is about to be asked, so the Chorus can simply
+  // take that turn and hand it back afterwards.
+  //
+  // RULE ONE: this ADDS questions. The boss's health is untouched, so the same
+  // number of correct answers is still needed to finish it - the Chorus is two
+  // extra questions on top, not two of the boss's own.
+  if (!m.chorusDone && m.maxHp && m.hp <= Math.ceil(m.maxHp / 2)) {
+    m.chorusDone = true;
+    saveState();
+    startChorus(CONFIG.CHORUS_BOSS_QUESTIONS, () => {
+      showScreen("screen-boss");
+      MUSIC.play("boss");
+      askBossQuestion();
+    }, {
+      boss: true,
+      lead: `${m.name} turns on the whole room. Everyone answers this one.`,
+    });
+    return;
+  }
+
   const cover = m.queue[m.index % m.queue.length];
   // the boss asks the hard version of a curriculum item wherever one exists
   const options = questionsForCover(cover, true);
@@ -2692,6 +2918,13 @@ on("btn-result-menu", "click", () => {
   SFX.click(); MUSIC.stop(); showScreen("screen-menu"); renderMenu();
 });
 
+on("cho-next", "click", () => {
+  SFX.click();
+  if (!CHORUS) return;
+  if (CHORUS.asked >= CHORUS.total) finishChorus();
+  else nextChorusQuestion();
+});
+
 on("popup-continue", "click", () => { SFX.click(); closePopup(); });
 
 bootstrap();
@@ -2713,7 +2946,8 @@ function checkMarkup() {
   // ids that must exist for the game to be usable at all
   const REQUIRED = ["pin-input", "pin-submit", "btn-teacher", "enc-choices",
                     "btn-distracted", "newpin-save", "hud-potions",
-                    "tab-curriculum", "btn-curriculum"];
+                    "tab-curriculum", "btn-curriculum",
+                    "cho-choices", "cho-judge", "cho-next"];
   const missing = REQUIRED.filter(id => !document.getElementById(id));
   const staleScript = typeof SHA256 === "undefined";
   const staleConfig = !CONFIG.TEACHER_PIN_SHA256;
