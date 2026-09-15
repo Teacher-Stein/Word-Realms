@@ -18,7 +18,8 @@ Then:
     python3 tools/tests/test_stale_deploy.py  # a half-updated upload must not brick the game
     python3 tools/tests/shot_realm2.py        # Realm 2's art in a real browser
     node    tools/tests/check_content.js      # every realm's question bank is sound
-    node    tools/tests/balance_sim.js        # wipe rates, questions per run
+    python3 tools/tests/test_stakes.py        # SAFE/RISKY do what the button promises
+    node    tools/tests/balance_sim.js        # wipe rates, questions per LESSON, boss growth
 
 ## What each one is guarding
 
@@ -40,11 +41,40 @@ harness had ever pressed the button. If you add a mechanic, add the test that
 presses it — a suite that only exercises the happy path will pass forever
 while a feature does nothing at all.
 
+**test_stakes.py** is the v6.7 suite. RISKY deals 2 and SAFE deals 1 — checked
+in a real fight, not just against the functions — the wrong-answer penalty is
+flat rather than a multiple of the question's tier, the gate charges exactly the
+number it promised at every tier and with a debuff running, shields still absorb
+it, and every answer records how it was staked.
+
+Two of its checks are worth understanding before you edit it. It counts killing
+blows as well as survived hits, because 2 damage into a 4-HP monster lands the
+kill often enough that dropping them threw away most of the RISKY sample and
+made the suite fail for want of evidence. And it chooses the stake in one loop
+iteration and answers in the next: doing both in one pass meant that if the
+question had not finished rendering, the walker fell through, found nothing to
+click, and stalled for the rest of its budget — reporting zero answers rather
+than a timing problem.
+
 **balance_sim.js** runs 2,500 simulated runs per configuration against the real
 `config.js`, `content.js` and `mapgen.js`. It reports wipe rate by accuracy,
-questions per run, and what share of damage comes from wrong answers rather
-than the monster's clock. Change a number in `config.js` and run this before
-believing the change is an improvement.
+questions per **lesson**, how big the boss grew, and what share of damage comes
+from wrong answers rather than the monster's clock. Change a number in
+`config.js` and run this before believing the change is an improvement.
+
+Read the questions-per-lesson column, not questions per run. The run is the
+wrong denominator — see Rule 1 in `CLAUDE.md`. The lesson model rests on an
+estimate of ~61 seconds per question which has not yet been checked with a
+stopwatch in a real classroom; if that number turns out to be wrong, every
+conclusion the first table draws moves with it.
+
+Two bugs it shipped with, both fixed in v6.7 and both worth knowing because they
+are the shape of thing that makes a simulator worse than useless: it pooled
+*both* realms' curriculum keys, which pinned the boss at its maximum in every
+scenario and hid boss growth entirely; and it did not count the boss's own
+questions as covering anything, which understated distinct curriculum items in
+exactly the scenarios where the boss matters most. Anything in here that is not
+read from the real config or the real content is a bug waiting to happen.
 
 Note that it excludes relics, potions and shop purchases, so it reads harsher
 than the real game. Use it for comparing configurations, not for predicting

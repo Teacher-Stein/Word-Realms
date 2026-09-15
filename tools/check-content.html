@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Word Realms — check your questions</title>
+<!--
+  CHECK YOUR QUESTIONS — no installing anything.
+
+  Open this file the same way you open the game: double-click it.
+
+  It reads js/content.js and runs every check the game's own build process runs.
+  The rules live in tools/content-rules.js and are shared with the terminal
+  version, so this page and a developer's command line always agree.
+
+  This exists because the single most useful safety net when writing a hundred
+  questions is the one that needs no installation. The terminal checker needs
+  Node.js; a school computer will not have it, and a teacher should not have to
+  care.
+-->
+<style>
+  :root {
+    --bg:#0c0714; --card:#1a1230; --line:#3a2a63; --text:#efe9ff;
+    --gold:#d4a02a; --good:#63e6a0; --bad:#ff5470; --dim:#a99cc9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; padding:32px 20px; background:var(--bg); color:var(--text);
+    font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  main { max-width: 900px; margin: 0 auto; }
+  h1 { font-size:1.6rem; margin:0 0 4px; color:var(--gold); letter-spacing:.5px; }
+  .sub { color:var(--dim); margin:0 0 24px; }
+  .verdict {
+    border-radius:12px; padding:20px 22px; margin-bottom:22px;
+    border:3px solid var(--line); background:var(--card);
+  }
+  .verdict.pass { border-color:var(--good); }
+  .verdict.fail { border-color:var(--bad); }
+  .verdict h2 { margin:0 0 6px; font-size:1.5rem; }
+  .verdict.pass h2 { color:var(--good); }
+  .verdict.fail h2 { color:var(--bad); }
+  .verdict p { margin:0; color:var(--dim); }
+  section { background:var(--card); border:2px solid var(--line);
+            border-radius:12px; padding:18px 22px; margin-bottom:18px; }
+  section h3 { margin:0 0 12px; font-size:1.05rem; letter-spacing:1.5px;
+               text-transform:uppercase; color:var(--gold); }
+  ol, ul { margin:0; padding-left:22px; }
+  li { margin-bottom:10px; }
+  .stats { font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+           font-size:.92rem; white-space:pre-wrap; color:var(--dim); margin:0; }
+  code { background:#0c0714; padding:2px 6px; border-radius:4px;
+         font-size:.9em; color:var(--gold); }
+  .hint { color:var(--dim); font-size:.92rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Check your questions</h1>
+  <p class="sub">Reads <code>js/content.js</code> and looks for the mistakes that
+     are easy to make and hard to spot. Nothing is changed — this only reads.</p>
+  <div id="out"></div>
+</main>
+
+<!-- The game's own files. Loading them is the whole trick: whatever the game
+     will read is exactly what gets checked. -->
+<script src="../js/config.js"></script>
+<script src="../js/content.js"></script>
+<script src="content-rules.js"></script>
+<script>
+(function () {
+  const out = document.getElementById("out");
+  const esc = s => String(s).replace(/[&<>]/g, c =>
+    ({ "&":"&amp;", "<":"&lt;", ">":"&gt;" }[c]));
+
+  let res;
+  try {
+    res = checkContent(REALMS, CONFIG);
+  } catch (e) {
+    // A syntax error in content.js stops the script tag above from running at
+    // all, so REALMS is undefined and we land here. That IS the most common
+    // failure while writing questions - a missing comma or bracket - and it
+    // deserves the clearest message on the page rather than a blank screen.
+    out.innerHTML =
+      '<div class="verdict fail"><h2>Your questions file could not be read</h2>' +
+      '<p>There is a typing mistake in <code>js/content.js</code> — almost ' +
+      'always a missing comma, quote or bracket. The game will not start ' +
+      'either until it is fixed.</p></div>' +
+      '<section><h3>What the browser said</h3><p class="stats">' +
+      esc(e && e.message ? e.message : e) + '</p>' +
+      '<p class="hint">Press F12 and open the Console tab — it names the line ' +
+      'number. Paste that line, and the error, to your AI assistant and it will ' +
+      'find it in seconds.</p></section>';
+    return;
+  }
+
+  const ok = res.problems.length === 0;
+  let html =
+    '<div class="verdict ' + (ok ? 'pass' : 'fail') + '">' +
+    '<h2>' + (ok ? 'All clear' : res.problems.length +
+      (res.problems.length === 1 ? ' problem to fix' : ' problems to fix')) +
+    '</h2><p>' + (ok
+      ? 'Every question is well formed. Reload the game and play it.'
+      : 'The game will still run — these are content problems, not crashes — ' +
+        'but each one will show up in a lesson.') +
+    '</p></div>';
+
+  if (!ok) {
+    html += '<section><h3>Fix these</h3><ol>' +
+      res.problems.map(p => '<li>' + esc(p) + '</li>').join('') +
+      '</ol><p class="hint">Every one of these names the realm and the ' +
+      'curriculum key, so you can search <code>js/content.js</code> for it.</p>' +
+      '</section>';
+  }
+
+  html += '<section><h3>Your banks</h3><p class="stats">' +
+    res.notes.map(esc).join('\n') + '</p></section>';
+
+  html += '<section><h3>What this does not check</h3><ul>' +
+    '<li>Whether a question is <em>right</em>. Nothing can check that but you.</li>' +
+    '<li>Whether the English is natural for your year group.</li>' +
+    '<li>Whether a question matches the curriculum key it is filed under.</li>' +
+    '</ul><p class="hint">Read a dozen of your own questions aloud before a ' +
+    'lesson. It catches more than any checker.</p></section>';
+
+  out.innerHTML = html;
+})();
+</script>
+</body>
+</html>

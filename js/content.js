@@ -913,7 +913,7 @@ const REALM2_QUESTIONS = [
 
   { cover:"copy", tier:1, type:"vocab", open:true, clue:"To do exactly the same thing as somebody or something else.",
     answer:"copy", choices:["copy","hunt","escape"] },
-  { cover:"copy", tier:2, type:"vocab", open:true, clue:"Complete it: 'Baby birds learn their song by ___ing the adults around them.'",
+  { cover:"copy", tier:2, type:"vocab", open:false, clue:"Complete it: 'Baby birds learn their song by ___ing the adults around them.'",
     answer:"copy", choices:["copy","frighten","defend"] },
 
   { cover:"frighten", tier:1, type:"vocab", open:true, clue:"To make another creature feel afraid.",
@@ -933,7 +933,7 @@ const REALM2_QUESTIONS = [
 
   { cover:"imitate", tier:1, type:"vocab", open:true, clue:"To copy the way something else looks, sounds or behaves.",
     answer:"imitate", choices:["imitate","frighten","defend"] },
-  { cover:"imitate", tier:2, type:"vocab", open:true, clue:"Complete it: 'Some harmless snakes ___ the bright colours of poisonous ones.'",
+  { cover:"imitate", tier:2, type:"vocab", open:false, clue:"Complete it: 'Some harmless snakes ___ the bright colours of poisonous ones.'",
     answer:"imitate", choices:["imitate","avoid","hunt"] },
   { cover:"imitate", tier:3, type:"grammar", open:false, clue:"Choose the correct sentence:",
     answer:"The bird imitates the sound of a car alarm.",
@@ -1022,7 +1022,7 @@ const REALM2_QUESTIONS = [
   { cover:"camouflage", tier:1, type:"vocab", open:false, clue:"Which of these animals is using camouflage?",
     answer:"a brown gecko resting on a brown wall", choices:["a brown gecko resting on a brown wall", "a red frog sitting on a green leaf", "a parrot singing on an open branch"] },
   { cover:"characteristic", tier:1, type:"vocab", open:false, clue:"Which of these is a characteristic of a bird?",
-    answer:"it has feathers", choices:["it has feathers", "it lives near my school", "it wakes up early"] },
+    answer:"it has feathers", choices:["it has feathers", "it lives near my school", "it belongs to my neighbour"] },
   { cover:"characteristic", tier:2, type:"vocab", open:true, clue:"Complete it: 'Sharp claws are a useful ___ for a cat that climbs trees.'",
     answer:"characteristic", choices:["characteristic", "camouflage", "predator"] },
   { cover:"copy", tier:1, type:"vocab", open:false, clue:"Which of these is an example of one animal copying another?",
@@ -1163,7 +1163,7 @@ const REALM2_GRAMMAR = [
   { cover:"imitation_talk", tier:3, type:"function", open:true, clue:"Why would a harmless animal copy a poisonous one? Because predators will ___ it.",
     answer:"avoid", choices:["avoid","attack","hunt"] },
 
-  { cover:"classification", tier:2, type:"function", open:true, clue:"In classification writing you sort animals into ___ — groups of the same kind.",
+  { cover:"classification", tier:2, type:"function", open:false, clue:"In classification writing you sort animals into ___ — groups of the same kind.",
     answer:"species", choices:["species","stripes","prey"] },
   { cover:"classification", tier:3, type:"function", open:false, clue:"Which sentence belongs in a classification text?",
     answer:"Insects can be divided into several groups.",
@@ -1195,13 +1195,13 @@ const REALM2_GRAMMAR = [
     answer:"hid", choices:["hid", "hided", "hides"] },
   { cover:"hunt", tier:2, type:"grammar", open:true, clue:"Put it in the past: 'The young lion ___ with its mother for the first time.'",
     answer:"hunted", choices:["hunted", "hunt", "hunting"] },
-  { cover:"imitate", tier:2, type:"grammar", open:true, clue:"Put it in the past: 'The clever bird ___ the ringtone of my phone all morning.'",
+  { cover:"imitate", tier:2, type:"grammar", open:false, clue:"Put it in the past: 'The clever bird ___ the ringtone of my phone all morning.'",
     answer:"imitated", choices:["imitated", "imitate", "imitating"] },
   { cover:"insect", tier:2, type:"grammar", open:true, clue:"Complete it with the plural: 'We counted five different ___ on one flower.'",
     answer:"insects", choices:["insects", "insect", "insectes"] },
   { cover:"predator", tier:2, type:"grammar", open:true, clue:"Complete it with the plural: 'Snakes and eagles are both ___ of small mice.'",
     answer:"predators", choices:["predators", "predator", "prey"] },
-  { cover:"as_as_equal", tier:2, type:"grammar", open:true, clue:"Finish it with as ... as: 'A young buffalo is already ___ ___ ___ a grown man.'",
+  { cover:"as_as_equal", tier:2, type:"grammar", open:false, clue:"Finish it with as ... as: 'A young buffalo is already ___ ___ ___ a grown man.'",
     answer:"as strong as", choices:["as strong as", "as stronger as", "so strong as"] },
   { cover:"as_as_equal", tier:2, type:"grammar", open:true, clue:"Finish it with as ... as: 'A bird's bones are ___ ___ ___ paper.'",
     answer:"as light as", choices:["as light as", "as light than", "as more light as"] },
@@ -1268,8 +1268,8 @@ const REALM2_GRAMMAR = [
     answer:"easy", fix:"hard" },
   { cover:"predator", tier:2, type:"fix it", format:"error", open:false,
     clue:"One word is wrong. Tap the mistake.",
-    sentence:"The eagle is the prey and the mouse is the predator.",
-    answer:"prey", fix:"predator (swap the two words round)" },
+    sentence:"The eagle hunts the mouse, so the eagle is the prey.",
+    answer:"prey", fix:"predator" },
   { cover:"imitate", tier:2, type:"fix it", format:"error", open:false,
     clue:"One word is wrong. Tap the mistake.",
     sentence:"The harmless fly imitates a bee so that predators attack it.",
@@ -1356,7 +1356,7 @@ const REALM2_ELITE_QUESTIONS = [
     answer:"Wolves hunt in groups called packs.",
     choices:["Wolves hunt in groups called packs.","Wolves hunts in groups called packs.","Wolves are hunt in groups called packs."] },
 
-  { cover:"imitate", tier:4, type:"function", open:true, clue:"A hoverfly has yellow and black bands but no sting. Which poisonous insect is it imitating?",
+  { cover:"imitate", tier:4, type:"function", open:false, clue:"A hoverfly has yellow and black bands but no sting. Which stinging insect is it imitating?",
     answer:"a wasp", choices:["a wasp","a beetle","a moth"] },
   { cover:"imitate", tier:4, type:"vocab", open:true, clue:"Which word means to copy something so well that others are fooled by it?",
     answer:"imitate", choices:["imitate","resemble","confuse"] },
@@ -1374,7 +1374,7 @@ const REALM2_ELITE_QUESTIONS = [
     answer:"The owl watched its prey from the branch.",
     choices:["The owl watched its prey from the branch.","The owl watched its prey's from the branch.","The owl watched it prey from the branch."] },
 
-  { cover:"resemble", tier:4, type:"vocab", open:true, clue:"'Resemble' and 'imitate' are close. Which one means only to LOOK like something, without copying its behaviour?",
+  { cover:"resemble", tier:4, type:"vocab", open:true, clue:"'Resemble' and 'imitate' are close. Which one just says two things look alike, without saying one is copying the other?",
     answer:"resemble", choices:["resemble","imitate","confuse"] },
 
   { cover:"species", tier:4, type:"function", open:true, clue:"Two animals look different but can have young together. Are they the same species or different species?",
@@ -1404,7 +1404,7 @@ const REALM2_ELITE_QUESTIONS = [
     choices:["The lizard escaped by dropping its tail.","The lizard escaped for dropping its tail.","The lizard escape by dropping its tail."] },
 
   // ---- as ... as, used ----
-  { cover:"as_as_equal", tier:4, type:"grammar", open:true, clue:"Join them with as ... as: 'The moth is 4cm. The leaf is 4cm.' The moth is ___ ___ ___ the leaf.",
+  { cover:"as_as_equal", tier:4, type:"grammar", open:false, clue:"Join them with as ... as: 'The moth is 4cm. The leaf is 4cm.' The moth is ___ ___ ___ the leaf.",
     answer:"as long as", choices:["as long as","as longer as","so long as"] },
   { cover:"as_as_equal", tier:4, type:"grammar", open:false, clue:"Choose the correct sentence:",
     answer:"This spider is as dangerous as it looks.",
@@ -1457,7 +1457,7 @@ const REALM2_ELITE_QUESTIONS = [
   { cover:"classification", tier:4, type:"function", open:true, clue:"Classification writing puts things into groups. Which unit word means one of those groups?",
     answer:"species", choices:["species","characteristic","camouflage"] },
 
-  { cover:"dictionary_use", tier:4, type:"function", open:true, clue:"Your dictionary shows 'poisonous (adj)'. Which unit word would come immediately BEFORE it alphabetically — predator or prey?",
+  { cover:"dictionary_use", tier:4, type:"function", open:true, clue:"Your dictionary shows 'poisonous (adj)'. Which unit word would come immediately AFTER it alphabetically — predator or prey?",
     answer:"predator", choices:["predator","prey","resemble"] },
   { cover:"dictionary_use", tier:4, type:"function", open:false, clue:"Which list is in correct dictionary order?",
     answer:"attack, avoid, confuse, defend, escape",
@@ -1476,7 +1476,7 @@ const REALM2_ELITE_QUESTIONS = [
   // not simply more questions.
   // ------------------------------------------------------------------
   { cover:"camouflage", tier:4, type:"fix it", open:false, clue:"One part is wrong: 'The tiger's stripes camouflages it in the long grass.'",
-    answer:"'camouflages' should be 'camouflage'", choices:["'camouflages' should be 'camouflage'", "'stripes' should be 'stripe'", "'in' should be 'on'"] },
+    answer:"'camouflages' should be 'camouflage'", choices:["'camouflages' should be 'camouflage'", "'grass' should be 'grasses'", "'in' should be 'on'"] },
   { cover:"characteristic", tier:4, type:"grammar", open:true, clue:"Put the word in the plural: 'Six legs and two feelers are two ___ of an insect.'",
     answer:"characteristics", choices:["characteristics", "characteristic", "characteristic's"] },
   { cover:"copy", tier:4, type:"fix it", open:false, clue:"One part is wrong: 'The parrot copy the words that people say.'",
@@ -1535,7 +1535,7 @@ const REALM2_ELITE_QUESTIONS = [
     answer:"sting", choices:["sting", "feed", "imitate"] },
   { cover:"classification", tier:4, type:"apply", open:false, clue:"You are making a classification chart that sorts animals by how they move. Which is a good heading for one column?",
     answer:"Animals that fly", choices:["Animals that fly", "My favourite animal", "A very fast animal"] },
-  { cover:"dictionary_use", tier:4, type:"apply", open:true, clue:"Your dictionary says: 'still (adjective) 1. not moving 2. quiet and calm'. In 'The lizard stayed still on the wall', which meaning is used — not moving, or quiet and calm?",
+  { cover:"dictionary_use", tier:4, type:"apply", open:true, clue:"'Still' can mean 1. not moving, or 2. quiet and calm. Which meaning is used in 'The lizard stayed still on the wall'?",
     answer:"not moving", choices:["not moving", "quiet and calm", "a kind of insect"] },
   { cover:"scan_text", tier:4, type:"apply", open:true, clue:"Scan this line: 'The green gecko sleeps in the daytime and hunts small insects after dark.' When does the gecko hunt?",
     answer:"after dark", choices:["after dark", "in the daytime", "early in the morning"] },
@@ -1707,6 +1707,45 @@ const REALMS = {
   8:{ id:8, name:"The Landfill Ruins",   theme:"Recycling & Environment",  ready:false },
   9:{ id:9, name:"The Wanderlands",      theme:"Vacation & Travel",        ready:false },
 };
+
+// ---------------------------------------------------------------------------
+// ADDING A REALM WITHOUT EDITING THIS FILE
+//
+// This file is seventeen hundred lines long. Asking someone to add their unit
+// by finding the right spot in the middle of it is asking for a missing comma
+// that stops the whole game loading - and a missing comma in a file this size
+// is genuinely hard to find.
+//
+// So a realm can register itself from its own file instead:
+//
+//   1. Copy js/realm-template.js to js/realm3.js (or whatever number).
+//   2. Fill in your questions.
+//   3. Add ONE line to index.html, after content.js:
+//        <script src="js/realm3.js"></script>
+//
+// If your file has a typo, only your realm fails to load. The game still runs
+// and the other realms are untouched, which is a much kinder failure than a
+// blank screen five minutes before a lesson.
+//
+// The cover keys are derived here rather than asked for, because keeping a
+// hand-written list in step with the questions is a chore that goes wrong
+// silently - a key you forgot to list simply never gets tested.
+// ---------------------------------------------------------------------------
+function registerRealm(def) {
+  if (!def || !def.id) {
+    console.warn("registerRealm: a realm needs an id");
+    return;
+  }
+  const questions = def.questions || [];
+  REALMS[def.id] = Object.assign({
+    palette: "storm",
+    sky: "storm",
+    eliteQuestions: [],
+    coverKeys: [...new Set(questions.map(q => q.cover))],
+    ready: questions.length > 0,
+  }, def);
+  return REALMS[def.id];
+}
 
 // ---------------------------------------------------------------------------
 // Event-node scenes: the realm's NPC, with a choice that has real stakes.

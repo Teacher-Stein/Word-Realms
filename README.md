@@ -1,7 +1,7 @@
 # Word Realms — Our World 5 Review Crawler
 
 A browser-based, decision-driven dungeon crawler for reviewing Our World 5 in
-class. **Version 6.5 — The whole class answers.** Two realms fully playable and
+class. **Version 6.6 — Ready to hand on.** Two realms fully playable and
 fully illustrated. Realm 1 (Unit 1, Extreme Weather) and Realm 2 (Unit 2, Copycat
 Animals) each have their own cast, boss, guide and three painted backdrops;
 Realms 3–9 appear as locked placeholders using the correct themes from the
@@ -22,6 +22,234 @@ once the page has loaded.
 5. Wait about a minute, then reload your `https://…github.io/word-realms/` link.
 
 If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
+
+---
+
+## v6.7 — the wager is finally a decision
+
+The SAFE/RISKY choice has been in the game since v5.3 and it has never worked
+properly. This rebuilds it, and one long-standing rule had to be rewritten to
+let it.
+
+### "Double both ways" was never fair, and that is arithmetic, not opinion
+
+RISKY used to pay double shards and cost double hearts. That sounds even. It is
+not, because the two sides are not drawn equally often: a class answering at 85%
+collects the upside roughly six times for every one time it pays the downside.
+Measured over 4,000 runs, a class that gambled on everything wiped **62%** of the
+time against **53%** for a class that never gambled at all. Being bold was
+strictly better, and a decision with a correct answer is not a decision — it is
+a tax on the classes that had not worked it out yet.
+
+Balancing it by multiplication does not work either. The multiplier needed to
+deter a confident class is about 5×, and 5× a tier-4 question is ten hearts out
+of eleven: one wrong answer, run over, nothing learned.
+
+### So the penalty is flat
+
+A wrong RISKY answer now costs **4 hearts**, or **6** on a tier-3/4 question —
+which means elites and the boss, since they ask from the tier-4 bank. Flat.
+Not a multiple of anything.
+
+This separates "how much does gambling cost" from "how hard was the question",
+and only the first of those needs to be big. It is also a number a ten-year-old
+can hold in their head while deciding, which "double" never was. Shields absorb
+it normally; the class already reads shields as their buffer and taking that
+away would have made a six-heart penalty arbitrary as well as large.
+
+**And the gate now says the number, in large red type, before they choose.** Both
+figures on the button come from the same function that charges them a second
+later, so the promise cannot drift from the outcome — a fault that shipped once
+already, in v5.1, where the tier floor lived in the button's label and nowhere
+else and a class was quietly lied to on 25 questions.
+
+### A correct RISKY answer strikes twice as hard
+
+The old upside was purely shards, and shards do not cash out until a shop
+several rooms away. The damage landed in the same second. That is why v5.3 had
+to bolt a free shield onto blind calls to stop RISKY reading as a trap, and it
+still read as one. A RISKY answer now deals **2** instead of 1, so the reward
+arrives at the same moment as the risk, in the currency the class is watching.
+The blind-call shield is gone with it.
+
+### Which meant rewriting the first rule of the project
+
+Rule 1 has always been "nothing may reduce the number of questions asked", and
+it has always been measured **per run**. Dealing 2 damage shortens fights, so
+under that rule this change was forbidden outright.
+
+The rule was measured against the wrong denominator. A lesson is forty-five
+minutes and a class that wipes does not go home — they pick a new hero and keep
+answering until the bell. Held against the clock instead of the run, at 85%
+accuracy, questions per lesson are **flat at 41–42** across a difficulty range
+that takes the wipe rate from almost never to almost always. A shorter run is
+simply followed by more runs.
+
+| | v6.6 | v6.7 |
+|---|---|---|
+| **questions per lesson** | 42 | 41 |
+| distinct curriculum items per lesson | 32 | 30 |
+| questions per run | 41 | 30 |
+| questions per fight | 4.7 | 3.8 |
+| monster swings per fight | 1.45 | 1.58 |
+| fights where the party took no damage | 70% | 56% |
+| boss HP | 9.3 | 13.4 |
+| wipe rate, cautious class | 53% | 77% |
+| wipe rate, bold class | 62% | 81% |
+| **bold minus cautious** | **9** | **4** |
+
+The last row is the one this version was built for. The first row is the one it
+had to not break.
+
+The two costs are in that table and are not hidden. Distinct curriculum items
+per lesson fell from 32 to 30 out of 32 — about 6% less breadth. And the lesson
+model rests on an estimate of ~61 seconds per question that has not yet been
+checked with a stopwatch in a real classroom.
+
+### The boss grew by itself, which is the safety net
+
+The boss's health is the number of curriculum keys the class did *not* cover on
+the way. Shorter fights leave more of them untouched, so the boss went from 9.3
+to 13.4 HP with nobody tuning it. The questions are not lost; they are moved to
+the finale and asked at tier 4, against the hardest monster in the realm, where
+a RISKY miss costs six. This was Stein's call before it was a measurement.
+
+### The monster's clock had to come down with it
+
+This nearly shipped broken. A shorter fight reaches the monster's turn less
+often, and at the old cadence of 3 the swings per fight fell to **0.79** —
+roughly half of all fights would have contained no monster attack at all. That
+is the exact fault v6.1 existed to fix, arriving again through the back door.
+
+`MONSTER_CADENCE` is now **2**, which v6.1 explicitly rejected and which is fine
+for the same reason the rest of this version is fine. It puts swings back to
+1.58, slightly *above* v6.6. The boss keeps its own clock at 3 and is untouched.
+
+### Smaller things found on the way
+
+**The Lucky Charm's card was describing a relic the game does not have.** It
+promised "the first wrong answer in each realm costs no heart"; the code has
+always blocked the first incoming hit of *any* kind, so a 1-damage monster poke
+usually spent it long before a wrong answer got the chance. Measured at v6.7
+numbers, the card's version is worth 7 points of wipe rate — more than the Storm
+Knight's entire hero perk, out of a *common* relic — and the code's version is
+worth 2, which is what a common relic should be. **The wording moved to meet the
+code**, not the other way round.
+
+**The EXPOSED chip said "next wrong answer costs 2".** That was only ever true
+on a tier-1 question played SAFE. It is +1 on top of whatever the mistake was
+going to cost, and after this version that can be 7.
+
+**The stakes and elite coach cards** were describing the old mechanic. Both
+rewritten.
+
+**Every answer now records how it was staked**, and the end-of-run debrief shows
+the class how often they gambled and how often it paid.
+
+**`START_HEARTS` is now documented as the difficulty dial** it has quietly been
+for six versions. It is the only continuous control in the game — everything
+else is integer-grained, so "make the monster 15% weaker" rounds straight back
+to the number you started with. 12 or 13 for a weaker class, 11 as shipped, 9 or
+10 for a class that is coasting.
+
+### Two bugs in the simulator, which is worse than two bugs in the game
+
+`balance_sim.js` was pooling **both** realms' curriculum keys — 64 instead of
+32. The boss's HP is the count of *uncovered* keys, so against a 64-key
+denominator the boss was pinned at its cap of 20 in every scenario ever
+measured, and boss growth — the single most important effect in this version —
+was invisible in every number this file has ever printed. It was also not
+counting the boss's own questions as covering anything, which understated
+distinct curriculum items exactly where the boss matters most. Both fixed, and
+everything above is measured after the fix.
+
+### Testing
+
+**`tools/tests/test_stakes.py` is new**, because a version that changes two
+numbers and nothing visible is precisely the shape of change that ships broken
+and passes every existing suite. It checks the flat penalty is flat (a tier-1
+and a tier-2 miss must cost the *same*, which multiplication cannot produce),
+that the gate charges exactly what it promised at every tier and with a debuff
+running, that RISKY takes 2 HP off a monster in a real fight and SAFE takes 1,
+that shields still absorb it, and that the stake reaches the log. It has a floor
+and fails if it measured nothing.
+
+All nineteen suites pass.
+
+---
+
+## v6.6 — the handover build
+
+Nothing in the game changed. Everything here is about somebody else being able
+to pick this up and carry on with their own subject.
+
+**A new teacher's first stop is `START-HERE.md`**, and their assistant's is
+`CLAUDE.md` — which is now a proper handover rather than a project note: the
+five rules and *why* each exists, the architecture, the test discipline, and a
+list of the things already tried and rejected so nobody spends a day
+rediscovering that shorter fights break Rule 1.
+
+**`tools/check-content.html`.** The content checker now runs in a browser.
+Double-click it. This matters more than it sounds: the terminal checker needs
+Node.js, a school computer will not have it, and the checker is the single most
+useful safety net for anyone writing two hundred questions. The rules live in
+`tools/content-rules.js` and are shared with the terminal version, so the two
+can never drift apart and disagree.
+
+It also catches the commonest failure of all — a missing comma that stops the
+whole file loading — and says so in plain language instead of showing a blank
+screen.
+
+**`js/realm-template.js` and `registerRealm()`.** A new unit is now a new file
+plus one line in `index.html`, instead of surgery in the middle of a
+seventeen-hundred-line `content.js`. If the new file has a typo, only that realm
+fails to load and the rest of the game still runs — which is a much kinder
+failure than a blank screen before a lesson.
+
+**Four guides** rather than one long one: start here, running it in class,
+putting in your own curriculum, and an optional page on publishing it. Each is
+for one moment rather than one topic.
+
+**Verified as a stranger receives it:** unzipped to a fresh folder, opened from
+`file://` with no server and no internet, a run played, both browser tools
+opened, and every file path the documents mention checked to exist.
+
+---
+
+## v6.5.1 — four fixes from an audit of v6.5
+
+Stein played a clean run with the Storm Knight and nothing looked wrong. These
+came out of going looking anyway.
+
+**A Chorus was crediting one child with the whole class's answers.** Every
+Chorus question was booked against whichever student happened to be on turn —
+up to nine phantom answers a run against two or three names, roughly a fifth of
+everything a run records. That made the new turn-fairness row report the
+*opposite* of the truth: a child who had answered nothing on their own looked
+like the busiest in the class. It also handed "Sharpest of the run" to whoever
+was standing there when a Chorus fired. A Chorus now credits nobody.
+
+**And it was stealing that child's turn.** Because the Chorus marked the room as
+answered, the rotation moved on afterwards — so the student who was up when the
+class walked in never answered alone and quietly lost their go. A Chorus now
+costs nobody their turn: the child who was up when you walk in is still up when
+you walk out.
+
+**A Chorus could freeze on a blank screen.** If it failed twelve times to draw a
+question the whole class could answer, it fell back to *any* question — and a
+spot-the-error question has no options list, so the screen threw and left the
+class staring at an empty panel with no way forward. It needs twelve consecutive
+sequence-format draws, which is a one-in-billions event with the current banks,
+but "the odds are tiny" is not a thing to say about a hard stall in front of
+twenty-four children.
+
+**The Chorus card promised something the game could break.** It said "there is
+no damage here whatever happens", and the Distracted button works on that screen
+and costs a heart. The button stays — it is meant to work everywhere — so the
+wording changed instead.
+
+Also removed one dead function nothing ever called. `test_chorus.py` now presses
+all of it.
 
 ---
 
@@ -330,9 +558,11 @@ overall difficulty is unchanged — a typical class still loses about one run in
 three, which is what Stein asked for. Questions per run went *up*, from 36 to
 38.
 
-Cadence 2 was tried and rejected on the numbers: it took wipes to ~100% and cut
-questions per run from 36 to 23, and fewer questions is the one thing this game
-may never do.
+Cadence 2 was tried and rejected here on the numbers: it took wipes to ~100%
+and cut questions per run from 36 to 23. **v6.7 shipped cadence 2 anyway**, once
+questions per *lesson* were measured and found not to move — see the v6.7 notes
+and Rule 1 in `CLAUDE.md`. The measurement above was right; the rule it was
+tested against was not.
 
 **A Distracted button.** When a student is nominated and somebody else shouts
 the answer, the teacher presses it: in a fight the monster takes the opening,
@@ -1305,18 +1535,30 @@ screen the fight scene scales itself down so nothing is cut off.
 
 Everything balance-related is in `js/config.js`:
 
+*This table drifted badly — it was last accurate around v5.x and by v6.6 four
+of its rows named numbers the game had not used for several versions, including
+one setting that no longer exists. It was rebuilt against `config.js` in v6.7.
+If you change a number, change it here too, or delete the row.*
+
 | Setting | Default | What it does |
 |---|---|---|
-| `START_HEARTS` | 9 | Party hearts — the main survivability dial |
-| `REST_SHIELDS` | 7 | Shields restored by a campfire **Repair** only |
+| `START_HEARTS` | 11 | Party hearts — **the difficulty dial.** The only continuous one; everything else is integer-grained. Raise it for a weaker class. |
 | `MONSTER_HP` | 4 | Correct answers to fell a monster — the main fight-length dial |
-| `STAKE_RISKY_DAMAGE` | 2 | Multiplier on a wrong answer when RISKY is taken |
+| `ELITE_HP` | 7 | Correct answers to defeat an Elite |
+| `MONSTER_CADENCE` | 2 | Monster acts every N answers, from anybody (lower = harder) |
+| `BOSS_CADENCE` | 3 | The boss's own clock, which `MONSTER_CADENCE` does not touch |
+| `TIER_DAMAGE` | 1/1/2/2 | Hearts lost per wrong **SAFE** answer, by question tier (4 = Elite bank) |
+| `STAKE_RISKY_FLAT` | 4 | Hearts lost on a wrong RISKY answer, tiers 1–2. **Flat, not a multiplier** |
+| `STAKE_RISKY_FLAT_HARD` | 6 | The same for tiers 3–4, so elites and the boss |
+| `STAKE_RISKY_DAMAGE_DEALT` | 2 | Damage a correct RISKY answer deals (SAFE deals 1) |
+| `STAKE_RISKY_SHARDS` | 2 | Shard multiplier for a RISKY answer |
 | `STAKE_BLIND_SHARDS` | 3 | Shard multiplier for a blind call |
 | `STAKE_MIN_TIER` | 2 | Question tier at which a blind call is offered |
-| `FOCUS_STUN_ANSWERS` | 2 | Answers struck off the clock by a landed Focus |
-| `BOSS_CADENCE` | 4 | Boss acts every N answers (lower = harder) |
+| `STAKE_BLIND_SHIELD` | 0 | Shields paid by a landed blind call. Removed in v6.7 — left wired up, not deleted |
+| `START_SHIELDS` | 6 | What the party sets out with — half a Repair |
+| `REST_SHIELDS` | 12 | Shields restored by a campfire **Repair** only |
 | `REST_HEAL` | 5 | Hearts restored by a campfire **Mend** |
-| `TIER_DAMAGE` | 1/1/3/3 | Hearts lost per wrong answer, by question tier (4 = Elite bank) |
+| `CHORUS_QUESTIONS` | 3 | Questions per Chorus room, asked of the whole class |
 | `SHOPS_PER_MAP` | 3 | Guaranteed shops, placed deep in the map |
 | `ELITE_HP` | 7 | Correct answers to defeat an Elite |
 | `TEAMUP_HP_COST` | 1 | HP the monster regains when a partner is called |

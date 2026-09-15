@@ -178,6 +178,64 @@ with sync_playwright() as pw:
                      f"marked as choral, but every one of them came from a "
                      f"Chorus")
 
+    # ---- a Chorus belongs to nobody ---------------------------------------
+    # The whole class answers, so no individual may be credited with it and no
+    # individual may lose their turn to it.
+    #
+    # v6.5 got both wrong. Every Chorus answer was booked against whichever
+    # child happened to be on turn - up to nine phantom answers a run against
+    # two or three names, roughly a fifth of everything a run records - which
+    # made the turn-fairness row report the opposite of the truth and handed
+    # "Sharpest of the run" to whoever was standing there. And because it set
+    # answeredThisRoom, that child then had their turn rotated away without
+    # ever answering anything alone.
+    p.evaluate("() => { STATE.run.studentRun = {}; }")
+    who_before = p.evaluate("() => STATE.run.currentStudent")
+    run_chorus(p, ['good'] * want)
+    owned = p.evaluate("() => ({"
+                       " credited: STATE.run.studentRun,"
+                       " who: STATE.run.currentStudent,"
+                       " logged: STATE.run.answerLog.filter(a => a.choral).length })")
+    names = list(owned['credited'].keys())
+    print(f"  belongs to nobody: on turn {who_before} -> {owned['who']} · "
+          f"credited {owned['credited'] or '(nobody)'}")
+    if names:
+        fails.append(f"a Chorus credited {names} with answers the whole class "
+                     f"gave — the turn-fairness row and the end-of-run award "
+                     f"both read from these tallies")
+    if owned['who'] != who_before:
+        fails.append(f"the child on turn changed from {who_before} to "
+                     f"{owned['who']} across a Chorus — they never answered "
+                     f"alone and lost their go to a question everybody answered")
+
+    # ---- the fallback can never hand back an unrenderable question ---------
+    # drawChorusQuestion tries twelve times for a selection question. Its old
+    # fallback was "return anything", and a spot-the-error question has no
+    # `choices` array - so the Chorus screen threw and left the class on a
+    # blank panel with no way forward. Vanishingly rare, and a hard stall in
+    # front of a class is not a thing to leave to the odds.
+    fb = p.evaluate("() => {"
+                    " const realm = REALMS[1];"
+                    " const keep = realm.questions;"
+                    " realm.questions = keep.filter(q => q.format === 'order'"
+                    "                              || q.format === 'error');"
+                    " let crash = null, drew = null;"
+                    " try {"
+                    "   const q = drawChorusQuestion(realm);"
+                    "   drew = q ? { fmt: q.format || 'choice',"
+                    "                hasChoices: Array.isArray(q.choices) } : null;"
+                    " } catch (e) { crash = String(e); }"
+                    " realm.questions = keep;"
+                    " return { crash, drew }; }")
+    print(f"  fallback with no selection question available: {fb}")
+    if fb['crash']:
+        fails.append(f"drawChorusQuestion threw when no selection question was "
+                     f"available: {fb['crash']}")
+    if fb['drew'] and not fb['drew']['hasChoices']:
+        fails.append(f"the Chorus fallback returned a {fb['drew']['fmt']} "
+                     f"question with no options — the screen renders blank and "
+                     f"the class cannot go forward")
+
     # ---- the boss demands one, once ---------------------------------------
     # Driven straight to half health rather than fought there: what matters is
     # that the Chorus fires at the threshold and never again, not how the boss

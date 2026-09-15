@@ -539,6 +539,26 @@ function runDebriefHtml(answerLog, studentRun) {
       <div>${list(tricky, 6)}${more(tricky, 6)}</div></div>`;
   }
 
+  // How often the class backed itself, and how often that paid. v6.7 made the
+  // stake a real decision rather than a shard bonus, so it earns a line - and
+  // it gives the teacher something concrete to say about a habit, which a
+  // percentage on a curriculum item cannot. A class that never gambles is
+  // leaving half the game unplayed; a class that always does is about to lose.
+  //
+  // Only shown if they actually risked something. A row reading "0 of 0" on
+  // every screen teaches the class to stop reading the screen.
+  const risked = answerLog.filter(a => a.stake === "risky" || a.stake === "blind");
+  if (risked.length) {
+    const landed = risked.filter(a => a.correct).length;
+    const blind = risked.filter(a => a.stake === "blind").length;
+    html += `<div class="debrief-row ${landed * 2 >= risked.length ? "good" : "bad"}">
+      <div class="debrief-label">You gambled</div>
+      <div><span class="debrief-chip">${risked.length} time${
+        risked.length === 1 ? "" : "s"} · ${landed} paid off</span>${
+        blind ? `<span class="debrief-chip">${blind} called blind</span>` : ""}
+      </div></div>`;
+  }
+
   // The celebration. Per-RUN, not all-time - the all-time figures would simply
   // crown whoever has attended the most lessons, which is not an achievement.
   // Ties are shared rather than broken, because breaking a tie on some hidden
@@ -1705,24 +1725,35 @@ function renderStakeGate(prefix, q) {
     : (q && q.open === true && (q.tier || 1) >= CONFIG.STAKE_MIN_TIER);
   // Show the REAL heart cost of each option, not a multiplier. A ten-year-old
   // deciding under time pressure should not have to do arithmetic on the word
-  // "double" - the gate says "costs 3" and "costs 6", and the clue is already
+  // "double" - the gate says "costs 1" and "costs 6", and the clue is already
   // on screen above it, so the gamble is an informed one.
-  const safeDmg = wrongAnswerDamage(q);
-  const riskDmg = safeDmg * CONFIG.STAKE_RISKY_DAMAGE;
+  //
+  // Both numbers come from wrongAnswerDamage(), the same function that charges
+  // them a second later, so the promise cannot drift from the outcome. That
+  // includes the Idol and any active debuff: if the class is Exposed, the gate
+  // says 7 and 7 is what it takes.
+  //
+  // v6.7 gives the cost its own line in large type. Six hearts of eleven is a
+  // run-ending amount and it needs to be read from the back of a classroom, by
+  // a child who is already thinking about the question rather than the button.
+  const safeDmg = wrongAnswerDamage(q, STAKE_SAFE);
+  const riskDmg = wrongAnswerDamage(q, STAKE_RISKY);
   const hearts = n => `${n} heart${n === 1 ? "" : "s"}`;
   el.innerHTML = `
     <div class="stake-title">How much are you putting on this one?</div>
     <div class="stake-opts">
       <button class="pixel-btn sg-safe" data-side="${prefix}">
         <b>SAFE</b>
-        <span>Normal shards · costs <b>${hearts(safeDmg)}</b> if wrong</span>
+        <span>Normal damage and shards</span>
+        <span class="stake-cost">Wrong: <b>−${hearts(safeDmg)}</b></span>
       </button>
       <button class="pixel-btn danger sg-risky" data-side="${prefix}">
         <b>RISKY</b>
         <span>${blind
-          ? `No options — say it out loud · <b>${CONFIG.STAKE_BLIND_SHARDS}× shards + a shield</b>`
-          : `<b>${CONFIG.STAKE_RISKY_SHARDS}× shards</b>`
-        } · costs <b>${hearts(riskDmg)}</b> if wrong</span>
+          ? `No options — say it out loud · <b>${CONFIG.STAKE_BLIND_SHARDS}× shards</b>, double damage`
+          : `<b>${CONFIG.STAKE_RISKY_SHARDS}× shards</b>, double damage`
+        }</span>
+        <span class="stake-cost big">Wrong: <b>−${hearts(riskDmg)}</b></span>
       </button>
     </div>`;
 }

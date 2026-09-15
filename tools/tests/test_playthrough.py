@@ -9,8 +9,14 @@ Checks, beyond "does it crash":
   2. RISKY never hides the options on a selection-only question.
   3. The Distracted button never eats the question it was pressed on.
 """
-import sys, random
+import os
+import sys
+import random
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from playwright.sync_api import sync_playwright
+from walk import answer_any, clear_rooms, drain_popups
 
 URL = 'http://localhost:8811/index.html'
 
@@ -52,6 +58,7 @@ def play(page, accuracy, budget, log):
     blind_on_closed = 0
     distracted_ate_question = 0
     answered = 0
+    runs = 1
 
     for _ in range(budget):
         # Drain the popup queue. Coach cards and reward cards stack, and any
@@ -99,6 +106,7 @@ def play(page, accuracy, budget, log):
             if visible(page, gate):
                 q = page.evaluate("""(s) => {
                   const run = STATE.run;
+                  if (!run) return null;           // the run can end mid-walk
                   const m = s==='boss' ? run.boss : run.encounter;
                   return m && m.currentQ ? {open: m.currentQ.open === true,
                                             tier: m.currentQ.tier || 1} : null;
@@ -193,85 +201,40 @@ def play(page, accuracy, budget, log):
                 if clock_bad <= 5:
                     log.append(f'  !! clock says "{t}" but turnsUntilAct={n}')
 
-        # ---- answer ---------------------------------------------------------
+        # ---- answer ----------------------------------------------------------
+        #
+        # MOVED ONTO THE SHARED WALKER IN v6.7. CLAUDE.md has asked for this
+        # since walk.py was written: the four suites still carrying private
+        # walkers should move over the next time one of them is touched, and
+        # this one has now been touched.
+        #
+        # It had grown its own copy of every question format, and the copy was
+        # already drifting - it could answer a spot-the-error and a put-it-in-
+        # order question, but only ever looked for `.choice` elements in the
+        # plain case and had no idea what to do with anything else. The cost
+        # showed up as wild variance: the same walk answered 31 questions on
+        # one attempt and 5 on the next, which reads as a game bug and is not.
+        #
+        # answer_any() knows every format and lives in one file. Teach it once,
+        # and this suite, test_stakes and test_perks all learn together.
         clicked = False
         for side in ('enc', 'boss'):
             box = page.query_selector(f'#{side}-choices')
             if not box or not box.is_visible():
                 continue
-
-            # v6.5 formats. This walker only ever knew how to click a `.choice`,
-            # and when the new formats landed it simply stopped answering: the
-            # run reported "questions answered 0" and the suite still said PASS,
-            # because nothing here asserted that it had answered anything.
-            #
-            # Both halves of that were bugs. This handles every format the game
-            # can render; the floor at the bottom of the file makes a walk that
-            # answers nothing a failure instead of a quiet success.
-            fmt = page.evaluate("(s) => {"
-                                " const el = document.getElementById(s + '-choices');"
-                                " const c = [...el.classList].find(x => x.startsWith('fmt-'));"
-                                " return c ? c.slice(4) : 'choice'; }", side)
-            if fmt in ('error', 'order'):
-                want_right = rng.random() < accuracy
-                did = page.evaluate("""([s, right]) => {
-                  const el = document.getElementById(s + '-choices');
-                  const bare = w => w.replace(/[.,!?;:'"]+$/g, '');
-                  const run = STATE.run;
-                  const m = s === 'boss' ? run.boss : run.encounter;
-                  const q = m && m.currentQ;
-                  if (!q) return false;
-                  if (q.format === 'error') {
-                    const words = [...el.querySelectorAll('.err-word:not(.locked):not(.ruled-out)')];
-                    if (!words.length) return false;
-                    const hit = right ? words.find(w => bare(w.textContent) === q.answer)
-                                      : words.find(w => bare(w.textContent) !== q.answer);
-                    (hit || words[0]).click();
-                    return true;
-                  }
-                  if (q.format === 'order') {
-                    const order = right ? q.parts : q.parts.slice().reverse();
-                    let moved = false;
-                    order.forEach(t => {
-                      const c = [...el.querySelectorAll('.order-pool .order-chip')]
-                        .find(x => x.textContent === t);
-                      if (c) { c.click(); moved = true; }
-                    });
-                    return moved;
-                  }
-                  return false;
-                }""", [side, want_right])
-                if did:
-                    answered += 1
-                    clicked = True
-                    page.wait_for_timeout(700)
-                    break
-                continue
-
-            opts = [c for c in box.query_selector_all('.choice')
-                    if 'locked' not in (c.get_attribute('class') or '')]
-            if not opts:
-                continue
-            answer = page.evaluate("""(s) => {
-              const run = STATE.run;
-              const m = s==='boss' ? run.boss : run.encounter;
-              return m && m.currentQ ? m.currentQ.answer : null;
-            }""", side)
-            want_right = rng.random() < accuracy
-            target = None
-            for c in opts:
-                if (c.inner_text().strip() == answer) == want_right:
-                    target = c; break
-            try:
-                (target or opts[0]).click(timeout=1500)
-                answered += 1; clicked = True
+            if answer_any(page, side, want_right=rng.random() < accuracy):
+                answered += 1
+                clicked = True
                 page.wait_for_timeout(700)
-            except Exception:
-                pass
             break
 
         if not clicked:
-            # map screen? pick a reachable node
+            # Not a question: a room, a card, or the map. clear_rooms() handles
+            # the Chorus and anything else that needs a press before the map
+            # comes back; the list below is the rooms this suite reaches that
+            # are resolved by pressing exactly one button.
+            if clear_rooms(page, level='good' if rng.random() < accuracy else 'half'):
+                continue
             node = page.query_selector('.map-node.reachable')
             if node:
                 try:
@@ -279,7 +242,8 @@ def play(page, accuracy, budget, log):
                 except Exception:
                     pass
             for sel in ('#btn-move-on', '#rest-mend', '#shop-leave', '#event-a',
-                        '#btn-continue', '#treasure-open', '#pause-resume'):
+                        '#btn-continue', '#treasure-open', '#pause-resume',
+                        '#popup-continue', '#btn-map-back', '#enc-continue'):
                 if visible(page, sel):
                     try:
                         page.click(sel, timeout=800); page.wait_for_timeout(500)
@@ -289,11 +253,47 @@ def play(page, accuracy, budget, log):
             else:
                 page.wait_for_timeout(600)   # totem walk; travel is guarded now
 
+        # ---- the run ended: start another one --------------------------------
+        #
+        # This used to `break`, and until v6.7 that was nearly harmless because
+        # runs rarely ended inside the budget. At the new difficulty the weak
+        # class wipes in a handful of questions, so a walk that stopped at the
+        # first gameover measured five questions on a good day and, once in
+        # about a dozen attempts, zero - which tripped the floor and reported a
+        # failure that was entirely in the harness.
+        #
+        # Walking on is not a workaround, it is what the game actually does: a
+        # class that wipes picks a new hero and keeps answering until the bell.
+        # That is the whole premise of v6.7's Rule 1, and a suite that stops at
+        # the first defeat cannot see the thing the version was built around.
         if visible(page, '#screen-gameover') or visible(page, '#screen-victory'):
-            break
+            runs += 1
+            if runs >= 4:
+                break
+            started = False
+            for sel in ('#btn-play-again', '#popup-continue'):
+                if visible(page, sel):
+                    try:
+                        page.click(sel, timeout=1200)
+                        page.wait_for_timeout(700)
+                        started = True
+                    except Exception:
+                        pass
+            if not started:
+                break
+            # back to the hero screen, if that is where it landed
+            if visible(page, '.hero-card'):
+                try:
+                    page.click('.hero-card', timeout=1200)
+                    page.wait_for_timeout(300)
+                    page.click('#hero-confirm', timeout=1200)
+                    page.wait_for_timeout(900)
+                except Exception:
+                    break
+            continue
 
     return dict(answered=answered, clock_checks=clock_checks, clock_bad=clock_bad,
-                blind_on_closed=blind_on_closed,
+                blind_on_closed=blind_on_closed, runs=runs,
                 distracted_ate_question=distracted_ate_question)
 
 
@@ -316,6 +316,7 @@ with sync_playwright() as pw:
         r = play(page, acc, budget, log)
         print(f'\n=== {label} ===')
         print(f'  questions answered      {r["answered"]}')
+        print(f'  runs walked             {r["runs"]}')
         print(f'  clock readings checked  {r["clock_checks"]}')
         print(f'  clock readings WRONG    {r["clock_bad"]}')
         print(f'  blind on closed q       {r["blind_on_closed"]}')

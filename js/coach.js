@@ -13,14 +13,21 @@
 // ---------------------------------------------------------------------------
 
 const COACH_LESSONS = {
+  // Rewritten in v6.7. It used to say "RISKY doubles both ways", which was the
+  // v5.3 mechanic and stopped being true: the penalty is now a flat number, not
+  // a multiple of the question's tier. A coach card that describes a mechanic
+  // the game no longer has is worse than no card, because the class believes it.
   stakes: {
     banner: "NEW: STAKES",
     title: "Decide how much you're putting on it",
-    effect: "SAFE plays normally · RISKY doubles both ways",
-    desc: "RISKY pays double shards and a mistake costs double. On some " +
-          "questions it goes further: the options vanish and you say the " +
-          "answer out loud for triple. Backing yourself when you KNOW is the " +
-          "skill — and knowing when you don't know is the other half of it.",
+    effect: "RISKY hits twice as hard — and costs 4 hearts if you're wrong",
+    desc: "RISKY strikes for double and pays double shards. Get it wrong and " +
+          "it costs four hearts, or six on the hardest questions — the button " +
+          "tells you the exact number before you choose, so look at it. On " +
+          "some questions RISKY goes further: the options vanish and you say " +
+          "the answer out loud for triple shards. Backing yourself when you " +
+          "KNOW is the skill — and knowing when you don't know is the other " +
+          "half of it.",
   },
   intent: {
     banner: "NEW: THE MONSTER'S PLAN",
@@ -70,10 +77,10 @@ const COACH_LESSONS = {
     banner: "NEW: THE CHORUS",
     title: "This one is for everybody",
     effect: "The whole class answers at once",
-    desc: "Nobody is picked. Everyone answers together — hands up, fingers " +
-          "out, or write it on a board — and your teacher says how the room " +
-          "did. There is no damage here whatever happens, so there is nothing " +
-          "to lose by having a go.",
+    desc: "Nobody is picked and nobody loses their turn. Everyone answers " +
+          "together — hands up, fingers out, or write it on a board — and your " +
+          "teacher says how the room did. The storm cannot hurt you in here, " +
+          "so there is nothing to lose by having a go.",
   },
   campfire: {
     banner: "NEW: THE CAMPFIRE",
@@ -87,8 +94,13 @@ const COACH_LESSONS = {
     banner: "AN ELITE",
     title: "This one is a long fight",
     effect: "Harder questions, better rewards",
-    desc: "Elites ask you to USE the language rather than recognise it, and " +
-          "a wrong answer here costs three hearts. They always drop a relic.",
+    // "costs three hearts" was stale from v6.0 - tier 4 has cost 2 since v6.1,
+    // and since v6.7 a RISKY miss here costs 6. Naming one number was wrong in
+    // both directions, so it now points at the gate, which is never wrong.
+    desc: "Elites ask you to USE the language rather than recognise it, they " +
+          "take a long time to bring down, and going RISKY against one costs " +
+          "six hearts if it misses. Read the stake buttons here. They always " +
+          "drop a relic.",
   },
   debuff: {
     banner: "YOU HAVE BEEN CURSED",

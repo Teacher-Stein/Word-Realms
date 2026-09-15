@@ -34,7 +34,11 @@ const INTENT_CLASS = { guard: "guard", regen: "regen", charge: "charge" };
 
 const DEBUFF_TEXT = {
   chill:  "CHILLED — next hit deals no damage",
-  expose: "EXPOSED — next wrong answer costs 2",
+  // Was "next wrong answer costs 2", which was only true on a tier-1 question
+  // played SAFE. It is +1 on top of whatever the mistake was going to cost,
+  // and after v6.7 that could be 6, so a fixed number on the chip is a lie the
+  // class can be caught by. The gate underneath shows the real total.
+  expose: "EXPOSED — next wrong answer costs 1 more",
   freeze: "FROZEN — you must Brace",
 };
 
@@ -261,17 +265,28 @@ function tickMonsterClock(m) {
 }
 
 // ---------------------------------------------------------------------------
-// player damage output (never varies fight length by gear - always 1 hit,
-// except the Giant-Slayer relic which is a deliberate exception the player
-// chooses to take)
+// player damage output
+//
+// GEAR still never varies this - a weapon that hit harder would let a class
+// shorten every fight for the rest of the run by shopping, which is a decision
+// made once and then never thought about again. The Giant-Slayer relic is the
+// single deliberate exception, and it is a choice the class makes knowingly.
+//
+// The STAKE does vary it, as of v6.7: RISKY deals 2. That is a per-question
+// decision made by the student standing at the board, re-made every time, and
+// paid for with a flat 4 or 6 hearts when it misses. See stakes.js.
 // ---------------------------------------------------------------------------
-function playerDamageAgainst(m) {
+function playerDamageAgainst(m, stake) {
   const run = STATE.run;
   if (!run || !m) return 0;
   if (run.debuff === "chill") return 0;
   if (m.guarding) return 0;
-  if (m.isElite && !m.isBoss && hasRelic("giant_slayer")) return 2;
-  return 1;
+  const base = stakeDamageDealt(stake || currentStake());
+  // The Giant-Slayer is a floor, not a bonus that stacks: 2 against an elite
+  // either way. Adding them would make a RISKY answer hit an elite for 4 of
+  // its 7 HP and turn the game's longest fight into its shortest.
+  if (m.isElite && !m.isBoss && hasRelic("giant_slayer")) return Math.max(2, base);
+  return base;
 }
 
 // shards earned for landing one hit
@@ -307,11 +322,17 @@ function incomingDamage(baseDmg, m) {
   return Math.max(0, dmg);
 }
 
-// wrong-answer damage is driven by the question's difficulty tier
-function wrongAnswerDamage(q) {
+// What a wrong answer costs, all in.
+//
+// The base comes from stakes.js: the question's tier if the class played SAFE,
+// a flat 4 or 6 if they went RISKY. Debuffs and the Idol add on top of either.
+// One choke point, called by the damage code AND by the gate that promises the
+// number beforehand, so the promise cannot drift from the outcome - that
+// exact drift was a real bug in v5.1, where the tier floor lived in the
+// button's label and nowhere else.
+function wrongAnswerDamage(q, stake) {
   const run = STATE.run;
-  const tier = q && q.tier ? q.tier : 1;
-  let dmg = CONFIG.TIER_DAMAGE[tier] || 1;
+  let dmg = stakeWrongCost(q, stake === undefined ? currentStake() : stake);
   if (run.debuff === "expose") dmg += 1;
   // The Whispering Idol: the class chose to carry it, knowing this. It is the
   // one lasting effect in the game that makes the party WORSE at something, and

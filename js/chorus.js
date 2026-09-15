@@ -27,19 +27,17 @@
 //   whole job is to get everyone answering. It pays less than a fight instead,
 //   so walking into one is still a real choice on the map.
 //
+//   IT BELONGS TO NOBODY. A Chorus credits no individual and costs no
+//   individual their turn. Attributing it to whoever happened to be on turn was
+//   the v6.5 bug: up to nine phantom answers a run against two or three names,
+//   which made the turn-fairness row read the opposite of the truth and handed
+//   the end-of-run award to whoever was standing there when a Chorus fired.
+//
 //   SELECTION QUESTIONS ONLY. Twenty-four children cannot each put four
 //   fragments in order on their fingers. drawChorusQuestion() enforces it.
 // ---------------------------------------------------------------------------
 
 let CHORUS = null;   // { queue, asked, results, onDone, boss }
-
-function chorusEls() {
-  return {
-    question: "cho-question",
-    choices:  "cho-choices",
-    feedback: "cho-feedback",
-  };
-}
 
 // Start a Chorus. `onDone` is called when the last question has been judged;
 // a Chorus room passes a return-to-map, the boss passes "carry on fighting".
@@ -124,7 +122,11 @@ function judgeChorus(level) {
 
   logAnswer(q, correct, level);
   run.stats[correct ? "correct" : "wrong"]++;
-  run.answeredThisRoom = true;
+  // NOT run.answeredThisRoom. That flag means "this room put a question to the
+  // student whose turn it is", and a Chorus did no such thing - it put one to
+  // everybody. Setting it made backToMap() rotate the turn onward, so the child
+  // who was up when the class walked into a Chorus never answered alone and
+  // silently lost their go.
 
   const pay = CONFIG.CHORUS_REWARD[level] || CONFIG.CHORUS_REWARD.poor;
   const gained = addShards(pay.shards);
@@ -183,7 +185,10 @@ document.addEventListener("click", ev => {
 
 // A Chorus ROOM on the map.
 function enterChorusRoom() {
-  startChorus(CONFIG.CHORUS_QUESTIONS, () => backToMap(true), {
+  // backToMap(FALSE): a Chorus does not consume anybody's turn. See the note in
+  // judgeChorus - the child who was up when the class walked in here is still up
+  // when they walk out.
+  startChorus(CONFIG.CHORUS_QUESTIONS, () => backToMap(false), {
     lead: "The storm wants to hear the whole class. Everyone answers.",
   });
 }

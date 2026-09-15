@@ -35,8 +35,13 @@ must reset to the plain cadence with no bonus on it.
 
 Run the local server from the project root first:  python3 -m http.server 8811
 """
+import os
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from playwright.sync_api import sync_playwright
+from walk import answer_any, clear_rooms, drain_popups, visible
 
 URL = 'http://localhost:8811/index.html'
 
@@ -102,10 +107,25 @@ def walk_to_fight(p, budget=150):
 
     A random walk found one about half the time, and a suite that fails for
     reasons unconnected to what it measures is worse than no suite at all.
+
+    MOVED ONTO THE SHARED WALKER IN v6.7, which is what CLAUDE.md asks for the
+    next time one of these private walkers is touched. It had to be: this one
+    did not know what a Chorus room was - a room type added two versions
+    earlier - so it parked in one and reported "three runs ended without
+    reaching a fight", which reads exactly like a broken hero perk and is not.
+    It also could not answer a question that appears on the encounter screen
+    without a monster behind it, such as a Treasure riddle.
+
+    Both gaps now come from walk.py, so the next new room or question format
+    fixes this suite for free instead of breaking it.
     """
     for _ in range(budget):
-        drain(p)
-        if vis(p, '#btn-move-on'):
+        drain_popups(p)
+        # A Chorus, and anything else that needs a press before the map comes
+        # back. This is the line whose absence cost the suite three runs.
+        if clear_rooms(p):
+            continue
+        if visible(p, '#btn-move-on'):
             try:
                 p.click('#btn-move-on', timeout=800)
                 p.wait_for_timeout(300)
@@ -115,12 +135,22 @@ def walk_to_fight(p, budget=150):
         if p.evaluate("!!(STATE.run && STATE.run.encounter && "
                       "typeof STATE.run.encounter.cadence === 'number')"):
             return True
-        if vis(p, '#enc-stake-gate'):
+        # A run can end on the way - the party wipes, or wins. Start again
+        # rather than spending the rest of the budget on a dead screen.
+        if p.evaluate("!STATE.run"):
+            return False
+        if visible(p, '#enc-stake-gate'):
             try:
                 p.click('#enc-stake-gate .sg-safe', timeout=1200)
                 p.wait_for_timeout(250)
             except Exception:
                 pass
+            continue
+        # A question on the encounter screen with no monster behind it: a
+        # Treasure riddle, or an event resolved by answering. Answer it in
+        # whatever format it came in.
+        if answer_any(p, 'enc', want_right=True):
+            p.wait_for_timeout(600)
             continue
         clicked = p.evaluate("""() => {
           const ns = [...document.querySelectorAll('.map-node.reachable')];
@@ -133,7 +163,7 @@ def walk_to_fight(p, budget=150):
             p.wait_for_timeout(650)
             continue
         for s in ('#rest-mend', '#shop-leave', '#event-a', '#treasure-open'):
-            if vis(p, s):
+            if visible(p, s):
                 try:
                     p.click(s, timeout=800)
                     p.wait_for_timeout(400)

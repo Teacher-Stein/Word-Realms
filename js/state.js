@@ -306,12 +306,28 @@ function logAnswer(q, correct, choralLevel) {
   const run = STATE.run;
   if (run) {
     if (!Array.isArray(run.answerLog)) run.answerLog = [];
+    // `stake` is "safe", "risky" or "blind". It is read here rather than passed
+    // in because both roads to this function - a click and a blind call - reach
+    // it before resolveFightAnswer clears the stake, and a third caller would
+    // have been a third place to forget. A Chorus is never an individual's
+    // gamble, so it is always recorded as safe.
     run.answerLog.push({ cover: q.cover, correct: !!correct, tier: q.tier || 1,
-                         choral: choralLevel || null });
+                         choral: choralLevel || null,
+                         stake: choralLevel ? "safe"
+                              : (typeof stakeTag === "function" ? stakeTag(q) : "safe") });
     // Per-run, per-student tallies for the end-of-run celebration. The all-time
     // figures in studentStats cannot do this job - they would crown whoever has
     // attended the most lessons rather than whoever had the best afternoon.
-    const who = run.currentStudent;
+    //
+    // A CHORUS CREDITS NOBODY. The whole class answered it, so attributing it to
+    // whichever child happened to be on turn is simply false - and it was not a
+    // harmless falsehood. Three Chorus questions a room, two or three rooms a
+    // run, put up to nine phantom answers against two or three names: about a
+    // fifth of everything a run records. That made the turn-fairness row read
+    // the opposite of the truth (a child who had answered nothing individually
+    // looked like the busiest in the class) and handed "Sharpest of the run" to
+    // whoever was standing there when a Chorus fired.
+    const who = choralLevel ? null : run.currentStudent;
     if (who) {
       if (!run.studentRun) run.studentRun = {};
       const s = run.studentRun[who] || (run.studentRun[who] = { correct: 0, wrong: 0 });
@@ -432,7 +448,7 @@ function startNewRun(realmId, heroId) {
     clarityActive: false, // Potion of Clarity trims the next question
     shopStock: {},        // nodeId -> generated stock, so a shop is stable
     countedInRecord: false, // has this run been counted in the teaching record
-    answerLog: [],         // every answer this run: {cover, correct, tier}
+    answerLog: [],         // every answer: {cover, correct, tier, choral, stake}
     studentRun: {},        // per-run tallies for the end-of-run celebration
     coveredKeys: [],       // curriculum items already tested this run
     missedQs: [],          // cover keys the class got WRONG (Echoing Hall)
@@ -492,17 +508,26 @@ function markCovered(cover) {
 // whiteboard. That rules out the formats where answering means a sequence of
 // taps: twenty-four children cannot each put four fragments in order. Selection
 // formats only.
+function isChorusFormat(q) {
+  const fmt = (q && q.format) || "choice";
+  return (fmt === "choice" || fmt === "odd") && Array.isArray(q.choices);
+}
+
 function drawChorusQuestion(realm) {
   for (let tries = 0; tries < 12; tries++) {
     const q = drawQuestion(realm);
     if (!q) return null;
-    const fmt = q.format || "choice";
-    if (fmt === "choice" || fmt === "odd") return q;
+    if (isChorusFormat(q)) return q;
   }
-  // Twelve draws without a selection question means the bank is almost all
-  // sequence formats, which would be a content problem rather than a bug here.
-  // Fall back to anything rather than leaving the room with no question.
-  return drawQuestion(realm);
+  // The fallback USED to be `return drawQuestion(realm)` - anything at all -
+  // and that was a latent freeze. A spot-the-error question has no `choices`
+  // array, so the Chorus screen threw on `shuffle(q.choices)` and left the
+  // class staring at a blank panel with no way forward. Twelve consecutive
+  // sequence draws is a one-in-billions event with the current banks, but "the
+  // odds are tiny" is not a thing to say about a hard stall in front of
+  // twenty-four children, and the honest fallback costs two lines.
+  const pool = (realm.questions || []).filter(isChorusFormat);
+  return pool.length ? pick(pool) : null;
 }
 
 function drawQuestion(realm, elite = false) {

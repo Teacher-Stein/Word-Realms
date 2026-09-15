@@ -1367,9 +1367,11 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
 
     const stake = currentStake();
     const blind = stakeIsBlind(q, stake);
-    // A stake pays in shards - never in damage. Extra damage would mean a
-    // shorter fight, and a shorter fight is fewer questions.
-    const dmg = playerDamageAgainst(m);
+    // v6.7: a stake now pays in damage as well as shards - RISKY lands for 2.
+    // The old comment here said it never could, because a shorter fight is
+    // fewer questions. Questions per LESSON turned out not to move; see
+    // config.js under MONSTER_CADENCE, which had to go to 2 to pay for this.
+    const dmg = playerDamageAgainst(m, stake);
 
     SFX.playerHit();
     animateSprite(P.hero, "attacking", 560);
@@ -1423,11 +1425,13 @@ function resolveCombatAnswer(ctx, correct, q, defending) {
     noteMissed(q);          // the Echoing Hall event brings these back
     run.bracing = false;
 
-    // This is where RISKY bites. The stake multiplies what the mistake costs;
-    // it never touched what a correct answer deals.
+    // This is where RISKY bites. A wrong RISKY answer costs a FLAT 4 hearts,
+    // or 6 from the tier-3/4 bank - it does not multiply the tier cost, which
+    // is why it can be big enough to deter without one-shotting the party on a
+    // hard question. Shields absorb it normally, in applyHit below.
     const stake = currentStake();
     const blind = stakeIsBlind(q, stake);
-    const dmg = wrongAnswerDamage(q) * stakeDamageMult(stake);
+    const dmg = wrongAnswerDamage(q, stake);
     clearStake();
     if (stake === STAKE_RISKY) {
       $(P.feedback).textContent += stakeNote(stake, blind, false);

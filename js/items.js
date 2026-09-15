@@ -14,7 +14,17 @@
 const RELICS = [
   { id:"lucky_charm",  name:"Lucky Charm",     rarity:"common",
     icon:"assets/items/lucky_charm.png",
-    desc:"The first wrong answer in each realm costs no heart.",
+    // This said "the first WRONG ANSWER in each realm costs no heart" and the
+    // code has never done that: damage() blocks the first incoming hit of any
+    // kind, so a 1-damage monster poke usually spends it long before a wrong
+    // answer gets the chance. The card was measured against the code in v6.7
+    // and the CODE is the version worth keeping - blocking the first wrong
+    // answer specifically is worth 7 points of wipe rate, more than the Storm
+    // Knight's entire hero perk, out of a COMMON relic. Blocking the first hit
+    // of any kind is worth 2, which is what a common relic should be.
+    //
+    // So the wording moved to meet the code, not the other way round.
+    desc:"The first hit in each realm costs no heart.",
     effect:"Blocks 1 hit per realm" },
 
   { id:"second_wind",  name:"Second Wind",     rarity:"common",

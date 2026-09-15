@@ -24,10 +24,27 @@ question or a new room to walk into now live HERE, once. A new format needs
 teaching to answer_any(); a new room needs teaching to clear_rooms(). Suites
 that use these get it for free.
 
-Suites still carrying their own copy: test_playthrough, test_curriculum,
-test_brace, test_announce. They work, and they were left alone rather than
-rewritten at the end of a long build - but they should move over the next time
-one of them is touched.
+MOVED OVER SO FAR: test_playthrough, test_perks, test_music, test_stakes.
+
+Suites still carrying their own copy: test_curriculum, test_brace,
+test_announce. They work, and they were left alone rather than rewritten at the
+end of a long build - but they should move over the next time one of them is
+touched.
+
+What moving test_playthrough over in v6.7 actually bought, since "it should be
+shared" is easy to nod at and ignore: its private copy answered 31 questions on
+one attempt and 5 on the next, from the same code, because it only understood
+some of the rooms it could land in and silently burned its budget in the rest.
+Three runs after the change: 36/37/28/24, 40/39/31/25, and no stalls. The suite
+had not been measuring the game, it had been measuring its own walker.
+
+FOUR suites failed in v6.7 for this same reason, none of them in the code under
+test: test_perks and test_music both parked in a Chorus room and reported
+"never reached a fight", test_playthrough burned its budget in rooms it did not
+recognise, and test_events broke out of its own loop because a flat 600ms wait
+sometimes was not long enough for a card to turn over. Every one of those reads
+like a real regression for several minutes. If a suite fails in a way that
+sounds like the feature is dead, suspect the walker first.
 """
 
 

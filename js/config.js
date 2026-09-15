@@ -30,6 +30,22 @@ const CONFIG = {
   // a smaller pool AND a slower clock, so the threat comes from not knowing
   // rather than from waiting. Wrong answers are now 47% of all damage and one
   // costs about a fifth of the party.
+  //
+  // ***** THIS IS THE DIFFICULTY DIAL. *****
+  //
+  // If you change one number in this file between classes, change this one.
+  // Everything else in the game is integer-grained - a monster hits for 1, 2
+  // or 3 hearts, so "make the monster 15% weaker" rounds straight back to the
+  // number you started with. The heart pool is the only continuous control
+  // there is, and it moves the wipe rate smoothly and predictably.
+  //
+  //   12 or 13   a weaker class, or the first lesson with a new group
+  //   11         the tuned default, aimed at roughly 1 run in 2 ending badly
+  //   9 or 10    a class that has played before and is coasting
+  //
+  // Nothing else needs touching to go with it. RULE THREE still applies at
+  // every setting: none of these is an easy mode, and the run must stay
+  // losable.
   START_HEARTS: 11,
   MAX_HEARTS: 16,
 
@@ -97,7 +113,11 @@ const CONFIG = {
   // while the monster landed about half a hit per fight. That taught classes
   // that RISKY is a trap and combat is scenery. The threat now comes from the
   // monster's clock (see BOSS_CADENCE and the cadence:2 monsters) and a
-  // mistake costs a serious but survivable amount. RISKY now caps at 4.
+  // mistake costs a serious but survivable amount.
+  //
+  // v6.7: THIS TABLE IS NOW THE *SAFE* COST ONLY. A wrong RISKY answer no
+  // longer multiplies these - it ignores them entirely and charges a flat
+  // STAKE_RISKY_FLAT / _FLAT_HARD instead. See the stakes block below.
   TIER_DAMAGE: { 1: 1, 2: 1, 3: 2, 4: 2 },   // tier 4 = the Elite bank
 
   // --- survivability (tuned with tools/../sim: at 100% accuracy the party
@@ -180,15 +200,31 @@ const CONFIG = {
   // hits per fight to ~1.5 - three times the threat, with the countdown finally
   // meaning something.
   //
-  // Cadence 2 was tried and rejected on the numbers. It pushed monster actions
-  // to 2.0 a fight, which the party could not absorb: the wipe rate went to
-  // ~100% at every accuracy and questions per run FELL from 36 to 23, because
-  // runs were ending early. Fewer questions is the one thing this game may
-  // never do, so cadence 2 is out regardless of how it feels.
+  // v6.7: THIS IS NOW 2, and the v6.1 note below explaining why it could never
+  // be 2 was measured against a rule that has since been corrected. Read both.
+  //
+  // v6.1 rejected cadence 2 because questions per RUN fell from 36 to 23. That
+  // measurement was right and the conclusion drawn from it was wrong, because
+  // the run is not the unit that matters. A lesson is forty-five minutes long
+  // and a class that wipes restarts and keeps answering until the bell. Held
+  // against the clock instead of the run, at 85% accuracy, questions per LESSON
+  // sit at 42-43 across every difficulty tested - a shorter run is simply
+  // followed by more runs - and the number of DISTINCT curriculum items touched
+  // goes slightly UP, because each fresh run sweeps untested keys first.
+  //
+  // So the thing v6.1 was protecting was never actually at risk. See RULE ONE
+  // in CLAUDE.md, which has been rewritten to say questions per lesson.
+  //
+  // What forced the move: v6.7 makes a RISKY correct answer deal 2 damage, and
+  // a shorter fight means the monster's clock reaches zero less often. Left at
+  // cadence 3 that took monster swings per fight from 1.46 to 0.79 - roughly
+  // half of all fights would have had no monster attack in them at all, which
+  // is the exact fault that made v6.1 raise the clock in the first place.
+  // Cadence 2 puts it back to 1.38. The two changes pay for each other.
   //
   // Overrides the per-monster `cadence` in content.js, which is 3 everywhere.
   // Kept as a single knob so the number can move for the whole cast at once.
-  MONSTER_CADENCE: 3,
+  MONSTER_CADENCE: 2,
 
   // --- monster behaviour ---
   VARIANT_CHANCE: 0.30,      // chance a regular monster is a tinted variant
@@ -206,12 +242,45 @@ const CONFIG = {
   // classes ignored it. The decision now sits on the question itself: before
   // the options appear, the student on turn picks SAFE or RISKY.
   //
-  // Stakes move SHARDS EARNED and DAMAGE TAKEN. They never move damage DEALT.
-  // An earlier system had a Heavy Strike that hit harder and it quietly cut a
-  // run from 36 questions to 25 - the exact rule this game exists to protect.
+  // v6.7 REBUILT THIS. Two faults, both found by measuring rather than by
+  // playing, and the second one only visible because of the first.
+  //
+  // FAULT 1 - "double both ways" is not symmetrical. It sounds fair and it is
+  // not, because the two sides are not drawn equally often. A class answering
+  // at 85% collects the upside about six times for every one time it pays the
+  // downside, so doubling both ends is a straight gift: a class that always
+  // gambled wiped 75% of the time against 95% for a class that never did.
+  // Being bold was strictly better, and a decision with a right answer is not
+  // a decision. Balancing it by multiplication needs roughly 5x, and 5x on a
+  // tier-4 question is 10 hearts out of 11 - one wrong answer, run over.
+  //
+  // So the penalty is FLAT. It does not scale with the question's tier, which
+  // means it can be set to a number that actually deters without becoming a
+  // one-shot kill on the hardest questions. It is also a number a ten-year-old
+  // can hold in their head while deciding, which "double" never was.
+  //
+  // FAULT 2 - the upside was pure shards, and shards only cash out at a shop
+  // several rooms later, while the damage lands in the same second. That is
+  // why v5.3 had to bolt a shield onto blind calls to stop RISKY being a trap.
+  // A RISKY correct answer now deals 2 damage instead of 1: the reward arrives
+  // at the same moment as the risk, in the currency the class is actually
+  // watching. This DOES shorten fights, and under the old reading of RULE ONE
+  // it would have been forbidden - see MONSTER_CADENCE above for why that
+  // reading was wrong, and what had to move with it.
   STAKES_ENABLED: true,
-  STAKE_RISKY_SHARDS: 2,     // RISKY pays double...
-  STAKE_RISKY_DAMAGE: 2,     // ...and a wrong answer costs double
+  STAKE_RISKY_SHARDS: 2,     // RISKY pays double shards...
+  STAKE_RISKY_DAMAGE_DEALT: 2,  // ...and lands twice as hard (SAFE deals 1)
+  // What a wrong RISKY answer costs, in hearts, flat. Shields absorb it
+  // normally - the class already reads shields as their buffer and taking that
+  // away would have made the penalty arbitrary as well as large.
+  //
+  // The split is by question tier, so an elite or the boss - which ask from
+  // the tier-4 bank - charge the higher number without needing to be named
+  // here. 4 of 11 hearts is a bad afternoon; 6 of 11 is most of the party and
+  // is meant to be frightening. Neither is fatal from full health, which is
+  // the line that separates a gamble from a coin-flip.
+  STAKE_RISKY_FLAT: 4,       // tiers 1-2
+  STAKE_RISKY_FLAT_HARD: 6,  // tiers 3-4, so elites and the boss
   // On a question tagged `open: true` the clue alone tells you what to say, so
   // RISKY escalates to answering BLIND - nothing on screen to pick from. This
   // is the old Commit, folded in. It pays more because recall is harder than
@@ -220,14 +289,18 @@ const CONFIG = {
   // must never do.
   STAKE_BLIND_SHARDS: 3,
   STAKE_MIN_TIER: 2,         // blind is a reward for the harder half of the bank
-  // A landed BLIND call also pays one shield point. Without this, RISKY was a
-  // trap: the shards only cash out at a shop several rooms later, while the
-  // doubled damage lands immediately, so a class that never risked anything
-  // was strictly better off. Paying it on every RISKY overcorrected - a class
-  // that always played SAFE then wiped 17 points more often, which is exactly
-  // the mandatory-mechanic trap Momentum fell into. Blind calls only, capped
-  // per fight, sits between the two. Shields do not shorten fights.
-  STAKE_BLIND_SHIELD: 1,
+  // REMOVED in v6.7 (was 1). This existed to stop RISKY being a trap, because
+  // the whole upside was shards that could not be spent until a shop several
+  // rooms away. RISKY now deals 2 damage, which is an immediate payoff, so the
+  // shield is doing nothing the mechanic does not already do - and it was a
+  // free shield in the one place the game had proved it cannot afford to give
+  // them away (see the Chorus note above: one shield per correct answer in a
+  // risk-free room was worth eight points of painless-fight rate).
+  //
+  // Left here at 0 rather than deleted so the reason survives. A blind call
+  // still pays 3x shards, still deals the RISKY 2 damage, and still costs the
+  // same flat 4 or 6 when it misses.
+  STAKE_BLIND_SHIELD: 0,
   STAKE_SHIELD_CAP: 2,       // per fight
 
   // --- team up ---
@@ -277,7 +350,7 @@ const CONFIG = {
   // a question that cost an evening once already, when a cached index.html
   // and a fresh config.js disagreed and the teacher menu simply stopped
   // accepting any passphrase at all.
-  VERSION: "6.5",
+  VERSION: "6.7",
 
   SAVE_KEY: "wordrealms_save_v2",
   DEFAULT_UNLOCKED: [1],

@@ -7,8 +7,13 @@ without noticing, so this drives it directly instead of trusting it.
 Chromium is launched with a fake audio device, so the AudioContext runs for
 real and we can read the graph's state back out of the page.
 """
+import os
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from playwright.sync_api import sync_playwright
+from walk import answer_any, clear_rooms
 
 URL = 'http://localhost:8811/index.html'
 
@@ -79,20 +84,24 @@ with sync_playwright() as pw:
     got_fight = False
     for _ in range(70):
         drain(p)
+        # The Chorus, and anything else needing a press before the map returns.
+        # Without this line the walk parks in a Chorus room and reports "never
+        # reached a fight" - which reads as a music bug and is a walker that
+        # has not been told about a room added two versions ago. That made four
+        # separate suites fail this way in one build; see walk.py.
+        if clear_rooms(p):
+            continue
         if vis(p, '#btn-move-on'):
             try: p.click('#btn-move-on', timeout=800); p.wait_for_timeout(350)
             except Exception: pass
         if p.evaluate("!!(STATE.run && STATE.run.encounter)"):
             got_fight = True; break
         # A Treasure room reuses the encounter screen but leaves run.encounter
-        # null, so it looks like a fight and is not one. Answer through it.
-        box = p.query_selector('#enc-choices')
-        if box and box.is_visible() and box.query_selector('.choice'):
-            opts = box.query_selector_all('.choice')
-            try:
-                opts[0].click(timeout=1200); p.wait_for_timeout(800); continue
-            except Exception:
-                pass
+        # null, so it looks like a fight and is not one. Answer through it, in
+        # whatever format it came in.
+        if answer_any(p, 'enc', want_right=True):
+            p.wait_for_timeout(800)
+            continue
         if vis(p, '#enc-stake-gate'):
             try: p.click('#enc-stake-gate .sg-safe', timeout=1200); p.wait_for_timeout(300); continue
             except Exception: pass

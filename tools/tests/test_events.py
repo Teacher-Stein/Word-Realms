@@ -137,21 +137,56 @@ with sync_playwright() as pw:
     check(gate['n'] >= 2, f'the forced event rendered {gate["n"]} options')
     print(f"\n  forced event first option: {gate['first'][:90]}")
 
-    # take the quiz option and answer all three
+    # Take the quiz option and answer all three.
+    #
+    # This loop used to click, wait a flat 800ms, and BREAK the moment the
+    # options were not on screen yet. A question that took a beat longer than
+    # that to render therefore looked identical to an event that had finished,
+    # so the suite reported "a quiz event asked no questions" - a failure with
+    # nothing wrong behind it, in a suite guarding a rule that was being kept.
+    # It is the same fault that wasted an afternoon in test_playthrough and the
+    # same one the README warns about: a fixed wait plus a break is a coin flip.
+    #
+    # Now it waits FOR the question rather than assuming it has arrived, and a
+    # miss costs one turn of the loop instead of the whole measurement.
     try:
         p.query_selector_all('#enc-choices .choice')[0].click()
-        p.wait_for_timeout(800)
-        for _ in range(4):
+        # WAIT FOR THE EVENT CARD TO GO before looking for questions. This is
+        # the actual bug that made this suite fail one run in three, and it is
+        # not the flat wait below it - it is the loop's own "have we looped
+        # back to the event card" guard firing on the FIRST pass, because the
+        # card the option was just clicked on had not been replaced yet. The
+        # guard is right; it simply must not be asked until the click has
+        # landed. Same question text, opposite meaning, 600ms apart.
+        for _ in range(20):
+            if 'Face the three locks' not in (
+                    p.query_selector('#enc-choices').inner_text()
+                    if p.query_selector('#enc-choices') else ''):
+                break
+            p.wait_for_timeout(250)
+        asked = 0
+        for _ in range(24):
             drain(p)
             box = p.query_selector('#enc-choices')
-            if not (box and box.is_visible() and box.query_selector('.choice')): break
+            if not (box and box.is_visible() and box.query_selector('.choice')):
+                # Either the event is over or the next question has not drawn
+                # yet. Give it a beat and look again; only give up if the
+                # encounter screen itself has gone.
+                if not p.evaluate("!!document.querySelector('#screen-encounter.active')"):
+                    break
+                p.wait_for_timeout(400)
+                continue
             txt = box.inner_text()
-            if 'Face the three locks' in txt or 'Climb around' in txt: break
+            # Back at the event card means the quiz is over - but only once
+            # at least one question has actually been asked. See above.
+            if asked and ('Face the three locks' in txt or 'Climb around' in txt):
+                break
             try:
                 box.query_selector_all('.choice')[0].click()
-                p.wait_for_timeout(1700)
+                asked += 1
+                p.wait_for_timeout(1500)
             except Exception:
-                break
+                p.wait_for_timeout(300)
         drain(p)
     except Exception as e:
         fails.append(f'could not play the quiz event: {e}')

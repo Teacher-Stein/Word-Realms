@@ -16,15 +16,31 @@
 // is. Before the options appear, the student on turn picks SAFE or RISKY.
 // No pool, no decay, nothing to accumulate, nothing to forget.
 //
-// The two hard rules this file must never break:
+// The rules this file must never break:
 //
-//   1. Stakes change SHARDS EARNED and DAMAGE TAKEN. They never change damage
-//      DEALT. A bigger hit is a shorter fight and a shorter fight is fewer
-//      questions, and review volume is the entire point of the game.
-//
-//   2. RISKY only hides the options on questions tagged `open: true` — ones
+//   1. RISKY only hides the options on questions tagged `open: true` — ones
 //      where the clue alone tells you what to say. Nothing in this game may
-//      ever hide the correct answer from a student who knows it.
+//      ever hide the correct answer from a student who knows it. This one is
+//      absolute and is not negotiable for any amount of balance.
+//
+//   2. A stake must never become the obviously-correct play, in either
+//      direction. If always gambling wins, or never gambling wins, there is no
+//      decision on the screen and the whole mechanic is theatre. Both failure
+//      modes have happened here; see config.js.
+//
+// WHAT CHANGED IN v6.7, AND WHY THE OLD RULE HERE IS GONE
+//
+// This file used to open with "stakes never change damage DEALT, because a
+// bigger hit is a shorter fight and a shorter fight is fewer questions". A
+// RISKY correct answer now deals 2. That is a deliberate reversal, not drift:
+// questions per LESSON — the number that actually matters, because a lesson is
+// time-boxed and a wiped class simply starts again — are flat at 42-43 whether
+// fights are short or long. The full measurement is in config.js under
+// MONSTER_CADENCE. RULE ONE in CLAUDE.md was rewritten to match.
+//
+// The constraint that replaced it is narrower and still real: nothing may
+// reduce the questions a class answers in FORTY-FIVE MINUTES. Shortening a
+// fight is now allowed. Ending the lesson early is not.
 // ---------------------------------------------------------------------------
 
 const STAKE_SAFE  = "safe";
@@ -37,8 +53,34 @@ function stakeShardMult(stake, blind) {
   return blind ? CONFIG.STAKE_BLIND_SHARDS : CONFIG.STAKE_RISKY_SHARDS;
 }
 
-function stakeDamageMult(stake) {
-  return stake === STAKE_RISKY ? CONFIG.STAKE_RISKY_DAMAGE : 1;
+// How hard a correct answer lands. SAFE deals 1; RISKY deals 2. This is the
+// half of the bargain that arrives immediately, which is what stops RISKY
+// being a trap — shards cash out at a shop several rooms later, and a class
+// deciding under pressure does not weigh a reward that far away.
+function stakeDamageDealt(stake) {
+  return stake === STAKE_RISKY ? (CONFIG.STAKE_RISKY_DAMAGE_DEALT || 2) : 1;
+}
+
+// What a WRONG answer costs, in hearts, before debuffs and gear.
+//
+// RISKY does not multiply the tier cost — it replaces it with a flat number.
+// Multiplying was the v5.3-v6.6 design and it could not be balanced: the
+// multiplier needed to deter a confident class (about 5x) turned a tier-4
+// miss into 10 of 11 hearts. Flat separates "how much does gambling cost"
+// from "how hard was the question", and only the first one needs to be big.
+//
+// Tier is the only input, so an elite or the boss charges the higher number by
+// virtue of asking from the tier-4 bank rather than by being special-cased. A
+// boss that falls back to a standard question on a key with no elite written
+// for it charges the lower number, which is correct: the class is being asked
+// an easier question and should pay the easier price.
+function stakeWrongCost(q, stake) {
+  const tier = (q && q.tier) || 1;
+  if (stake === STAKE_RISKY) {
+    return tier >= 3 ? (CONFIG.STAKE_RISKY_FLAT_HARD || 6)
+                     : (CONFIG.STAKE_RISKY_FLAT || 4);
+  }
+  return CONFIG.TIER_DAMAGE[tier] || 1;
 }
 
 // Can this question be answered with nothing on screen? Only `open` questions
@@ -84,10 +126,12 @@ function clearStake() {
   saveState();
 }
 
-// A landed BLIND call also pays a shield point, capped per fight. See the note
-// in config.js: without a defensive payoff RISKY is a trap, and with one on
-// every RISKY it becomes mandatory. Returns how many shields were actually
-// paid so the feedback line can say so.
+// A landed BLIND call used to pay a shield point, capped per fight. v6.7 sets
+// STAKE_BLIND_SHIELD to 0 — the 2 damage a RISKY answer now deals is the
+// immediate payoff that shield was standing in for, and free shields are the
+// one reward this game has measured itself unable to afford. The plumbing
+// stays so the number can be turned back on without rebuilding it.
+// Returns how many shields were actually paid so the feedback line can say so.
 function payStakeShield(blind) {
   const run = STATE.run;
   if (!run || !blind || !CONFIG.STAKE_BLIND_SHIELD) return 0;
@@ -103,8 +147,19 @@ function payStakeShield(blind) {
 // A short line for the feedback bar, so the class hears why the number moved.
 function stakeNote(stake, blind, correct) {
   if (stake !== STAKE_RISKY) return "";
-  if (correct) return blind ? " Called it blind!" : " Risk paid off!";
-  return blind ? " Risked it blind — it hurts twice as much." : " Risk taken, risk lost.";
+  if (correct) return blind ? " Called it blind — double damage!" : " Risk paid off — double damage!";
+  return blind ? " Risked it blind, and it hurt." : " Risk taken, risk lost.";
+}
+
+// How the answer was played, for the run log. "safe" also covers questions
+// that were never gated at all — a Treasure riddle, a Last Stand — because the
+// run's stake is cleared to SAFE after every question and those roads never
+// set it. Nothing reports a SAFE count for that reason; what the log is for is
+// counting how often a class backed itself, and how often that paid.
+function stakeTag(q) {
+  const stake = currentStake();
+  if (stake !== STAKE_RISKY) return "safe";
+  return stakeIsBlind(q, stake) ? "blind" : "risky";
 }
 
 // ---------------------------------------------------------------------------

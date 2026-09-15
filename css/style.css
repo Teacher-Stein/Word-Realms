@@ -1505,6 +1505,18 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 .stake-opts .pixel-btn b { font-size: 1.35rem; letter-spacing: 2px; }
 .stake-opts .pixel-btn span { font-size: .92rem; font-weight: 600; opacity: .92; }
 .stake-opts .pixel-btn span b { font-size: inherit; letter-spacing: 0; color: var(--gold); }
+/* The cost of being wrong, on its own line and bigger than the reward above
+   it. v6.7 made a wrong RISKY answer worth 4 or 6 hearts of 11, which is a
+   run-ending amount - it has to be legible from the back of a classroom to a
+   child who is already thinking about the question rather than the button.
+   test_announce.py measures this; do not shrink it back. */
+.stake-opts .pixel-btn .stake-cost {
+  margin-top: 3px; font-size: 1.0rem; opacity: 1; color: #ffc9c9;
+}
+.stake-opts .pixel-btn .stake-cost b {
+  font-size: 1.3rem; color: #ff8080; letter-spacing: 1px;
+}
+.stake-opts .pixel-btn .stake-cost.big b { font-size: 1.65rem; color: #ff5d5d; }
 .sg-risky { background: linear-gradient(#8a2a2a, #5b1010); border-color: #ff8a8a; }
 .sg-risky:hover { background: linear-gradient(#a83434, #6d1414); }
 @media (max-width: 900px) {
