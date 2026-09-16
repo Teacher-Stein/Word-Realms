@@ -41,8 +41,9 @@ dependencies.** Open `index.html` and it runs, including from `file://`. That is
 a hard constraint, not a preference — it runs on locked-down school computers
 with no install rights and often no internet.
 
-It ships with two complete units of Grade 5 English (Our World 5) as a worked
-example. Realms 3–9 are locked placeholders.
+It ships with three units of Grade 5 English (Our World 5) as a worked example:
+Realms 1 and 2 complete with their own artwork, Realm 3 written and playable
+while it borrows Realm 1's cast. Realms 4–9 are locked placeholders.
 
 ---
 
@@ -131,6 +132,7 @@ tell them not to send it.
 |---|---|
 | `js/config.js` | **All tuning.** Hearts, monster HP, rewards, stakes, Chorus payouts, the per-realm ramp. Change numbers here, never in the logic. |
 | `js/content.js` | Realms 1–2: questions, labels, monsters, elites, bosses, guides. The biggest file. |
+| `js/realm3.js` | Realm 3 (Unit 3, Music) — a whole unit in one file, via `registerRealm()`. The pattern every later realm should follow. |
 | `js/realm-template.js` | Copy this to add a new unit. See §5. |
 | `js/main.js` | Game flow — turns, encounters, rooms, the run loop, `renderQuestion`. |
 | `js/state.js` | Save/load, the party, the roster, the teaching record, question drawing. |

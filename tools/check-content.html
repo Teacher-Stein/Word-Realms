@@ -66,6 +66,23 @@
      will read is exactly what gets checked. -->
 <script src="../js/config.js"></script>
 <script src="../js/content.js"></script>
+<!-- Realms that live in their own file, as js/realm3.js does. These are wired
+     up in advance for realms 3 to 9 so that adding a unit never means editing
+     this page: a file that does not exist yet simply fails to load and is
+     ignored, which is harmless.
+
+     This was a real hole. v6.6 added registerRealm() so a new unit could live
+     in its own file, and told teachers in START-HERE.md to check their work
+     with this page - which read js/content.js and nothing else. A realm that
+     followed the advice was never checked, and the page cheerfully said "All
+     clear" about a bank it had not opened. -->
+<script src="../js/realm3.js"></script>
+<script src="../js/realm4.js"></script>
+<script src="../js/realm5.js"></script>
+<script src="../js/realm6.js"></script>
+<script src="../js/realm7.js"></script>
+<script src="../js/realm8.js"></script>
+<script src="../js/realm9.js"></script>
 <script src="content-rules.js"></script>
 <script>
 (function () {

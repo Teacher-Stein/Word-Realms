@@ -11,6 +11,8 @@ A static audit can prove it. This one fails if:
 
   * a sprite or backdrop path in content.js / ui.js is not on disk
   * a ready realm borrows art from another realm's folder (a leftover stand-in)
+    UNLESS it declares the loan with `artBorrowedFrom`, which is reported on
+    every run so a temporary borrow cannot quietly become permanent
   * two realms share a sprite file that isn't meant to be shared
   * a sprite still has magenta in it - the chroma key silently missed
   * a sprite is wildly outside the size band the arena is built for
@@ -45,6 +47,46 @@ for m in re.finditer(r"\n  (\d+):\s*\{(.*?)\n  \},", CONTENT, re.S):
         READY.add(rid)
 if not READY:
     fails.append("could not parse any ready realm out of content.js")
+
+# --- realms that live in their own file --------------------------------------
+#
+# v6.6 added registerRealm() so a unit could live in js/realm3.js rather than be
+# pasted into content.js, and js/realm-template.js tells every teacher to do
+# exactly that. This file went on reading content.js alone, so a realm that took
+# the advice was invisible here - which is precisely the hole this suite was
+# written to close, reopened one version later by a feature meant to help.
+#
+# Such a realm may legitimately BORROW an earlier realm's cast while its own art
+# is still being made. That is the recommended road for a new unit: questions
+# first, art afterwards. What must never happen again is a borrowed cast nobody
+# declared, because that is indistinguishable from a path somebody forgot to
+# swap - the exact confusion in the docstring above.
+#
+# So a borrow has to be declared with `artBorrowedFrom`, and it is reported
+# loudly every run. An undeclared one fails.
+BORROWED = {}
+for f in sorted((ROOT / "js").glob("realm*.js")):
+    src = f.read_text()
+    rid_m = re.search(r"registerRealm\(\{\s*id:\s*(\d+)", src)
+    if not rid_m:
+        continue
+    rid = int(rid_m.group(1))
+    lends = re.search(r"artBorrowedFrom:\s*(\d+)", src)
+    has_questions = re.search(r"questions:\s*\w+", src)
+    if not has_questions:
+        continue
+    READY.add(rid)
+    if lends:
+        BORROWED[rid] = int(lends.group(1))
+        notes.append(f"realm {rid} ({f.name}) is playable but is BORROWING "
+                     f"realm {BORROWED[rid]}'s art — its own cast is still to be made")
+    else:
+        own = f"assets/sprites/realm{rid}/"
+        for sp in re.findall(r'sprite:"([^"]+)"', src):
+            if not sp.startswith(own):
+                fails.append(f"realm {rid} is ready and declares no "
+                             f"artBorrowedFrom, but points at {sp} — either "
+                             f"move the art under {own} or declare the loan")
 
 # --- every sprite path referenced anywhere ------------------------------------
 paths = sorted(set(re.findall(r'sprite:"([^"]+)"', CONTENT)))
@@ -133,7 +175,16 @@ else:
         table[int(m.group(1))] = re.findall(r'"([^"]+)"', m.group(2))
     for rid in sorted(READY):
         if rid not in table:
-            fails.append(f"realm {rid} is ready but has no backdrops")
+            # A declared borrow covers scenery as well as the cast: the realm
+            # renders with the lender's sky, which is already checked against
+            # the hero luminance under the lender's own id. Silence here would
+            # be wrong, so it is reported as a note rather than passed over.
+            if rid in BORROWED:
+                notes.append(f"realm {rid} has no backdrops of its own and "
+                             f"uses realm {BORROWED[rid]}'s — declared, and "
+                             f"checked under realm {BORROWED[rid]} above")
+            else:
+                fails.append(f"realm {rid} is ready but has no backdrops")
     for rid, files in table.items():
         if len(files) != 3:
             fails.append(f"realm {rid} has {len(files)} backdrops, expected 3")

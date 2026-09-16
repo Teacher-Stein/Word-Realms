@@ -25,6 +25,92 @@ If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
 
+## v6.8 — Realm 3, The Concert Caverns
+
+Our World 5 Unit 3 (Music): 192 standard questions and 47 elite questions across
+32 curriculum keys, written from the school syllabus. **Playable now, borrowing
+Realm 1's cast** — the Concert Caverns get their own monsters next.
+
+All 21 syllabus words have a key of their own; none was merged or dropped. The
+two target structures (present perfect with *ever* and *never*, and comparative
+adverbs) take three keys each, the /ɔ/ phonics takes two, and the last three
+carry Unit 1 and Unit 2 grammar forward **recast in music** — question tags on
+top of the new present perfect ("You've never heard jazz, have you?"), the zero
+conditional on how instruments work, *going to* on concerts. Unit 2's *as … as*
+needed no key of its own: it reappears inside the comparative adverbs, because
+"I play as well as my brother" is one of the unit's own target sentences.
+
+The Gifted tab's parallel Oxford Grammar strand is deliberately **not** in the
+realm. Elites and the boss appear on every map, so putting it in the elite bank
+would ask high-standard classes about structures nobody has taught them. Gifted
+classes are stretched the way Realms 1 and 2 stretch them — tier-4 elites that
+ask a student to *use* the language rather than recognise it.
+
+### Three holes found in the tools, not the game
+
+v6.6 added `registerRealm()` so a unit could live in its own file, and
+`START-HERE.md` tells every teacher to do exactly that. **Three separate
+checkers then went on reading `js/content.js` alone**, so a realm that followed
+the documented advice was invisible to all of them:
+
+- `tools/check-content.html` — the teacher's own tool, the one the docs say to
+  double-click — would have reported **"All clear" on a bank it had never
+  opened**. Now wired for realms 3 to 9 in advance, so adding a unit never means
+  editing the checker.
+- `tools/tests/check_content.js` — same hole, same fix, loading every
+  `js/realm*.js` in order.
+- `test_reachable.py` — printed a contented "64 keys, 64 labelled" while Realm 3
+  added 32 more it could not see. Now 96 of 96.
+
+A feature meant to make new units easier had quietly disabled the safety net
+that catches mistakes in them. That is worth more than the realm.
+
+### Borrowed art is now declared rather than assumed
+
+`test_art.py` exists because Realm 2 once shipped with seventeen sprite paths
+pointing at Realm 1's cast and nothing could tell a deliberate stand-in from a
+path someone forgot to swap. A realm in its own file slipped past that test too.
+
+A borrow is now **declared** — `artBorrowedFrom: 1` — and reported loudly on
+every run, and an *undeclared* one fails. The realm card in the game says
+"Playable · artwork still to come" for the same reason. When the Concert Caverns
+get their own cast both flags come off and the test starts enforcing
+`assets/sprites/realm3/` instead of merely reporting the loan.
+
+### What the content review turned up
+
+The bank was written in five batches and then read end to end. 41 fixes, of
+which the ones worth naming:
+
+- **Three elite questions required grammar nobody has taught** — the present
+  perfect continuous, the passive, and an object relative clause — two of them
+  to be *produced blind* for six hearts. Replaced with the unit's own structures.
+- **"I have been playing the violin since I was seven"** was the stored answer
+  where "I have played" is equally correct *and* is what Unit 3 teaches. The
+  student most likely to be right was the one most likely to be marked wrong.
+- **Blind answers that were words from outside the unit** — *orchestra*,
+  *chorus*, *improvise*. A child who knows *violin* perfectly would have failed
+  a question filed under "violin", pointing Monday's lesson at the wrong thing.
+- **"If you press two keys together, you hear a chord"** contradicted this
+  realm's own definition of a chord as three or more notes.
+- **Three error-spotting sentences had a second, equally valid repair.** Tapping
+  *sister* in "My sister play the violin" fixes it just as well as tapping
+  *play*, and costs a heart.
+- **The phonics keys treated *song*, *long* and *strong* as the same vowel as
+  *rock* and *pop*.** True for a cot–caught-merged American speaker, false for
+  everyone else — and it bought nothing, because *box, clock, hop, shop* are
+  unambiguous for every American speaker. Swapped.
+- **"The long thin *metal* instrument you hold sideways"** — the flute a
+  Vietnamese ten-year-old knows is the bamboo *sáo trúc*. Making the material
+  the deciding fact quietly punishes the child who pictures the one from home.
+- **A chorus does not *play*.** It sings. Also: *chorus* meant choir in four
+  questions, a song section in two, and the game's own whole-class round on
+  screen. Three senses in one lesson is too many at A2; the song section went.
+- **"plays a violin"** taught the wrong article where Grade 5 is explicitly
+  taught *play **the** violin*. Four questions reworded.
+
+---
+
 ## v6.7 — the wager is finally a decision
 
 The SAFE/RISKY choice has been in the game since v5.3 and it has never worked

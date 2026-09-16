@@ -96,14 +96,25 @@ for must in ("brace", "potions", "stakes", "intent"):
 # crash anything - coverLabel() falls back to the de-slugged key - it just
 # quietly makes one row of the report worse than the others, which is exactly
 # the kind of fault nobody reports and nobody fixes.
+# A REALM IN ITS OWN FILE COUNTS TOO. v6.6 added registerRealm() so a unit
+# could live in js/realm3.js, and this check went on reading content.js alone -
+# so a realm that followed the documented advice could ship 32 unlabelled keys
+# and this suite would print a contented "64 keys, 64 labelled". The realm
+# files carry their own label tables and merge them with Object.assign, so both
+# the questions and the labels have to be gathered from all of them.
 content = JS.get("content.js", "")
-q_keys = set(re.findall(r'cover:"([^"]+)"', content))
-m = re.search(r"const COVER_LABELS = \{(.*?)\n\};", content, re.S)
-if not m:
+realm_src = "".join(src for name, src in sorted(JS.items())
+                    if re.fullmatch(r"realm\d+\.js", name))
+allsrc = content + realm_src
+
+q_keys = set(re.findall(r'cover:"([^"]+)"', allsrc))
+labelled = set()
+tables = re.findall(r"const \w*COVER_LABELS\w* = \{(.*?)\n\};", content, re.S)
+tables += re.findall(r"const REALM\d+_LABELS = \{(.*?)\n\};", realm_src, re.S)
+if not tables:
     fails.append("could not find COVER_LABELS in content.js")
-    labelled = set()
-else:
-    labelled = set(re.findall(r'^  "([^"]+)":', m.group(1), re.M))
+for t in tables:
+    labelled |= set(re.findall(r'^  "([^"]+)":', t, re.M))
 for k in sorted(q_keys - labelled):
     fails.append(f'curriculum key "{k}" has questions but no entry in '
                  f'COVER_LABELS — it would appear in the teaching report as a '
