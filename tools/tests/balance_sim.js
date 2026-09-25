@@ -77,9 +77,22 @@ function runOne(acc, S) {
 
 
       // Stakes policy. A class that plays it safe risks rarely; a bold class
-      // risks often. Crucially children misjudge: they take RISKY on questions
-      // they are LESS sure of about O.riskMisjudge of the time, so a risky
-      // answer is slightly less accurate than a safe one.
+      // risks often, and a risky answer is less accurate than a safe one by
+      // O.riskMisjudge.
+      //
+      // v7.0 RAISED THAT FROM 6 POINTS TO 10, because RISKY now always means
+      // saying the answer with nothing on screen. Where the number comes from:
+      // a multiple choice hands a student who does NOT know a 1-in-3 guess, and
+      // at 85% accuracy they are in that position 15% of the time, so the guess
+      // alone is worth about 5 points. Add a little for production being harder
+      // than recognition even when you half-know it, and 8-10 is the honest
+      // range.
+      //
+      // IT MATTERS WHICH END. At 10 points a bold class wipes 88% against a
+      // cautious 79% - a decision worth making either way. At 15 it is 93%
+      // against 79%, and playing safe becomes strictly correct, which is the
+      // v6.6 fault inverted. If the first lesson shows bold classes dying far
+      // more often, the lever is the flat penalty: 4/6 down to 3/5.
       // v5.2 control mode: bank Momentum on correct answers, spend 3 on a
       // Guard that takes 2 off a telegraphed blow. No stakes at all.
       if (O.v52) {
@@ -107,7 +120,12 @@ function runOne(acc, S) {
         continue;
       }
 
-      const risky = Math.random() < O.riskRate;
+      // v7.0: RISKY is only OFFERED where the question can be said aloud, which
+      // after the clue rewrites is ~90% of the bank (it was ~30-50%, and the
+      // rest of the time RISKY silently meant "same multiple choice, bigger
+      // stakes"). O.blindFrac is now that availability, so a class that wants
+      // to gamble can only do it when the game lets them.
+      const risky = (Math.random() < O.blindFrac) && (Math.random() < O.riskRate);
       const eff = risky ? Math.max(0.05, acc - O.riskMisjudge) : acc;
       const right = Math.random() < eff;
 
@@ -252,7 +270,7 @@ function shape(label, opt) {
   O = Object.assign({ layers: CONFIG.LAYERS_PER_REALM,
                       shields: CONFIG.START_SHIELDS,
                       hearts: CONFIG.START_HEARTS,
-                      riskRate: 0.30, riskMisjudge: 0.06, v52: false, moEff: 0.45, blindFrac: 0.54 }, opt);
+                      riskRate: 0.30, riskMisjudge: 0.10, v52: false, moEff: 0.45, blindFrac: 0.90 }, opt);
   const cells = [];
   for (const acc of [0.95, 0.85, 0.75]) {
     const S = newStats();
@@ -310,8 +328,8 @@ const LESSON = 45 * 60, T_Q = 61, T_RESTART = 150;
 
 function lesson(acc, opt) {
   O = Object.assign({ layers: CONFIG.LAYERS_PER_REALM, shields: CONFIG.START_SHIELDS,
-    hearts: CONFIG.START_HEARTS, riskRate: 0.30, riskMisjudge: 0.06,
-    v52: false, moEff: 0.45, blindFrac: 0.54 }, opt);
+    hearts: CONFIG.START_HEARTS, riskRate: 0.30, riskMisjudge: 0.10,
+    v52: false, moEff: 0.45, blindFrac: 0.90 }, opt);
   let totalQ = 0, wipes = 0, runs = 0, distinct = 0; const N = 1200;
   for (let i = 0; i < N; i++) {
     let t = 0, q = 0, w = 0, r = 0; const seenKeys = new Set();
@@ -365,8 +383,8 @@ function tune(label, opt) {
   const wipes = []; let acts = 0, bhp = 0;
   for (const rr of [0.08, 0.65]) {
     O = Object.assign({ layers: CONFIG.LAYERS_PER_REALM, shields: CONFIG.START_SHIELDS,
-      hearts: CONFIG.START_HEARTS, riskMisjudge: 0.06,
-      v52: false, moEff: 0.45, blindFrac: 0.54 }, opt, { riskRate: rr });
+      hearts: CONFIG.START_HEARTS, riskMisjudge: 0.10,
+      v52: false, moEff: 0.45, blindFrac: 0.90 }, opt, { riskRate: rr });
     const S = newStats();
     let d = 0; const N = 2500;
     for (let i = 0; i < N; i++) { if (runOne(0.85, S).dead) d++; }

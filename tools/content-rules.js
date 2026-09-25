@@ -115,11 +115,21 @@
       // the answer? That is the shape that cannot be answered blind.
       const norml = s => String(s).toLowerCase().replace(/[^a-z0-9 ]/g, " ")
                                   .replace(/\s+/g, " ").trim();
-      all.filter(q => q.open && q.answer).forEach(q => {
+      // v7.0 WIDENED THIS FROM `open` QUESTIONS TO EVERY SAYABLE ONE.
+      //
+      // RISKY now hides the options on ANY question that is not an odd-one-out
+      // or a put-in-order, so a clue that only points at the options is no
+      // longer merely a mis-tagged blind call - it is a question that becomes
+      // unanswerable the moment a class presses the button. The flag it used to
+      // depend on was hand-set and wrong 19 times out of 47; the format is not.
+      const SAYABLE = q => q.noBlind !== true &&
+                           ["odd", "order"].indexOf(q.format || "choice") === -1;
+      all.filter(q => SAYABLE(q) && q.answer).forEach(q => {
         const clueHasAnswer = norml(q.clue).includes(norml(q.answer));
         if (REFERS_TO_OPTIONS.test(q.clue) && !clueHasAnswer)
-          bad(`${realmName} "${q.cover}" is tagged open but its clue points at the ` +
-              `options: "${q.clue.slice(0, 60)}..."`);
+          bad(`${realmName} "${q.cover}" can be taken RISKY, but its clue points ` +
+              `at the options, so it cannot be said aloud. Rewrite the clue so it ` +
+              `stands alone, or add noBlind:true — "${q.clue.slice(0, 60)}..."`);
       });
 
       // --- coverage ----------------------------------------------------------
@@ -142,7 +152,10 @@
       // --- the blind-call pool ----------------------------------------------
       // RISKY escalates to a blind call on open questions at or above the tier
       // floor. If that pool is thin the mechanic barely appears.
-      const blindable = all.filter(q => q.open && q.tier >= CONFIG.STAKE_MIN_TIER);
+      // v7.0: what can go blind is now decided by format, not by the `open`
+      // flag, because pressing RISKY always hides the options.
+      const blindable = all.filter(q => q.noBlind !== true &&
+                        ["odd", "order"].indexOf(q.format || "choice") === -1);
       const pct = (blindable.length / all.length * 100).toFixed(0);
       note(`blind-call pool  : ${blindable.length} of ${all.length} (${pct}%)`);
       if (blindable.length < all.length * 0.25)

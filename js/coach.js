@@ -17,17 +17,22 @@ const COACH_LESSONS = {
   // v5.3 mechanic and stopped being true: the penalty is now a flat number, not
   // a multiple of the question's tier. A coach card that describes a mechanic
   // the game no longer has is worse than no card, because the class believes it.
+  // Rewritten in v7.0. It used to end "on SOME questions RISKY goes further:
+  // the options vanish" - and that word `some` was the whole problem. One
+  // student pressed RISKY and had to produce the answer from nothing; the next
+  // pressed it and got a multiple choice. A class called that unfair and they
+  // were right. RISKY now does one thing, so the card describes one thing.
   stakes: {
     banner: "NEW: STAKES",
     title: "Decide how much you're putting on it",
-    effect: "RISKY hits twice as hard — and costs 4 hearts if you're wrong",
-    desc: "RISKY strikes for double and pays double shards. Get it wrong and " +
-          "it costs four hearts, or six on the hardest questions — the button " +
-          "tells you the exact number before you choose, so look at it. On " +
-          "some questions RISKY goes further: the options vanish and you say " +
-          "the answer out loud for triple shards. Backing yourself when you " +
-          "KNOW is the skill — and knowing when you don't know is the other " +
-          "half of it.",
+    effect: "RISKY = no options. Say it out loud.",
+    desc: "SAFE keeps the three options on screen. RISKY takes them ALL away " +
+          "and you say the answer out loud — your teacher decides if you got " +
+          "it. It is always this, every time. Land it and you hit twice as " +
+          "hard for triple shards; miss and it costs four hearts, or six on " +
+          "the hardest questions. The button tells you the exact number before " +
+          "you choose, so look at it. Backing yourself when you KNOW is the " +
+          "skill — and knowing when you don't know is the other half of it.",
   },
   intent: {
     banner: "NEW: THE MONSTER'S PLAN",

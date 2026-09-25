@@ -25,6 +25,182 @@ If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
 
+## v7.0 — RISKY means one thing, and an armour bug that made a hero invincible
+
+Two things came back from real classes, and one of them was a bug that had been
+sitting in the game for six versions.
+
+### The Storm Scholar was taking no damage at all
+
+Reported from a boss fight: the Storm Scholar took nothing from wrong answers
+and nothing from ordinary attacks. It was not the Scholar and it was not a
+relic. `incomingDamage()` ended with `Math.max(0, dmg)`, and the **Stormhide
+Cloak** takes 1 off every elite and boss hit — so against the boss, everything
+that dealt exactly 1 dealt nothing:
+
+| | damage | landed as |
+|---|---|---|
+| SAFE wrong answer, tier 1–2 | 1 | **0** |
+| boss flurry (1 × 3) | 1 each | **0, 0, 0** |
+| boss drain | 1 | **0** |
+| boss heavy | 2 | 1 |
+| boss charge | 4 | 3 |
+
+The Scholar only found it first because her perk hands her a random piece of
+gear and the cloak is one of six. Any hero who buys it gets the same immunity,
+against elites as well as the boss.
+
+**Armour now reduces a blow and never erases one** — a hit that was going to
+land lands for at least 1. The floor is general rather than a special case for
+one cloak, because the next source of damage reduction would hit the same wall.
+
+Two faults were stacked underneath it. A zero-damage hit still ran the whole
+damage routine, which checks the Storm Shield potion and the Lucky Charm
+*before* it checks the number — so a blow that was never going to hurt could
+still **spend a one-shot defence**. And the feedback read *"the monster strikes
+for 0!"* instead of naming the armour that stopped it. Both fixed.
+
+### RISKY did two different jobs, and a class noticed
+
+One student pressed RISKY and had to say the answer with nothing on screen. The
+next pressed the same button and got three options to choose from. Same button,
+same reward, two different difficulties — and the students said that was unfair.
+They were right.
+
+**RISKY now always hides the options.** Every time, on every question that
+offers it.
+
+The obvious objection is Rule 2: *"Which sentence is correct?"* cannot be said
+aloud with the options gone. The answer was not to write a separate bank of
+say-aloud questions — that would force the choice to be made *before* the
+question appears, which throws away the best part of the mechanic, the moment a
+student reads the clue and decides whether they actually know it.
+
+Instead the protection moved from a **flag** to the **shape of the question**:
+
+- **69 clues were rewritten** so they stand on their own. *"Choose the correct
+  sentence:"* became *"Say it correctly: 'She have lived here since 2019.'"* —
+  which works as a multiple choice with the options shown and as a spoken
+  question with them hidden, and is a better question either way. Each quoted
+  broken sentence is a fresh one, never a distractor, so the multiple choice
+  still has three live candidates.
+- **26 questions were flagged `noBlind: true`** — the ones that are really
+  pick-from-this-list ("Which of these is NOT an emergency?", "Which pair BOTH
+  use the /θ/ sound?"). They never offer the gate.
+- **Odd-one-out and put-it-in-order never offer it either**, because the options
+  are the question.
+
+`tools/content-rules.js` now enforces this on every question, not just the ones
+someone remembered to tag: a clue that points at its options must be rewritten
+or declared, or the content check fails.
+
+**RISKY is now available on about 90% of questions**, against roughly a third
+before. Spot-the-error is included — the sentence stays on screen as plain text
+and the student says which word is wrong.
+
+### The flat penalty came down from 4/6 to 3/5
+
+Because RISKY is now genuinely harder. A multiple choice hands a student who
+does not know a 1-in-3 guess, and a class at 85% accuracy is in that position
+about 15% of the time — so removing it costs roughly 5 points of accuracy, plus
+a little more for production being harder than recognition.
+
+At the old 4/6 that made bold play strictly *worse*: a gambling class wiped 87%
+against a cautious class's 78%. Which is exactly the v6.6 fault inside out — a
+stake with a correct answer is not a stake. At 3/5 it is 82% against 76%, and a
+class can reasonably play either way. Questions per lesson and curriculum
+coverage are unchanged at 41 and 30.
+
+**The difficulty did not go away; it moved from the punishment to the task.**
+
+### The answer is now shown after every blind call
+
+A SAFE question always ends with the right option highlighted in green. A blind
+call had nothing on screen at all, so until now the only written form of the
+answer was a line of small type — and reliably only when they got it wrong. It
+now appears in large type either way.
+
+### Status effects you can actually see
+
+A class spent a fight baffled: a student answered correctly and the monster took
+no damage. The cause was Chilled, and the chip saying so was **correct** — it
+rendered, it stayed, it was still there when the next question appeared. It was
+also a 177 × 82 box in the bottom-left corner with its explanation in 0.68rem
+type, which is invisible on a TV from the back of a classroom.
+
+So: every status chip now carries a **symbol** as well as a word and is half
+again as large — and a **coloured band appears above the question**, before the
+student answers, saying what is about to happen to them in a full sentence
+(*"❄ CHILLED — your next hit will do NO DAMAGE. Answer anyway; the cold wears
+off."*). Both read from the same table, so they cannot disagree.
+
+### A question that did not make sense
+
+Realm 2, cover key `attack`: *"One part is wrong: 'The wasps attacked to the
+fruit on the table.'"* Two problems, both found in a lesson. Corrected, the
+sentence still read wrongly — wasps land on fruit and swarm it, they do not
+attack it — so a student who made the right repair could not tell. And the third
+option, *"'the fruit' should be 'fruits'"*, is defensible English, which made
+two answers arguably right. Replaced with bees and a bear.
+
+All twenty suites pass.
+
+---
+
+## v6.9 — the teaching report knows which unit you just taught
+
+The record has always been cumulative and flat: every question a class has ever
+answered, in one table, sorted weakest-first. With two realms that was fine.
+Realm 3 made it 96 possible rows — and the day after a Unit 3 lesson the top of
+the table was Unit 2 content from a month earlier. By Realm 9 it is 288 rows.
+
+**The report now filters by unit, and opens on the one the class last played.**
+Tabs across the top, one per unit that class has actually met, plus *All units*.
+A unit nobody has played is not offered, because an empty tab is a question a
+teacher has to answer by clicking it.
+
+Both exports follow what is on screen. A teacher who has filtered to Unit 3 and
+then downloads the whole year has been handed the wrong file with no way to tell
+until they open it. The copied summary names its unit in the heading, the CSV
+gains a `unit` column, and the filename carries it too — so a file opened in
+February still says what it is about, and several exports can be pasted into one
+sheet without losing which is which.
+
+**No change to the save format, and no migration.** The unit a curriculum item
+belongs to is worked out at read time from each realm's own `coverKeys`, which
+is what makes this work on records a class built up months before the feature
+existed. A key may belong to more than one unit — a later realm could reuse an
+earlier key for spiral review — and such an item shows under both. Realm 3
+deliberately does not do this: its review keys are named `review-going-to`
+rather than reusing Realm 1's `g1-statement`, because a shared key would merge
+two units' scores into one row and hide exactly the improvement worth seeing.
+
+### What is still missing, and is not hidden
+
+**The record has no time dimension.** October and December blend into one
+percentage, so a class that went from 40% to 80% on question tags looks like a
+class sitting at 60%. Fixing it means a save-format change and a migration,
+which is where save bugs come from, so it is deliberately deferred — nothing
+collected now is wrong, it is simply undated, and it can be dated later.
+
+### Testing
+
+`tools/tests/test_report.py` is new, and uses no walker at all: it seeds a
+record directly and presses the buttons, so it cannot fail for reasons
+unconnected to what it measures. The check that matters adds the per-unit row
+counts back up and requires them to equal the unfiltered total — a filter that
+silently drops rows, or counts one twice, looks exactly like a filter that works.
+
+One assertion had to be rewritten during the build, and it is the lesson worth
+keeping: the first version asked whether any Realm 1 label appeared anywhere in
+a Unit 3 summary, and failed on the word **"plan"** — which is a Realm 1
+curriculum item *and* a word in the summary's own footer about lesson plans. The
+filter was perfect; the assertion was measuring a proxy for it.
+
+All twenty suites pass.
+
+---
+
 ## v6.8 — Realm 3, The Concert Caverns
 
 Our World 5 Unit 3 (Music): 192 standard questions and 47 elite questions across

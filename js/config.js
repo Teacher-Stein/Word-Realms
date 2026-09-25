@@ -267,8 +267,20 @@ const CONFIG = {
   // watching. This DOES shorten fights, and under the old reading of RULE ONE
   // it would have been forbidden - see MONSTER_CADENCE above for why that
   // reading was wrong, and what had to move with it.
+  // v7.0: RISKY MEANS ONE THING - the options vanish and the answer is said
+  // out loud. It used to mean that on some questions and "same multiple choice,
+  // bigger stakes" on the rest, which a class spotted in a lesson and called
+  // unfair: two students, same button, different jobs. The split is gone.
+  //
+  // What enforces it is the SHAPE of the question, not a flag somebody has to
+  // remember to tick. RISKY is simply not offered on an odd-one-out, a
+  // put-it-in-order, or anything carrying `noBlind: true` - see stakes.js. That
+  // covers about 10% of the bank; the other 90% offers it, against roughly a
+  // third before the v7.0 clue rewrites.
   STAKES_ENABLED: true,
-  STAKE_RISKY_SHARDS: 2,     // RISKY pays double shards...
+  STAKE_RISKY_SHARDS: 2,     // UNUSED since v7.0 - there is one RISKY, and it
+                             // pays STAKE_BLIND_SHARDS. Kept so the old rate is
+                             // recoverable if the blind rate proves too rich.
   STAKE_RISKY_DAMAGE_DEALT: 2,  // ...and lands twice as hard (SAFE deals 1)
   // What a wrong RISKY answer costs, in hearts, flat. Shields absorb it
   // normally - the class already reads shields as their buffer and taking that
@@ -279,8 +291,24 @@ const CONFIG = {
   // here. 4 of 11 hearts is a bad afternoon; 6 of 11 is most of the party and
   // is meant to be frightening. Neither is fatal from full health, which is
   // the line that separates a gamble from a coin-flip.
-  STAKE_RISKY_FLAT: 4,       // tiers 1-2
-  STAKE_RISKY_FLAT_HARD: 6,  // tiers 3-4, so elites and the boss
+  //
+  // v7.0 BROUGHT THESE DOWN FROM 4/6, and the reason is worth keeping.
+  //
+  // RISKY now always hides the options, so it is a genuinely harder question
+  // than it was: a multiple choice hands a student who does not know a 1-in-3
+  // guess, and a class at 85% accuracy is in that position about 15% of the
+  // time. Removing it costs them roughly 5 points of accuracy, plus a little
+  // more for production being harder than recognition.
+  //
+  // At the old 4/6, that made bold play strictly WORSE - a class that gambled
+  // wiped 87% against a cautious class's 78%. Which is precisely the v6.6 fault
+  // turned inside out: a stake with a correct answer is not a stake. At 3/5 it
+  // is 82% against 76%, a six-point spread, and a class can reasonably play
+  // either way. Questions per lesson and curriculum coverage are unchanged.
+  //
+  // The difficulty did not go away - it moved from the punishment to the task.
+  STAKE_RISKY_FLAT: 3,       // tiers 1-2
+  STAKE_RISKY_FLAT_HARD: 5,  // tiers 3-4, so elites and the boss
   // On a question tagged `open: true` the clue alone tells you what to say, so
   // RISKY escalates to answering BLIND - nothing on screen to pick from. This
   // is the old Commit, folded in. It pays more because recall is harder than
@@ -288,7 +316,12 @@ const CONFIG = {
   // correct answer from a student who knows it is the one thing this game
   // must never do.
   STAKE_BLIND_SHARDS: 3,
-  STAKE_MIN_TIER: 2,         // blind is a reward for the harder half of the bank
+  // UNUSED since v7.0. This was the tier floor below which RISKY would not go
+  // blind, and it is exactly the kind of hidden second condition that made the
+  // button behave differently on questions that looked the same. A tier-1
+  // question now offers the same gamble as any other; the flat penalty already
+  // scales the cost by tier, so nothing here needed a floor as well.
+  STAKE_MIN_TIER: 2,
   // REMOVED in v6.7 (was 1). This existed to stop RISKY being a trap, because
   // the whole upside was shards that could not be spent until a shop several
   // rooms away. RISKY now deals 2 damage, which is an immediate payoff, so the
@@ -350,7 +383,7 @@ const CONFIG = {
   // a question that cost an evening once already, when a cached index.html
   // and a fresh config.js disagreed and the teacher menu simply stopped
   // accepting any passphrase at all.
-  VERSION: "6.8",
+  VERSION: "7.0",
 
   SAVE_KEY: "wordrealms_save_v2",
   DEFAULT_UNLOCKED: [1],

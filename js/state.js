@@ -369,17 +369,56 @@ function logAnswer(q, correct, choralLevel) {
     run.countedInRecord = true;
     rec.runs++;
   }
+  // Which unit this class most recently played. The teaching report opens on
+  // it, because the question a teacher actually has the day after a lesson is
+  // "what do I reteach from THAT", not "how are they doing across the year".
+  // Stored per class, so seven classes on seven machines each open on the unit
+  // they were last taught.
+  if (run && run.realmId) rec.lastRealmId = run.realmId;
   saveState();
 }
 
 // ---- reading the record back ----------------------------------------------
 
+// Which realm a curriculum key belongs to.
+//
+// Derived from the realm's own coverKeys at READ time rather than stored in the
+// record, which matters for two reasons: it needs no change to the save format
+// and no migration, and it works on records a class built up months ago. The
+// keys are the join.
+//
+// A key may legitimately belong to more than one realm - a later unit could
+// reuse an earlier key for spiral review - so this returns a LIST and such a
+// key shows under every unit that asks it. Realm 3 deliberately does not do
+// this (its review keys are named `review-going-to` rather than reusing Realm
+// 1's `g1-statement`), because a shared key would also merge the two units'
+// scores into one row and hide exactly the improvement you would want to see.
+function realmsForKey(key) {
+  const out = [];
+  Object.values(REALMS).forEach(r => {
+    if (r && Array.isArray(r.coverKeys) && r.coverKeys.includes(key)) out.push(r.id);
+  });
+  return out;
+}
+
+// Which units has this class actually been tested on? Drives the report's tabs;
+// a unit nobody has played is not offered.
+function realmsInRecord(className) {
+  const rec = classRecord(className);
+  const ids = new Set();
+  Object.keys(rec.items).forEach(k => realmsForKey(k).forEach(id => ids.add(id)));
+  return [...ids].sort((a, b) => a - b);
+}
+
 // One row per curriculum item this class has actually met. Items nobody has
 // been asked about do not appear - an untested item is not a weakness, and
 // padding the table with thirty empty rows would bury the real ones.
-function curriculumRows(className) {
+function curriculumRows(className, realmId) {
   const rec = classRecord(className);
-  return Object.keys(rec.items).map(key => {
+  const keys = realmId
+    ? Object.keys(rec.items).filter(k => realmsForKey(k).includes(realmId))
+    : Object.keys(rec.items);
+  return keys.map(key => {
     const it = rec.items[key];
     return {
       key,
@@ -395,9 +434,9 @@ function curriculumRows(className) {
 // Group rows, so a report can say "zero conditional" rather than listing three
 // near-identical rows. A group is only worth reporting once it has been asked
 // about a few times.
-function curriculumGroups(className) {
+function curriculumGroups(className, realmId) {
   const by = {};
-  curriculumRows(className).forEach(r => {
+  curriculumRows(className, realmId).forEach(r => {
     const g = by[r.group] || (by[r.group] = { group: r.group, asked: 0, right: 0, items: 0 });
     g.asked += r.asked; g.right += r.right; g.items++;
   });
@@ -411,8 +450,8 @@ function curriculumGroups(className) {
 // loud rather than letting a teacher plan a lesson around one wrong answer.
 const CURRICULUM_MIN_ATTEMPTS = 4;
 
-function curriculumReady(className) {
-  return curriculumRows(className).some(r => r.asked >= CURRICULUM_MIN_ATTEMPTS);
+function curriculumReady(className, realmId) {
+  return curriculumRows(className, realmId).some(r => r.asked >= CURRICULUM_MIN_ATTEMPTS);
 }
 
 function startNewRun(realmId, heroId) {

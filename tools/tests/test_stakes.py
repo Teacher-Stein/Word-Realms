@@ -40,10 +40,13 @@ WHAT IT CHECKS, AND WHY EACH ONE IS HERE
      being a buffer for their character." A flat 6 that ignored shields would
      make the buffer meaningless exactly when it matters most.
 
-  5. RULE TWO. RISKY still never hides the correct answer on a selection-only
-     question. This is checked in test_playthrough too, and it is checked again
-     here, because this is the file somebody will edit when they want RISKY to
-     bite harder.
+  5. RULE TWO, AS v7.0 ENFORCES IT. RISKY now ALWAYS hides the options, so the
+     protection moved: instead of a per-question `open` flag that a human had
+     to remember (and got wrong on 19 questions out of 47 in v5.1), the gate is
+     simply never OFFERED on a question whose options are the question — an
+     odd-one-out, a put-it-in-order, or anything carrying `noBlind: true`.
+     The checks below assert both halves: always blind when offered, and never
+     offered where the clue cannot stand alone.
 
   6. THE STAKE IS LOGGED. Every answer records how it was played.
 
@@ -261,26 +264,82 @@ with sync_playwright() as pw:
     # -----------------------------------------------------------------------
     # 5. RULE TWO. RISKY may hide the options only on an `open` question.
     # -----------------------------------------------------------------------
+    # --- 4b. ARMOUR REDUCES A BLOW. IT NEVER ERASES ONE. -------------------
+    #
+    # A class found this one in a lesson: the Storm Scholar took no damage at
+    # all through a whole boss fight. The Stormhide Cloak takes 1 off every
+    # elite and boss hit, and incomingDamage() clamped with Math.max(0, ...),
+    # so against the boss EVERY 1-damage source became nothing - wrong answers
+    # at tier 1-2, the three hits of the flurry, and the drain. The Scholar was
+    # only the first to find it because her perk hands her a random piece of
+    # gear and the cloak is one of six.
+    #
+    # A 0-damage hit also used to run the whole damage() routine, which checks
+    # the Storm Shield potion and the Lucky Charm BEFORE it checks the number -
+    # so a blow that was never going to hurt could still spend one of them.
+    print('\narmour cannot make you immune')
+    armour = p.evaluate("""() => {
+      STATE.run.armour = 'stormhide';
+      STATE.run.debuff = null; STATE.run.idolTaken = false;
+      const boss = { isElite: false, isBoss: true };
+      const elite = { isElite: true, isBoss: false };
+      const mob = { isElite: false, isBoss: false };
+      const out = { boss: {}, elite: {}, mob: {} };
+      for (const t of [1, 2, 3, 4]) {
+        out.boss[t]  = incomingDamage(t, boss);
+        out.elite[t] = incomingDamage(t, elite);
+        out.mob[t]   = incomingDamage(t, mob);
+      }
+      out.zero = incomingDamage(0, boss);
+      // and the one-shot defences must survive a hit that does nothing
+      STATE.run.shieldActive = true; STATE.run.usedLuckyCharm = false;
+      STATE.run.relics = [{ id: 'lucky_charm', name: 'Lucky Charm' }];
+      return out;
+    }""")
+    check('the Stormhide Cloak cannot zero a hit from the boss',
+          min(armour['boss'].values()) >= 1, str(armour['boss']))
+    check('nor from an elite', min(armour['elite'].values()) >= 1, str(armour['elite']))
+    check('it still REDUCES a boss hit — the cloak is not useless',
+          armour['boss']['4'] < 4, f"4 damage lands as {armour['boss']['4']}")
+    check('it does nothing against an ordinary monster, as its card says',
+          all(int(k) == v for k, v in armour['mob'].items()), str(armour['mob']))
+    check('a hit that was already nothing stays nothing',
+          armour['zero'] == 0, str(armour['zero']))
+
+    # RISKY always hides the options. What protects a student who knew the
+    # answer is that the gate is never OFFERED where the options ARE the
+    # question. Both halves are asserted, because either alone is the bug:
+    # "always blind" without the gate rule makes an odd-one-out unanswerable,
+    # and the gate rule without "always blind" is the two-faced button the
+    # classes called unfair.
     print('\nrule two')
     r2 = p.evaluate("""() => {
-      const mk = (open, tier) => ({ tier, open, cover: 'x' });
+      const mk = o => Object.assign({ tier: 2, cover: 'x' }, o);
       return {
-        // selection-only, however hard: never blind
-        closedHard: stakeIsBlind(mk(false, 4), STAKE_RISKY),
-        closedEasy: stakeIsBlind(mk(false, 1), STAKE_RISKY),
-        // open but below the tier floor: not blind either
-        openLow:    stakeIsBlind(mk(true, 1), STAKE_RISKY),
-        // open and hard enough: this is the one that may go blind
-        openHigh:   stakeIsBlind(mk(true, 4), STAKE_RISKY),
-        // SAFE is never blind, whatever the question
-        safeOpen:   stakeIsBlind(mk(true, 4), STAKE_SAFE),
+        plainT1: stakeIsBlind(mk({ tier: 1 }), STAKE_RISKY),
+        plainT4: stakeIsBlind(mk({ tier: 4 }), STAKE_RISKY),
+        error:   stakeIsBlind(mk({ format: 'error', sentence: 'He go home.' }), STAKE_RISKY),
+        oddGate:     stakesAvailable(mk({ format: 'odd' }), false),
+        orderGate:   stakesAvailable(mk({ format: 'order' }), false),
+        noBlindGate: stakesAvailable(mk({ noBlind: true }), false),
+        plainGate:   stakesAvailable(mk({}), false),
+        safe: stakeIsBlind(mk({}), STAKE_SAFE),
       };
     }""")
-    check('RISKY never hides options on a selection-only question',
-          not r2['closedHard'] and not r2['closedEasy'], str(r2))
-    check('SAFE never hides options', not r2['safeOpen'])
-    check('a blind call is still possible on an open, hard question',
-          r2['openHigh'], 'nothing can go blind — the reward is unreachable')
+    check('RISKY goes blind on an ordinary question at any tier',
+          r2['plainT1'] and r2['plainT4'], str(r2))
+    check('RISKY goes blind on spot-the-error too', r2['error'])
+    check('SAFE never hides the options', not r2['safe'])
+    check('the gate is NOT offered on an odd-one-out', not r2['oddGate'])
+    check('the gate is NOT offered on a put-it-in-order', not r2['orderGate'])
+    check('the gate is NOT offered on a question flagged noBlind', not r2['noBlindGate'])
+    check('the gate IS offered on an ordinary question', r2['plainGate'])
+
+    # Spot-the-error must keep its sentence visible, or a student taking it
+    # blind has nothing to say a word FROM.
+    bp = p.evaluate("() => blindPrompt({ format: 'error', sentence: 'He go home.' })")
+    check('a blind spot-the-error still shows its sentence',
+          bp.get('line') == 'He go home.', str(bp))
 
     # -----------------------------------------------------------------------
     # 6 + 1 again. A REAL fight: click RISKY and watch the monster's HP.
@@ -291,6 +350,7 @@ with sync_playwright() as pw:
     print('\na real fight')
     landed = 0
     safe_landed = 0
+    reveals = 0
     risky_hits = []
     safe_hits = []
     logged = []
@@ -315,18 +375,41 @@ with sync_playwright() as pw:
             # answer it - that road is exercised by test_playthrough, and
             # pretending to cover it here would be a check that measures
             # nothing.
-            blind = p.evaluate("""() => {
-              const m = STATE.run && STATE.run.encounter;
-              const q = m && m.currentQ;
-              return !!(q && typeof stakeIsBlind === 'function'
-                        && stakeIsBlind(q, STAKE_RISKY));
-            }""")
+            # v7.0: every gate that appears is a blind call, so alternate
+            # between the two roads deliberately - SAFE to measure a 1-damage
+            # hit, RISKY to measure a 2-damage one.
+            want_risky = (landed + safe_landed) % 2 == 0
             try:
-                p.click('#enc-stake-gate ' + ('.sg-safe' if blind else '.sg-risky'),
+                p.click('#enc-stake-gate ' + ('.sg-risky' if want_risky else '.sg-safe'),
                         timeout=1500)
             except Exception:
                 break
-            p.wait_for_timeout(320)
+            p.wait_for_timeout(340)
+            if want_risky:
+                # the room adjudicates what was said aloud
+                before = p.evaluate("""() => ({
+                  hp: STATE.run.encounter ? STATE.run.encounter.hp : null,
+                  log: STATE.run.answerLog.length })""")
+                try:
+                    p.click('#enc-commit-say .cs-yes', timeout=1500)
+                except Exception:
+                    break
+                p.wait_for_timeout(800)
+                after = p.evaluate("""() => ({
+                  hp: STATE.run.encounter ? STATE.run.encounter.hp : 0,
+                  alive: !!STATE.run.encounter,
+                  log: STATE.run.answerLog.length,
+                  revealed: !!document.querySelector('.answer-reveal'),
+                  last: STATE.run.answerLog[STATE.run.answerLog.length - 1] || null })""")
+                if after['revealed']:
+                    reveals += 1
+                if after['log'] > before['log'] and after['last']:
+                    logged.append(after['last'])
+                    if before['hp'] is not None and before['hp'] > 0:
+                        if after['alive'] and after['hp'] < before['hp']:
+                            risky_hits.append(before['hp'] - after['hp']); landed += 1
+                        elif not after['alive'] or after['hp'] <= 0:
+                            risky_hits.append(2 if before['hp'] <= 2 else before['hp']); landed += 1
             continue
 
         # ---- a question is on screen: answer it -----------------------------
@@ -415,6 +498,11 @@ with sync_playwright() as pw:
     if safe_landed:
         check('a correct SAFE answer still takes only 1 HP off, in a real fight',
               all(h == 1 for h in safe_hits), f"hits recorded: {safe_hits}")
+    # A blind call leaves nothing written on screen unless the game puts it
+    # there. A SAFE question always shows the right option in green; this is
+    # the equivalent, and it must appear whether they got it or not.
+    check('every blind call ends with the answer shown on screen',
+          reveals >= 2, f"{reveals} reveals seen across {landed} blind calls")
     check('every answer recorded how it was staked',
           bool(logged) and all('stake' in e for e in logged),
           f"{len(logged)} logged, first {logged[0] if logged else None}")
@@ -430,8 +518,8 @@ with sync_playwright() as pw:
 
 # The other half of the floor: if the suite did not get far enough to run its
 # checks, that is a failure, not a pass. Sixteen is the number written above.
-if checks < 18:
-    fails.append(f'only {checks} of 18 checks ran — the suite tested almost nothing')
+if checks < 27:
+    fails.append(f'only {checks} of 27 checks ran — the suite tested almost nothing')
 
 print(f"\nChecks run: {checks}")
 print(f"Problems: {len(fails)}")

@@ -320,30 +320,70 @@ function renderLeaderboards() {
 //   3. It sorts weakest first. Nobody opens this screen to be told what went
 //      well.
 // ---------------------------------------------------------------------------
+// WHICH UNIT THE REPORT IS SHOWING.
+//
+// Null means every unit at once. It is deliberately NOT stored in the save:
+// the report should open on the unit just played every time it is opened, not
+// on whatever was last clicked three weeks ago.
+let _curRealm = undefined;
+
+function curriculumRealmFilter(className) {
+  // undefined = "not chosen yet", so fall back to the unit this class last
+  // played. A teacher opening this screen the day after a lesson wants that
+  // lesson, not a year-to-date average in which it is one row of ninety-six.
+  if (_curRealm !== undefined) return _curRealm;
+  const rec = classRecord(className);
+  const seen = realmsInRecord(className);
+  if (rec.lastRealmId && seen.includes(rec.lastRealmId)) return rec.lastRealmId;
+  return seen.length ? seen[seen.length - 1] : null;
+}
+
+function setCurriculumRealm(v) {
+  _curRealm = v;
+  renderCurriculum();
+}
+
 function renderCurriculum() {
   const el = document.getElementById("tab-curriculum");
   if (!el) return;
   const className = currentClassName();
   const rec = classRecord(className);
-  const rows = curriculumRows(className);
-  const groups = curriculumGroups(className);
+  const seen = realmsInRecord(className);
+  const realmId = curriculumRealmFilter(className);
+  const rows = curriculumRows(className, realmId);
+  const groups = curriculumGroups(className, realmId);
+  const unitName = id => (REALMS[id] ? `${REALMS[id].theme}` : `Realm ${id}`);
 
   if (!rows.length) {
     el.innerHTML = `<div class="empty-note">Nothing recorded yet for
-      <b>${escapeHtml(className)}</b>. Play a realm with this class and every
-      question they answer will be logged against the curriculum item it
-      tested.</div>`;
+      <b>${escapeHtml(className)}</b>${realmId ? ` in <b>${escapeHtml(unitName(realmId))}</b>` : ""}.
+      Play a realm with this class and every question they answer will be logged
+      against the curriculum item it tested.</div>`;
     return;
   }
 
   const thin = rows.filter(r => r.asked < CURRICULUM_MIN_ATTEMPTS).length;
   const solid = groups.filter(g => g.asked >= CURRICULUM_MIN_ATTEMPTS);
 
-  let html = `<div class="cur-head">
+  let html = "";
+  // One tab per unit this class has actually met, plus All. A unit nobody has
+  // played is not offered - an empty tab is a question a teacher has to answer
+  // by clicking it.
+  if (seen.length > 1) {
+    html += `<div class="cur-tabs">` +
+      seen.map(id => `<button class="cur-tab${id === realmId ? " on" : ""}"
+        data-realm="${id}">${escapeHtml(unitName(id))}</button>`).join("") +
+      `<button class="cur-tab${realmId === null ? " on" : ""}"
+        data-realm="all">All units</button></div>`;
+  }
+
+  html += `<div class="cur-head">
     <div>
-      <div class="cur-class">${escapeHtml(className)}</div>
+      <div class="cur-class">${escapeHtml(className)}${
+        realmId ? ` <span class="cur-unit">· ${escapeHtml(unitName(realmId))}</span>` : ""}</div>
       <div class="cur-sub">${rec.runs} run${rec.runs === 1 ? "" : "s"} ·
-        ${rec.questions} questions answered · ${rows.length} curriculum items met</div>
+        ${rec.questions} questions answered · ${rows.length} curriculum item${
+        rows.length === 1 ? "" : "s"} met${realmId ? " in this unit" : ""}</div>
     </div>
     <div class="cur-actions">
       <button id="cur-copy" class="pixel-btn small">Copy summary</button>
@@ -351,7 +391,7 @@ function renderCurriculum() {
     </div>
   </div>`;
 
-  if (!curriculumReady(className)) {
+  if (!curriculumReady(className, realmId)) {
     html += `<div class="cur-warn">This class has not played enough yet for any
       of these figures to mean much. They settle down after three or four runs —
       until then, read the list, not the percentages.</div>`;
@@ -396,22 +436,33 @@ function renderCurriculum() {
   }
 
   el.innerHTML = html;
+  el.querySelectorAll(".cur-tab").forEach(b => {
+    b.onclick = () => setCurriculumRealm(
+      b.dataset.realm === "all" ? null : Number(b.dataset.realm));
+  });
   const copy = document.getElementById("cur-copy");
   const csv  = document.getElementById("cur-csv");
-  if (copy) copy.onclick = () => copyCurriculumSummary(className);
-  if (csv)  csv.onclick  = () => downloadCurriculumCsv(className);
+  // Both exports follow what is on screen. A teacher who has filtered to Unit 3
+  // and then downloads the whole year has been handed the wrong file, and would
+  // have no way of telling until they opened it.
+  if (copy) copy.onclick = () => copyCurriculumSummary(className, realmId);
+  if (csv)  csv.onclick  = () => downloadCurriculumCsv(className, realmId);
 }
 
 // A summary written to be pasted straight into a lesson plan, so it is plain
 // text with no markup and it says what it is resting on.
-function curriculumSummaryText(className) {
+function curriculumSummaryText(className, realmId) {
   const rec = classRecord(className);
-  const rows = curriculumRows(className);
-  const groups = curriculumGroups(className).filter(g => g.asked >= CURRICULUM_MIN_ATTEMPTS);
+  const rows = curriculumRows(className, realmId);
+  const groups = curriculumGroups(className, realmId).filter(g => g.asked >= CURRICULUM_MIN_ATTEMPTS);
   const solid = rows.filter(r => r.asked >= CURRICULUM_MIN_ATTEMPTS);
+  const unit = realmId && REALMS[realmId] ? REALMS[realmId].theme : null;
   const L = [];
   L.push(`WORD REALMS - what to reteach`);
-  L.push(`${className} · ${rec.runs} run${rec.runs === 1 ? "" : "s"} · ${rec.questions} questions answered`);
+  // The heading has to say which unit this covers. Pasted into a lesson plan
+  // and read back in February, a table of percentages with no unit on it is a
+  // table of percentages about nothing.
+  L.push(`${className}${unit ? ` · ${unit}` : " · all units"} · ${rec.runs} run${rec.runs === 1 ? "" : "s"} · ${rec.questions} questions answered`);
   L.push("");
   if (!solid.length) {
     L.push(`Not enough attempts yet. Nothing here has been asked ${CURRICULUM_MIN_ATTEMPTS} times.`);
@@ -433,8 +484,8 @@ function curriculumSummaryText(className) {
   return L.join("\n");
 }
 
-function copyCurriculumSummary(className) {
-  const text = curriculumSummaryText(className);
+function copyCurriculumSummary(className, realmId) {
+  const text = curriculumSummaryText(className, realmId);
   const done = () => showPopup({
     banner: "COPIED", tone: "good", title: "Summary is on the clipboard",
     desc: "Paste it into your lesson plan.", button: "Good",
@@ -470,13 +521,17 @@ function fallbackCopy(text, done) {
   });
 }
 
-function downloadCurriculumCsv(className) {
+function downloadCurriculumCsv(className, realmId) {
   const rec = classRecord(className);
-  const rows = curriculumRows(className);
+  const rows = curriculumRows(className, realmId);
+  const unit = realmId && REALMS[realmId] ? REALMS[realmId].theme : "all units";
   const esc = v => `"${String(v).replace(/"/g, '""')}"`;
-  const lines = [["class", "area", "curriculum item", "key", "right", "asked", "percent"]
+  // A `unit` column, so a file opened months later says what it is about, and
+  // so several exports can be pasted into one sheet without losing which is
+  // which.
+  const lines = [["class", "unit", "area", "curriculum item", "key", "right", "asked", "percent"]
                    .map(esc).join(",")];
-  rows.forEach(r => lines.push([className, r.group, r.label, r.key,
+  rows.forEach(r => lines.push([className, unit, r.group, r.label, r.key,
                                 r.right, r.asked, r.pct].map(esc).join(",")));
   // The BOM is here so Excel opens the file as UTF-8. Without it the curly
   // quotes in labels like "going to" arrive as mojibake, on exactly the
@@ -485,8 +540,9 @@ function downloadCurriculumCsv(className) {
                         { type: "text/csv;charset=utf-8;" });
   const a = document.createElement("a");
   const stamp = new Date().toISOString().slice(0, 10);
+  const slug = t => String(t).replace(/[^\w-]+/g, "-").replace(/^-|-$/g, "");
   a.href = URL.createObjectURL(blob);
-  a.download = `word-realms-${className.replace(/[^\w-]+/g, "-")}-${stamp}.csv`;
+  a.download = `word-realms-${slug(className)}-${slug(unit)}-${stamp}.csv`;
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
@@ -1513,6 +1569,8 @@ function renderShieldRow(elId) { renderStatusRow(elId); }
 function refreshStatus() {
   renderStatusRow("hero-shields");
   renderStatusRow("boss-hero-shields");
+  renderDebuffBand("enc");
+  renderDebuffBand("boss");
 }
 
 // ---------------------------------------------------------------------------
@@ -1679,10 +1737,19 @@ function renderIntent(elId, m) {
 // vanish, so a class could be Chilled or Exposed for three turns with nothing
 // on screen saying so. These sit under the hero's feet and stay while active.
 // ---------------------------------------------------------------------------
+// Every chip carries a SYMBOL as well as a word. A class reading a TV from the
+// back of the room recognises a shape long before it reads 0.7rem text, and the
+// symbol is what makes a status legible at a glance across a whole term.
+//
+// `band` is the sentence shown above the question while the effect is live -
+// written as what is about to happen to THEM, not as a description of a state.
 const STATUS_CHIPS = {
-  chill:  { label: "CHILLED",  cls: "chill",  hint: "next hit deals no damage" },
-  expose: { label: "EXPOSED",  cls: "expose", hint: "next wrong answer costs 2" },
-  freeze: { label: "FROZEN",   cls: "freeze", hint: "you must Brace" },
+  chill:  { icon: "❄", label: "CHILLED", cls: "chill",  hint: "your hit does no damage",
+            band: "❄ CHILLED — your next hit will do NO DAMAGE. Answer anyway; the cold wears off." },
+  expose: { icon: "✷", label: "EXPOSED", cls: "expose", hint: "a mistake costs 1 more",
+            band: "✷ EXPOSED — a wrong answer costs 1 heart more than usual." },
+  freeze: { icon: "✳", label: "FROZEN",  cls: "freeze", hint: "you must Brace",
+            band: "✳ FROZEN — you cannot attack this turn. Brace, and a correct answer blocks the blow." },
 };
 
 function renderStatusRow(elId) {
@@ -1692,20 +1759,34 @@ function renderStatusRow(elId) {
   el.innerHTML = "";
   if (!run) return;
 
-  const add = (label, cls, hint) => {
+  const add = (label, cls, hint, icon) => {
     const c = document.createElement("div");
     c.className = "status-chip " + cls;
-    c.innerHTML = `<b>${label}</b>${hint ? `<span>${hint}</span>` : ""}`;
+    c.innerHTML = (icon ? `<i class="chip-icon">${icon}</i>` : "") +
+                  `<b>${label}</b>${hint ? `<span>${hint}</span>` : ""}`;
     el.appendChild(c);
   };
 
   if (run.debuff && STATUS_CHIPS[run.debuff]) {
     const s = STATUS_CHIPS[run.debuff];
-    add(s.label, s.cls, s.hint);
+    add(s.label, s.cls, s.hint, s.icon);
   }
-  if (run.bracing)      add("BRACING", "brace", "a correct answer blocks");
-  if (run.shieldActive) add("STORM SHIELD", "ward", "blocks the next hit");
-  if ((run.shields || 0) > 0) add(`SHIELDS ${run.shields}`, "shield", "");
+  if (run.bracing)      add("BRACING", "brace", "a correct answer blocks", "🛡");
+  if (run.shieldActive) add("STORM SHIELD", "ward", "blocks the next hit", "✦");
+  if ((run.shields || 0) > 0) add(`SHIELDS ${run.shields}`, "shield", "", "◈");
+}
+
+// The band above the question. Same source of truth as the chip, so the two
+// can never disagree about what is happening.
+function renderDebuffBand(prefix) {
+  const el = document.getElementById(`${prefix}-debuff-band`);
+  if (!el) return;
+  const run = STATE.run;
+  const s = run && run.debuff ? STATUS_CHIPS[run.debuff] : null;
+  if (!s) { el.style.display = "none"; el.textContent = ""; return; }
+  el.textContent = s.band;
+  el.className = "debuff-band " + s.cls;
+  el.style.display = "";
 }
 
 // ---------------------------------------------------------------------------
@@ -1719,10 +1800,9 @@ function renderStatusRow(elId) {
 function renderStakeGate(prefix, q) {
   const el = document.getElementById(`${prefix}-stake-gate`);
   if (!el) return;
-  // ask the same predicate the outcome uses, so the promise cannot drift
-  const blind = typeof stakeIsBlind === "function"
-    ? stakeIsBlind(q, STAKE_RISKY)
-    : (q && q.open === true && (q.tier || 1) >= CONFIG.STAKE_MIN_TIER);
+  // v7.0: the gate is only ever shown on a question RISKY can actually take
+  // blind (see stakesAvailable), so there is no longer a second wording. The
+  // button says one thing because the button does one thing.
   // Show the REAL heart cost of each option, not a multiplier. A ten-year-old
   // deciding under time pressure should not have to do arithmetic on the word
   // "double" - the gate says "costs 1" and "costs 6", and the clue is already
@@ -1749,10 +1829,7 @@ function renderStakeGate(prefix, q) {
       </button>
       <button class="pixel-btn danger sg-risky" data-side="${prefix}">
         <b>RISKY</b>
-        <span>${blind
-          ? `No options — say it out loud · <b>${CONFIG.STAKE_BLIND_SHARDS}× shards</b>, double damage`
-          : `<b>${CONFIG.STAKE_RISKY_SHARDS}× shards</b>, double damage`
-        }</span>
+        <span>No options — <b>say it out loud</b> · ${CONFIG.STAKE_BLIND_SHARDS}× shards, double damage</span>
         <span class="stake-cost big">Wrong: <b>−${hearts(riskDmg)}</b></span>
       </button>
     </div>`;

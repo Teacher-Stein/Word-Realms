@@ -314,12 +314,34 @@ function rollStun() {
 }
 
 // damage the party takes from one incoming hit, after tier/debuff/gear
+// Damage the party takes from one incoming hit, after gear.
+//
+// ARMOUR REDUCES A BLOW. IT NEVER ERASES ONE.
+//
+// This returned Math.max(0, dmg) for six versions, and a class found the hole
+// in a lesson. The Stormhide Cloak takes 1 off every elite and boss hit, so
+// against the boss it turned EVERY 1-damage source into nothing:
+//
+//   a SAFE wrong answer on tier 1 or 2 ....... 1 -> 0
+//   the boss's flurry, three hits of 1 ....... 0, 0, 0
+//   the boss's drain ......................... 1 -> 0
+//
+// leaving only heavy (2) and charge (4) able to land at all. The Storm Scholar
+// showed it first because her perk hands her a random piece of gear and the
+// cloak is one of six, but any hero who buys it gets the same immunity, and it
+// applies to elites as well as the boss.
+//
+// The floor is the fix, not a special case for stormhide: any future source of
+// damage reduction hits the same wall, and "you cannot be made immune" is a
+// rule worth having once rather than remembering each time.
 function incomingDamage(baseDmg, m) {
   const run = STATE.run;
   let dmg = baseDmg;
   const armour = run.armour ? gearById(run.armour) : null;
   if (armour && armour.id === "stormhide" && (m.isElite || m.isBoss)) dmg -= 1;
-  return Math.max(0, dmg);
+  // A blow that was going to land still lands. Only something that was already
+  // nothing stays nothing.
+  return baseDmg > 0 ? Math.max(1, dmg) : 0;
 }
 
 // What a wrong answer costs, all in.

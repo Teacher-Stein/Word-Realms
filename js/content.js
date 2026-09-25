@@ -145,36 +145,36 @@ const REALM1_QUESTIONS = [
     answer:"think", choices:["think","this","those"] },
   { cover:"phonics-theta", tier:2, type:"phonics", open:false, clue:"Which word uses the /θ/ sound (like in 'thought')?",
     answer:"birthday", choices:["birthday","weather","therefore"] },
-  { cover:"phonics-theta", tier:2, type:"phonics", open:false, clue:"Which one does NOT have the /θ/ sound?",
+  { cover:"phonics-theta", tier:2, type:"phonics", open:false, noBlind:true, clue:"Which one does NOT have the /θ/ sound?",
     answer:"those", choices:["those","thermometer","thanks"] },
 
   { cover:"phonics-eth", tier:2, type:"phonics", open:false, clue:"Which word has the buzzy /ð/ sound, like 'this' and 'weather'?",
     answer:"though", choices:["though","thanks","birthday"] },
   { cover:"phonics-eth", tier:2, type:"phonics", open:false, clue:"Which word uses the /ð/ sound (your voice buzzes)?",
     answer:"therefore", choices:["therefore","think","thunder"] },
-  { cover:"phonics-eth", tier:2, type:"phonics", open:false, clue:"Which one does NOT have the buzzy /ð/ sound?",
+  { cover:"phonics-eth", tier:2, type:"phonics", open:false, noBlind:true, clue:"Which one does NOT have the buzzy /ð/ sound?",
     answer:"thermometer", choices:["thermometer","those","weather"] },
 
   // ===================== GRAMMAR 1: be going to =====================
-  { cover:"g1-question", tier:3, type:"grammar", open:false, clue:"Choose the correctly formed question:",
+  { cover:"g1-question", tier:3, type:"grammar", open:false, clue:"Make it a question: 'It is going to rain tomorrow.'",
     answer:"Is it going to rain tomorrow?", choices:["Is it going to rain tomorrow?","Is it go to rain tomorrow?","Is it going rain tomorrow?"] },
-  { cover:"g1-question", tier:3, type:"grammar", open:false, clue:"Choose the correct question about the future:",
+  { cover:"g1-question", tier:3, type:"grammar", open:false, clue:"Make it a question: 'They are going to check the shelter.'",
     answer:"Are they going to check the shelter?", choices:["Are they going to check the shelter?","Are they going check the shelter?","Do they going to check the shelter?"] },
 
   { cover:"g1-statement", tier:3, type:"grammar", open:true, clue:"Complete it: 'I ___ listen to the weather forecast at eight o'clock.'",
     answer:"am going to", choices:["am going to","is going to","going to be"] },
-  { cover:"g1-statement", tier:3, type:"grammar", open:false, clue:"Choose the correct sentence:",
+  { cover:"g1-statement", tier:3, type:"grammar", open:false, clue:"Say it correctly: 'They is going to check the storm shelter.'",
     answer:"They are going to check the storm shelter.", choices:["They are going to check the storm shelter.","They going to check the storm shelter.","They are go to check the storm shelter."] },
 
   { cover:"g1-negative", tier:3, type:"grammar", open:true, clue:"Complete it: 'It ___ snow tomorrow - it's going to rain.'",
     answer:"isn't going to", choices:["isn't going to","aren't going to","doesn't going to"] },
-  { cover:"g1-negative", tier:3, type:"grammar", open:false, clue:"Choose the correct negative prediction:",
+  { cover:"g1-negative", tier:3, type:"grammar", open:false, clue:"Say it correctly: 'We isn't going to travel in this storm.'",
     answer:"We aren't going to travel in this storm.", choices:["We aren't going to travel in this storm.","We aren't go to travel in this storm.","We don't going to travel in this storm."] },
 
   // ===================== GRAMMAR 2: zero conditional =====================
-  { cover:"g2-form", tier:3, type:"grammar", open:false, clue:"Choose the correct zero conditional sentence:",
+  { cover:"g2-form", tier:3, type:"grammar", open:false, clue:"Say it correctly: 'If I seeing lightning, I go inside.'",
     answer:"If I see lightning, I go inside.", choices:["If I see lightning, I go inside.","If I saw lightning, I go inside.","If I will see lightning, I go inside."] },
-  { cover:"g2-form", tier:3, type:"grammar", open:false, clue:"Choose the correct sentence:",
+  { cover:"g2-form", tier:3, type:"grammar", open:false, clue:"Say it correctly: 'I putting on my coat if the weather is cold.'",
     answer:"I put on my coat if the weather is cold.", choices:["I put on my coat if the weather is cold.","I put on my coat if the weather was cold.","I will put on my coat if the weather is cold."] },
 
   { cover:"g2-verb", tier:3, type:"grammar", open:true, clue:"Complete it: 'If a sandstorm ___, I close all the windows.'",
@@ -182,7 +182,7 @@ const REALM1_QUESTIONS = [
   { cover:"g2-verb", tier:3, type:"grammar", open:true, clue:"Complete it: 'If the temperature ___ below zero, water freezes.'",
     answer:"drops", choices:["drops","drop","will drop"] },
 
-  { cover:"g2-meaning", tier:3, type:"grammar", open:false, clue:"Which sentence describes something that is ALWAYS true?",
+  { cover:"g2-meaning", tier:3, type:"grammar", open:false, clue:"Say the whole sentence, and make it always true: 'If you heat ice, it ___.'",
     answer:"If you heat ice, it melts.", choices:["If you heat ice, it melts.","If you heat ice, it melted.","If you heated ice, it will melt."] },
   { cover:"g2-meaning", tier:3, type:"grammar", open:true, clue:"Complete it: 'If the sirens ___, everyone goes to the shelter.'",
     answer:"sound", choices:["sound","sounded","will sound"] },
@@ -206,7 +206,7 @@ const REALM1_QUESTIONS = [
     answer:"go inside the building", choices:["go inside the building", "stand next to the metal flagpole", "stay in the middle of the yard"] },
   { cover:"flood", tier:2, type:"vocab", open:true, clue:"Complete it: 'The ___ water reached the top of our front steps.'",
     answer:"flood", choices:["flood", "drought", "heat wave"] },
-  { cover:"flood", tier:1, type:"apply", open:false, clue:"Which of these happens during a flood?",
+  { cover:"flood", tier:1, type:"apply", open:false, clue:"Six days of rain, and the river is spilling into the town. Say what a flood does there.",
     answer:"water covers the roads", choices:["water covers the roads", "the wells dry up", "snow piles up on the roofs"] },
   { cover:"drought", tier:2, type:"vocab", open:true, clue:"Complete it: 'The lake dried up completely during the ___.'",
     answer:"drought", choices:["drought", "hurricane", "sandstorm"] },
@@ -214,7 +214,7 @@ const REALM1_QUESTIONS = [
     answer:"about", choices:["about", "thought", "brought"] },
   { cover:"ice storm", tier:2, type:"vocab", open:true, clue:"Complete it: 'Our football match was cancelled because the ___ had frozen the pitch solid.'",
     answer:"ice storm", choices:["ice storm", "heat wave", "drought"] },
-  { cover:"ice storm", tier:1, type:"apply", open:false, clue:"Which of these is the biggest danger the morning after an ice storm?",
+  { cover:"ice storm", tier:1, type:"apply", open:false, clue:"Freezing rain fell all night and everything outside is covered in ice. Say the biggest danger this morning.",
     answer:"slippery roads", choices:["slippery roads", "dusty air", "dry fields"] },
   { cover:"blizzard", tier:1, type:"reason", open:true, clue:"The snow is falling sideways, the wind is howling, and you cannot even see your own gate. Which storm is outside?",
     answer:"a blizzard", choices:["a blizzard", "a sandstorm", "a tropical storm"] },
@@ -238,7 +238,7 @@ const REALM1_QUESTIONS = [
     answer:"down to the lowest room in the house", choices:["down to the lowest room in the house", "up to the roof to watch it", "out into the open field"] },
   { cover:"sandstorm", tier:2, type:"vocab", open:true, clue:"Complete it: 'After the ___, there was a thick layer of dust on every table.'",
     answer:"sandstorm", choices:["sandstorm", "blizzard", "flood"] },
-  { cover:"sandstorm", tier:1, type:"apply", open:false, clue:"Which of these would help you most if you had to walk home in a sandstorm?",
+  { cover:"sandstorm", tier:1, type:"apply", open:false, clue:"You must walk home while a sandstorm is blowing. Say the one thing that would help you most.",
     answer:"a scarf over your nose and mouth", choices:["a scarf over your nose and mouth", "a thick winter coat", "an umbrella"] },
   { cover:"range", tier:1, type:"vocab", open:true, clue:"If a chart shows everything from the smallest number up to the biggest number, it shows the whole ___.",
     answer:"range", choices:["range", "rise", "emergency"] },
@@ -304,15 +304,15 @@ const REALM1_QUESTIONS = [
     answer:"When are you going to leave?", choices:["When are you going to leave?", "When you are going to leave?", "When do you going to leave?"] },
   { cover:"g1-question", tier:2, type:"grammar", open:true, clue:"Complete the question: 'What ___ you going to do if the power goes out?'",
     answer:"are", choices:["are", "is", "do"] },
-  { cover:"g1-statement", tier:1, type:"grammar", open:false, clue:"Which sentence talks about a PLAN for the future?",
+  { cover:"g1-statement", tier:1, type:"grammar", open:false, clue:"Say the whole sentence as a plan for the future: 'I ___ buy a raincoat.'",
     answer:"I am going to buy a raincoat.", choices:["I am going to buy a raincoat.", "I bought a raincoat.", "I buy a raincoat every year."] },
   { cover:"g1-statement", tier:2, type:"grammar", open:true, clue:"Complete this plan: 'Tomorrow morning the scientist ___ measure the wind speed.'",
     answer:"is going to", choices:["is going to", "are going to", "going to"] },
-  { cover:"g1-negative", tier:1, type:"grammar", open:false, clue:"Which sentence means the picnic will NOT happen?",
+  { cover:"g1-negative", tier:1, type:"grammar", open:false, clue:"Say the whole sentence so the picnic will NOT happen: 'We ___ have the picnic.'",
     answer:"We aren't going to have the picnic.", choices:["We aren't going to have the picnic.", "We are going to have the picnic.", "Are we going to have the picnic?"] },
   { cover:"g1-negative", tier:2, type:"grammar", open:true, clue:"Say this again with the short form of 'is not': 'It is not going to rain today.'",
     answer:"It isn't going to rain today.", choices:["It isn't going to rain today.", "It doesn't going to rain today.", "It is not go to rain today."] },
-  { cover:"g2-form", tier:1, type:"grammar", open:false, clue:"Which sentence has NO mistake in it?",
+  { cover:"g2-form", tier:1, type:"grammar", open:false, clue:"Say it correctly: 'If clouds cover the sun, the air feeling cooler.'",
     answer:"If clouds cover the sun, the air feels cooler.", choices:["If clouds cover the sun, the air feels cooler.", "If clouds will cover the sun, the air feels cooler.", "If clouds cover the sun, the air felt cooler."] },
   { cover:"g2-form", tier:2, type:"grammar", open:true, clue:"Complete it: 'If you put a paper boat in water, it always ___.'",
     answer:"floats", choices:["floats", "will float", "floated"] },
@@ -320,7 +320,7 @@ const REALM1_QUESTIONS = [
     answer:"come", choices:["come", "comes", "will come"] },
   { cover:"g2-verb", tier:2, type:"grammar", open:true, clue:"Complete it: 'If the rivers rise too high, the village always ___ under water.'",
     answer:"goes", choices:["goes", "go", "will go"] },
-  { cover:"g2-meaning", tier:1, type:"grammar", open:false, clue:"Which sentence is a general fact that is true every time?",
+  { cover:"g2-meaning", tier:1, type:"grammar", open:false, clue:"Say the whole sentence as a fact that is true every time: 'If you mix blue and yellow, you ___ green.'",
     answer:"If you mix blue and yellow, you get green.", choices:["If you mix blue and yellow, you get green.", "Yesterday I mixed blue and yellow.", "Tomorrow I am going to mix blue and yellow."] },
   { cover:"g2-meaning", tier:2, type:"reason", open:false, clue:"'If you leave milk in the sun, it goes bad.' What does this sentence tell us?",
     answer:"It happens every time.", choices:["It happens every time.", "It happened once last week.", "It might happen tomorrow."] },
@@ -465,19 +465,19 @@ const REALM1_ELITE_QUESTIONS = [
     answer:"to the storm shelter", choices:["to the storm shelter","up onto the roof","out to the car"] },
 
   // ---------------- odd one out ----------------
-  { cover:"heat wave", tier:4, type:"apply", open:false, clue:"Which of these would NOT happen during a heat wave?",
+  { cover:"heat wave", tier:4, type:"apply", open:false, noBlind:true, clue:"Which of these would NOT happen during a heat wave?",
     answer:"the roads freeze over", choices:["the roads freeze over","people stay indoors","the city opens cool rooms"] },
 
-  { cover:"blizzard", tier:4, type:"apply", open:false, clue:"Which of these would you NOT need in a blizzard?",
+  { cover:"blizzard", tier:4, type:"apply", open:false, noBlind:true, clue:"Which of these would you NOT need in a blizzard?",
     answer:"a sun hat", choices:["a sun hat","a warm coat","a flashlight"] },
 
-  { cover:"supplies", tier:4, type:"apply", open:false, clue:"Which of these is NOT emergency supplies?",
+  { cover:"supplies", tier:4, type:"apply", open:false, noBlind:true, clue:"Which of these is NOT emergency supplies?",
     answer:"a birthday cake", choices:["a birthday cake","bottled water","spare batteries"] },
 
-  { cover:"emergency", tier:4, type:"apply", open:false, clue:"Which of these is NOT an emergency?",
+  { cover:"emergency", tier:4, type:"apply", open:false, noBlind:true, clue:"Which of these is NOT an emergency?",
     answer:"choosing what to wear", choices:["choosing what to wear","a fire in the kitchen","a flood in the street"] },
 
-  { cover:"instruments", tier:4, type:"apply", open:false, clue:"Which one does NOT measure the weather?",
+  { cover:"instruments", tier:4, type:"apply", open:false, noBlind:true, clue:"Which one does NOT measure the weather?",
     answer:"a compass", choices:["a compass","a thermometer","a wind gauge"] },
 
   // ---------------- transformation ----------------
@@ -490,7 +490,7 @@ const REALM1_ELITE_QUESTIONS = [
   { cover:"g1-negative", tier:4, type:"apply", open:true, clue:"Make this negative: 'It is going to snow tonight.'",
     answer:"It isn't going to snow tonight.", choices:["It isn't going to snow tonight.","It doesn't going to snow tonight.","It is going to not snow tonight."] },
 
-  { cover:"g2-meaning", tier:4, type:"apply", open:false, clue:"Which sentence means the same as 'Ice melts whenever you heat it'?",
+  { cover:"g2-meaning", tier:4, type:"apply", open:false, clue:"Say it as a zero conditional: 'Ice melts whenever you heat it.'",
     answer:"If you heat ice, it melts.", choices:["If you heat ice, it melts.","If you heated ice, it melted.","If you will heat ice, it will melt."] },
 
   // ---------------- inference from a scene ----------------
@@ -522,10 +522,10 @@ const REALM1_ELITE_QUESTIONS = [
   { cover:"plan", tier:4, type:"apply", open:true, clue:"In the sentence 'We plan to leave early', the word 'plan' is being used as a...",
     answer:"verb", choices:["verb","noun","adjective"] },
 
-  { cover:"phonics-theta", tier:4, type:"phonics", open:false, clue:"Which pair BOTH use the breathy /θ/ sound?",
+  { cover:"phonics-theta", tier:4, type:"phonics", open:false, noBlind:true, clue:"Which pair BOTH use the breathy /θ/ sound?",
     answer:"thunder and thirsty", choices:["thunder and thirsty","these and those","weather and mother"] },
 
-  { cover:"phonics-eth", tier:4, type:"phonics", open:false, clue:"Which pair BOTH use the buzzy /ð/ sound?",
+  { cover:"phonics-eth", tier:4, type:"phonics", open:false, noBlind:true, clue:"Which pair BOTH use the buzzy /ð/ sound?",
     answer:"weather and those", choices:["weather and those","thanks and think","birthday and thermometer"] },
 
   { cover:"lightning", tier:4, type:"reason", open:true, clue:"Why is standing under the tallest tree in an open field dangerous in a storm?",
@@ -586,7 +586,7 @@ const REALM1_ELITE_QUESTIONS = [
     answer:"stronger", choices:["stronger", "more strong", "strongest"] },
   { cover:"speed", tier:4, type:"fix it", open:false, clue:"One part is wrong: 'Scientists measures the speed of the wind with a special tool.'",
     answer:"'measures' should be 'measure'", choices:["'measures' should be 'measure'", "'speed' should be 'speeds'", "'with' should be 'by'"] },
-  { cover:"hurricane", tier:4, type:"grammar", open:false, clue:"Choose the correct sentence.",
+  { cover:"hurricane", tier:4, type:"grammar", open:false, clue:"Say it correctly: 'The hurricane destroying hundreds of houses last night.'",
     answer:"The hurricane destroyed hundreds of houses last night.", choices:["The hurricane destroyed hundreds of houses last night.", "The hurricane destroy hundreds of houses last night.", "The hurricane was destroyed hundreds of houses last night."] },
   { cover:"tornado", tier:4, type:"function", open:true, clue:"Finish the warning with the strongest word: 'A tornado is coming — everybody ___ move away from the windows now.'",
     answer:"must", choices:["must", "might", "could"] },
@@ -907,7 +907,7 @@ const REALM2_QUESTIONS = [
 
   { cover:"characteristic", tier:1, type:"vocab", open:true, clue:"A feature or quality that an animal has, which helps you tell what it is.",
     answer:"a characteristic", choices:["a characteristic","a predator","camouflage"] },
-  { cover:"characteristic", tier:3, type:"grammar", open:false, clue:"Choose the correct sentence:",
+  { cover:"characteristic", tier:3, type:"grammar", open:false, clue:"Say it correctly: 'A long neck is one characteristic from a giraffe.'",
     answer:"A long neck is one characteristic of a giraffe.",
     choices:["A long neck is one characteristic of a giraffe.","A long neck is one characteristic for a giraffe.","A long neck is one characteristic to a giraffe."] },
 
@@ -935,7 +935,7 @@ const REALM2_QUESTIONS = [
     answer:"imitate", choices:["imitate","frighten","defend"] },
   { cover:"imitate", tier:2, type:"vocab", open:false, clue:"Complete it: 'Some harmless snakes ___ the bright colours of poisonous ones.'",
     answer:"imitate", choices:["imitate","avoid","hunt"] },
-  { cover:"imitate", tier:3, type:"grammar", open:false, clue:"Choose the correct sentence:",
+  { cover:"imitate", tier:3, type:"grammar", open:false, clue:"Say it correctly: 'The bird imitating the sound of a car alarm.'",
     answer:"The bird imitates the sound of a car alarm.",
     choices:["The bird imitates the sound of a car alarm.","The bird imitates to the sound of a car alarm.","The bird imitate the sound of a car alarm."] },
 
@@ -963,7 +963,7 @@ const REALM2_QUESTIONS = [
     answer:"resemble", choices:["resemble","frighten","escape"] },
   { cover:"resemble", tier:2, type:"vocab", open:true, clue:"Complete it: 'The stick insect's body ___s a thin brown twig.'",
     answer:"resemble", choices:["resemble","attack","avoid"] },
-  { cover:"resemble", tier:3, type:"grammar", open:false, clue:"Choose the correct sentence:",
+  { cover:"resemble", tier:3, type:"grammar", open:false, clue:"Say it correctly: 'This caterpillar resemble a small green snake.'",
     answer:"This caterpillar resembles a small green snake.",
     choices:["This caterpillar resembles a small green snake.","This caterpillar resembles to a small green snake.","This caterpillar resembles like a small green snake."] },
 
@@ -1019,33 +1019,33 @@ const REALM2_QUESTIONS = [
   // ------------------------------------------------------------------
   { cover:"camouflage", tier:2, type:"vocab", open:true, clue:"Complete it: 'Soldiers wear green and brown clothes to ___ themselves in the forest.'",
     answer:"camouflage", choices:["camouflage", "frighten", "hunt"] },
-  { cover:"camouflage", tier:1, type:"vocab", open:false, clue:"Which of these animals is using camouflage?",
+  { cover:"camouflage", tier:1, type:"vocab", open:false, noBlind:true, clue:"Which of these animals is using camouflage?",
     answer:"a brown gecko resting on a brown wall", choices:["a brown gecko resting on a brown wall", "a red frog sitting on a green leaf", "a parrot singing on an open branch"] },
-  { cover:"characteristic", tier:1, type:"vocab", open:false, clue:"Which of these is a characteristic of a bird?",
+  { cover:"characteristic", tier:1, type:"vocab", open:false, noBlind:true, clue:"Which of these is a characteristic of a bird?",
     answer:"it has feathers", choices:["it has feathers", "it lives near my school", "it belongs to my neighbour"] },
   { cover:"characteristic", tier:2, type:"vocab", open:true, clue:"Complete it: 'Sharp claws are a useful ___ for a cat that climbs trees.'",
     answer:"characteristic", choices:["characteristic", "camouflage", "predator"] },
-  { cover:"copy", tier:1, type:"vocab", open:false, clue:"Which of these is an example of one animal copying another?",
+  { cover:"copy", tier:1, type:"vocab", open:false, noBlind:true, clue:"Which of these is an example of one animal copying another?",
     answer:"a harmless fly with the same yellow bands as a bee", choices:["a harmless fly with the same yellow bands as a bee", "a lizard growing a new tail", "a fish swimming into deeper water"] },
-  { cover:"frighten", tier:1, type:"vocab", open:false, clue:"Which of these would frighten a small bird?",
+  { cover:"frighten", tier:1, type:"vocab", open:false, noBlind:true, clue:"Which of these would frighten a small bird?",
     answer:"a cat jumping out of a bush", choices:["a cat jumping out of a bush", "a bowl of seeds on the ground", "a warm nest in a tree"] },
   { cover:"frighten", tier:2, type:"vocab", open:true, clue:"Complete it: 'The little frog puffs itself up to look bigger and ___ the snake.'",
     answer:"frighten", choices:["frighten", "resemble", "copy"] },
-  { cover:"hide", tier:1, type:"vocab", open:false, clue:"Which of these animals is hiding?",
+  { cover:"hide", tier:1, type:"vocab", open:false, noBlind:true, clue:"Which of these animals is hiding?",
     answer:"a gecko pressed flat behind a curtain", choices:["a gecko pressed flat behind a curtain", "a tiger walking across open grass", "a bird singing on a high branch"] },
-  { cover:"hunt", tier:1, type:"vocab", open:false, clue:"Which of these animals hunts other animals for its food?",
+  { cover:"hunt", tier:1, type:"vocab", open:false, noBlind:true, clue:"Which of these animals hunts other animals for its food?",
     answer:"a snake", choices:["a snake", "a cow", "a butterfly"] },
-  { cover:"imitate", tier:1, type:"vocab", open:false, clue:"Which of these is an example of imitating?",
+  { cover:"imitate", tier:1, type:"vocab", open:false, noBlind:true, clue:"Which of these is an example of imitating?",
     answer:"a moth with wing patterns shaped like an owl's eyes", choices:["a moth with wing patterns shaped like an owl's eyes", "a fish swimming quickly away from a bird", "a bear sleeping through the whole winter"] },
-  { cover:"insect", tier:1, type:"vocab", open:false, clue:"Which of these is an insect?",
+  { cover:"insect", tier:1, type:"vocab", open:false, noBlind:true, clue:"Which of these is an insect?",
     answer:"an ant", choices:["an ant", "a snail", "a gecko"] },
   { cover:"poisonous", tier:2, type:"vocab", open:true, clue:"Complete it: 'Some caterpillars eat ___ leaves so that birds will not touch them.'",
     answer:"poisonous", choices:["poisonous", "frightened", "hidden"] },
-  { cover:"poisonous", tier:1, type:"vocab", open:false, clue:"Which of these animals is famous for being poisonous?",
+  { cover:"poisonous", tier:1, type:"vocab", open:false, noBlind:true, clue:"Which of these animals is famous for being poisonous?",
     answer:"a bright yellow dart frog", choices:["a bright yellow dart frog", "a garden snail", "a small brown sparrow"] },
-  { cover:"predator", tier:1, type:"vocab", open:false, clue:"Which of these animals is a predator?",
+  { cover:"predator", tier:1, type:"vocab", open:false, noBlind:true, clue:"Which of these animals is a predator?",
     answer:"an owl", choices:["an owl", "a rabbit", "a grasshopper"] },
-  { cover:"prey", tier:1, type:"vocab", open:false, clue:"Which of these animals is usually prey, not a predator?",
+  { cover:"prey", tier:1, type:"vocab", open:false, noBlind:true, clue:"Which of these animals is usually prey, not a predator?",
     answer:"a mouse", choices:["a mouse", "a tiger", "a shark"] },
   { cover:"prey", tier:2, type:"vocab", open:true, clue:"Complete it: 'Frogs shoot out their long tongues to catch their ___, which is mostly insects.'",
     answer:"prey", choices:["prey", "predator", "camouflage"] },
@@ -1099,16 +1099,16 @@ const REALM2_GRAMMAR = [
   // The structure is as + adjective + as. The commonest Grade 5 errors are
   // dropping the second `as`, using `so` for the first one, and reaching for a
   // comparative form (`as bigger as`), so the distractors are exactly those.
-  { cover:"as_as_equal", tier:2, type:"grammar", open:false, clue:"Choose the correct sentence:",
+  { cover:"as_as_equal", tier:2, type:"grammar", open:false, clue:"Say it correctly: 'This moth is so small as your thumbnail.'",
     answer:"This moth is as small as your thumbnail.",
     choices:["This moth is as small as your thumbnail.","This moth is as smaller as your thumbnail.","This moth is as small than your thumbnail."] },
   { cover:"as_as_equal", tier:2, type:"grammar", open:true, clue:"Finish it with as ... as: 'A cheetah is ___ ___ ___ a racing car over short distances.'",
     answer:"as fast as", choices:["as fast as","as faster as","so fast as"] },
-  { cover:"as_as_equal", tier:3, type:"grammar", open:false, clue:"Choose the correct sentence:",
+  { cover:"as_as_equal", tier:3, type:"grammar", open:false, clue:"Say it correctly: 'Her camouflage is so good as his.'",
     answer:"Her camouflage is as good as his.",
     choices:["Her camouflage is as good as his.","Her camouflage is as well as his.","Her camouflage is as good than his."] },
 
-  { cover:"as_as_negative", tier:2, type:"grammar", open:false, clue:"Choose the correct sentence:",
+  { cover:"as_as_negative", tier:2, type:"grammar", open:false, clue:"Say it correctly: 'A rabbit is not as heavy than a deer.'",
     answer:"A rabbit is not as heavy as a deer.",
     choices:["A rabbit is not as heavy as a deer.","A rabbit is not as heavier as a deer.","A rabbit is not so heavy than a deer."] },
   { cover:"as_as_negative", tier:3, type:"grammar", open:true, clue:"Say it the other way round. 'A python is longer than a viper.' So a viper is NOT ___ ___ ___ a python.",
@@ -1125,7 +1125,7 @@ const REALM2_GRAMMAR = [
   // match the verb in the statement.
   { cover:"tag_positive", tier:2, type:"grammar", open:true, clue:"Add the tag: 'That insect is poisonous, ___ ___?'",
     answer:"isn't it", choices:["isn't it","is it","doesn't it"] },
-  { cover:"tag_positive", tier:2, type:"grammar", open:false, clue:"Choose the correct sentence:",
+  { cover:"tag_positive", tier:2, type:"grammar", open:false, clue:"Add the tag and say the whole sentence: 'Owls hunt at night, ___ ___?'",
     answer:"Owls hunt at night, don't they?",
     choices:["Owls hunt at night, don't they?","Owls hunt at night, do they?","Owls hunt at night, aren't they?"] },
   { cover:"tag_positive", tier:3, type:"grammar", open:true, clue:"Add the tag: 'The stick insect resembles a twig, ___ ___?'",
@@ -1133,7 +1133,7 @@ const REALM2_GRAMMAR = [
 
   { cover:"tag_negative", tier:2, type:"grammar", open:true, clue:"Add the tag: 'Zebras aren't predators, ___ ___?'",
     answer:"are they", choices:["are they","aren't they","do they"] },
-  { cover:"tag_negative", tier:2, type:"grammar", open:false, clue:"Choose the correct sentence:",
+  { cover:"tag_negative", tier:2, type:"grammar", open:false, clue:"Add the tag and say the whole sentence: 'You didn't see the camouflage, ___ ___?'",
     answer:"You didn't see the camouflage, did you?",
     choices:["You didn't see the camouflage, did you?","You didn't see the camouflage, didn't you?","You didn't see the camouflage, do you?"] },
   { cover:"tag_negative", tier:3, type:"grammar", open:true, clue:"Add the tag: 'These frogs can't escape, ___ ___?'",
@@ -1141,20 +1141,20 @@ const REALM2_GRAMMAR = [
 
   { cover:"tag_rule", tier:3, type:"grammar", open:true, clue:"If the sentence is POSITIVE, is the tag question at the end positive or negative?",
     answer:"negative", choices:["negative","positive","either one"] },
-  { cover:"tag_rule", tier:3, type:"grammar", open:false, clue:"Which one has the WRONG tag?",
+  { cover:"tag_rule", tier:3, type:"grammar", open:false, noBlind:true, clue:"Which one has the WRONG tag?",
     answer:"The leopard has spots, hasn't the leopard?",
     choices:["The leopard has spots, hasn't the leopard?","The leopard has spots, doesn't it?","The leopard doesn't have stripes, does it?"] },
 
   // ===================== SKILLS & FUNCTIONS ================================
   { cover:"describe_animals", tier:2, type:"function", open:true, clue:"You want to describe a tiger's markings. Which word do you need — spots or stripes?",
     answer:"stripes", choices:["stripes","spots","species"] },
-  { cover:"describe_animals", tier:3, type:"function", open:false, clue:"Choose the best description of a ladybird:",
+  { cover:"describe_animals", tier:3, type:"function", open:false, clue:"Describe a ladybird in one sentence: its size, its colour, what kind of animal it is, and its markings.",
     answer:"It is a small red insect with black spots.",
     choices:["It is a small red insect with black spots.","It is a small red insect with black stripes.","It is a small red predator with black spots."] },
 
   { cover:"compare_animals", tier:2, type:"function", open:true, clue:"You want to say two animals are EQUALLY good at hiding. Which structure do you use?",
     answer:"as good as", choices:["as good as","better than","the best"] },
-  { cover:"compare_animals", tier:3, type:"function", open:false, clue:"Choose the sentence that compares two animals correctly:",
+  { cover:"compare_animals", tier:3, type:"function", open:false, clue:"Say it correctly: 'A gecko is as quiet than a moth.'",
     answer:"A gecko is as quiet as a moth.",
     choices:["A gecko is as quiet as a moth.","A gecko is as quieter as a moth.","A gecko is quiet as a moth than."] },
 
@@ -1165,7 +1165,7 @@ const REALM2_GRAMMAR = [
 
   { cover:"classification", tier:2, type:"function", open:false, clue:"In classification writing you sort animals into ___ — groups of the same kind.",
     answer:"species", choices:["species","stripes","prey"] },
-  { cover:"classification", tier:3, type:"function", open:false, clue:"Which sentence belongs in a classification text?",
+  { cover:"classification", tier:3, type:"function", open:false, clue:"Start a classification text about insects. Say a sentence that tells the reader they can be sorted into groups.",
     answer:"Insects can be divided into several groups.",
     choices:["Insects can be divided into several groups.","I really love looking at insects.","The insect ran away quickly yesterday."] },
 
@@ -1336,7 +1336,7 @@ const REALM2_ELITE_QUESTIONS = [
   // ---- vocabulary used, not recognised ----
   { cover:"camouflage", tier:4, type:"vocab", open:true, clue:"An animal is brown and grey and sits still on tree bark all day. Give the ONE word for what it is using.",
     answer:"camouflage", choices:["camouflage","imitation","classification"] },
-  { cover:"camouflage", tier:4, type:"grammar", open:false, clue:"Choose the correct sentence:",
+  { cover:"camouflage", tier:4, type:"grammar", open:false, clue:"Say it correctly: 'Its camouflage works best when it do not move.'",
     answer:"Its camouflage works best when it does not move.",
     choices:["Its camouflage works best when it does not move.","It's camouflage works best when it does not move.","Its camouflage work best when it does not move."] },
 
@@ -1352,7 +1352,7 @@ const REALM2_ELITE_QUESTIONS = [
   { cover:"hide", tier:4, type:"function", open:true, clue:"A predator is close by. Does the prey animal hide, hunt, or attack?",
     answer:"hide", choices:["hide","hunt","attack"] },
 
-  { cover:"hunt", tier:4, type:"grammar", open:false, clue:"Choose the correct sentence:",
+  { cover:"hunt", tier:4, type:"grammar", open:false, clue:"Say it correctly: 'Wolves hunting in groups called packs.'",
     answer:"Wolves hunt in groups called packs.",
     choices:["Wolves hunt in groups called packs.","Wolves hunts in groups called packs.","Wolves are hunt in groups called packs."] },
 
@@ -1370,7 +1370,7 @@ const REALM2_ELITE_QUESTIONS = [
   { cover:"predator", tier:4, type:"function", open:true, clue:"An eagle eats fish. In that sentence, which word describes the eagle — predator or prey?",
     answer:"predator", choices:["predator","prey","species"] },
 
-  { cover:"prey", tier:4, type:"grammar", open:false, clue:"Choose the correct sentence:",
+  { cover:"prey", tier:4, type:"grammar", open:false, clue:"Say it correctly: 'The owl watch its prey from the branch.'",
     answer:"The owl watched its prey from the branch.",
     choices:["The owl watched its prey from the branch.","The owl watched its prey's from the branch.","The owl watched it prey from the branch."] },
 
@@ -1399,20 +1399,20 @@ const REALM2_ELITE_QUESTIONS = [
   { cover:"defend", tier:4, type:"vocab", open:true, clue:"Which pair are OPPOSITES — attack and defend, or attack and hunt?",
     answer:"attack and defend", choices:["attack and defend","attack and hunt","hide and escape"] },
 
-  { cover:"escape", tier:4, type:"grammar", open:false, clue:"Choose the correct sentence:",
+  { cover:"escape", tier:4, type:"grammar", open:false, clue:"Say it correctly: 'The lizard escaped with dropping its tail.'",
     answer:"The lizard escaped by dropping its tail.",
     choices:["The lizard escaped by dropping its tail.","The lizard escaped for dropping its tail.","The lizard escape by dropping its tail."] },
 
   // ---- as ... as, used ----
   { cover:"as_as_equal", tier:4, type:"grammar", open:false, clue:"Join them with as ... as: 'The moth is 4cm. The leaf is 4cm.' The moth is ___ ___ ___ the leaf.",
     answer:"as long as", choices:["as long as","as longer as","so long as"] },
-  { cover:"as_as_equal", tier:4, type:"grammar", open:false, clue:"Choose the correct sentence:",
+  { cover:"as_as_equal", tier:4, type:"grammar", open:false, clue:"Say it correctly: 'This spider is so dangerous as it looks.'",
     answer:"This spider is as dangerous as it looks.",
     choices:["This spider is as dangerous as it looks.","This spider is as dangerous than it looks.","This spider is dangerous as it looks."] },
 
   { cover:"as_as_negative", tier:4, type:"grammar", open:true, clue:"Rewrite with 'not as ... as': 'The gecko is smaller than the iguana.' The gecko is not ___ ___ ___ the iguana.",
     answer:"as big as", choices:["as big as","as bigger as","as small as"] },
-  { cover:"as_as_negative", tier:4, type:"grammar", open:false, clue:"Choose the correct sentence:",
+  { cover:"as_as_negative", tier:4, type:"grammar", open:false, clue:"Say it correctly: 'A moth is not as colourful than a butterfly.'",
     answer:"A moth is not as colourful as a butterfly.",
     choices:["A moth is not as colourful as a butterfly.","A moth is not as more colourful as a butterfly.","A moth is not so colourful than a butterfly."] },
 
@@ -1432,14 +1432,14 @@ const REALM2_ELITE_QUESTIONS = [
   { cover:"tag_negative", tier:4, type:"grammar", open:true, clue:"Add the tag: 'They weren't hunting, ___ ___?'",
     answer:"were they", choices:["were they","weren't they","did they"] },
 
-  { cover:"tag_rule", tier:4, type:"grammar", open:false, clue:"Which sentence uses BOTH rules correctly?",
+  { cover:"tag_rule", tier:4, type:"grammar", open:false, clue:"Add both tags: 'It's poisonous, ___ ___? And it isn't harmless, ___ ___?'",
     answer:"It's poisonous, isn't it? And it isn't harmless, is it?",
     choices:["It's poisonous, isn't it? And it isn't harmless, is it?","It's poisonous, is it? And it isn't harmless, isn't it?","It's poisonous, doesn't it? And it isn't harmless, do it?"] },
   { cover:"tag_rule", tier:4, type:"grammar", open:true, clue:"The statement uses CAN'T. Which word must the tag use?",
     answer:"can", choices:["can","can't","do"] },
 
   // ---- skills, applied ----
-  { cover:"describe_animals", tier:4, type:"function", open:false, clue:"Choose the most complete description:",
+  { cover:"describe_animals", tier:4, type:"function", open:false, clue:"Give a full description of a tiger: say its size, its markings, that it is a predator, and how it hunts.",
     answer:"It is a large striped predator that hunts alone.",
     choices:["It is a large striped predator that hunts alone.","It is a large animal.","It is striped."] },
 
@@ -1451,7 +1451,7 @@ const REALM2_ELITE_QUESTIONS = [
   { cover:"imitation_talk", tier:4, type:"function", open:true, clue:"Which is the better description of a harmless snake with a poisonous snake's colours — it resembles it, or it hunts it?",
     answer:"it resembles it", choices:["it resembles it","it hunts it","it defends it"] },
 
-  { cover:"classification", tier:4, type:"function", open:false, clue:"Which opening belongs in a classification text about insects?",
+  { cover:"classification", tier:4, type:"function", open:false, clue:"Open a classification text about insects in this habitat. Say a sentence telling the reader how many groups there are.",
     answer:"There are three main groups of insect in this habitat.",
     choices:["There are three main groups of insect in this habitat.","Yesterday I caught a beautiful insect.","Insects are the best animals in the world."] },
   { cover:"classification", tier:4, type:"function", open:true, clue:"Classification writing puts things into groups. Which unit word means one of those groups?",
@@ -1459,7 +1459,7 @@ const REALM2_ELITE_QUESTIONS = [
 
   { cover:"dictionary_use", tier:4, type:"function", open:true, clue:"Your dictionary shows 'poisonous (adj)'. Which unit word would come immediately AFTER it alphabetically — predator or prey?",
     answer:"predator", choices:["predator","prey","resemble"] },
-  { cover:"dictionary_use", tier:4, type:"function", open:false, clue:"Which list is in correct dictionary order?",
+  { cover:"dictionary_use", tier:4, type:"function", open:false, clue:"Put these five words in dictionary order and say the list: confuse, escape, attack, defend, avoid.",
     answer:"attack, avoid, confuse, defend, escape",
     choices:["attack, avoid, confuse, defend, escape","avoid, attack, defend, confuse, escape","escape, defend, confuse, avoid, attack"] },
 
@@ -1505,8 +1505,13 @@ const REALM2_ELITE_QUESTIONS = [
     answer:"'spot' should be 'spots'", choices:["'spot' should be 'spots'", "'has' should be 'have'", "'big' should be 'bigger'"] },
   { cover:"stripe", tier:4, type:"grammar", open:true, clue:"Make it one word: a shirt that has stripes on it is a ___ shirt.",
     answer:"striped", choices:["striped", "stripes", "striping"] },
-  { cover:"attack", tier:4, type:"fix it", open:false, clue:"One part is wrong: 'The wasps attacked to the fruit on the table.'",
-    answer:"'attacked to' should be 'attacked'", choices:["'attacked to' should be 'attacked'", "'attacked' should be 'attack'", "'the fruit' should be 'fruits'"] },
+  // Was: "The wasps attacked to the fruit on the table." Two faults, both found
+  // in a lesson. Corrected, the sentence still read wrongly - wasps land on
+  // fruit and swarm it, they do not attack it - so a student who made the right
+  // repair could not tell they had. And the third option, "'the fruit' should
+  // be 'fruits'", is defensible English, which made two answers arguably right.
+  { cover:"attack", tier:4, type:"fix it", open:false, clue:"One part is wrong: 'The angry bees attacked to the bear near the nest.'",
+    answer:"'attacked to' should be 'attacked'", choices:["'attacked to' should be 'attacked'", "'attacked' should be 'attack'", "'the bear' should be 'a bear'"] },
   { cover:"avoid", tier:4, type:"grammar", open:true, clue:"Finish it in the right form: 'My grandmother avoids ___ out in the rain without a coat.'",
     answer:"going", choices:["going", "to go", "go"] },
   { cover:"confuse", tier:4, type:"grammar", open:true, clue:"Finish it with the right form: 'The instructions were so ___ that nobody knew what to do.'",

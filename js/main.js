@@ -755,22 +755,26 @@ document.addEventListener("click", ev => {
 
   if (btn.classList.contains("sg-risky")) {
     setStake(STAKE_RISKY);
-    // On a selection-only question RISKY just raises the stakes and the
-    // options come straight back. Only an `open` question goes blind - the
-    // correct answer is never hidden from someone who could have picked it.
-    if (!stakeIsBlind(P.q, STAKE_RISKY)) {
-      SFX.unlockChime();
-      _pendingStake = null;
-      clearStakeUI(side);
-      const fb = $(side === "boss" ? "boss-feedback" : "enc-feedback");
-      fb.textContent = "RISKY — double shards, double damage if it's wrong.";
-      fb.className = "enc-feedback";
-      P.onPick(STAKE_RISKY);
-      return;
-    }
+    // v7.0: RISKY always goes blind. The gate is never offered on a question
+    // that cannot (see stakesAvailable), so this branch has no "options come
+    // back" case any more - that split was the unfairness the classes reported.
     SFX.bossRoar();
     e.gate.style.display = "none";
     e.say.style.display = "";
+    // Spot-the-error still needs its sentence: the student says which WORD is
+    // wrong, and the tappable copy lives inside the element a blind call hides.
+    const prompt = blindPrompt(P.q);
+    const t = e.say.querySelector(".cs-title");
+    if (t) t.textContent = prompt.title;
+    let lineEl = e.say.querySelector(".cs-line");
+    if (!lineEl) {
+      lineEl = document.createElement("div");
+      lineEl.className = "cs-line";
+      const sub = e.say.querySelector(".cs-sub");
+      e.say.insertBefore(lineEl, sub ? sub.nextSibling : null);
+    }
+    lineEl.textContent = prompt.line || "";
+    lineEl.style.display = prompt.line ? "" : "none";
     showStreakBanner("RISKY — NO OPTIONS, SAY IT OUT LOUD");
     return;
   }
@@ -779,13 +783,43 @@ document.addEventListener("click", ev => {
   const correct = btn.classList.contains("cs-yes");
   const fb = $(side === "boss" ? "boss-feedback" : "enc-feedback");
   fb.textContent = correct
-    ? `Called it blind — the answer was "${P.q.answer}". Triple shards!`
+    ? `Called it blind — the answer was "${P.q.answer}".`
     : `Not this time — the answer was "${P.q.answer}".`;
   fb.className = "enc-feedback " + (correct ? "good" : "bad");
+  // SHOW THE ANSWER EITHER WAY, WHERE THE ROOM CAN READ IT.
+  //
+  // On a blind call nothing was ever on screen, so the class has no written
+  // form of the answer to take away - and on a SAFE question they always get
+  // one, because the right option sits there highlighted in green. The feedback
+  // line said it already, but in small type at the bottom of the panel, and a
+  // class that just heard an answer shouted across a room needs to SEE it.
+  revealAnswer(side, P.q, correct);
   _pendingStake = null;
   clearStakeUI(side);
   P.onPick(STAKE_RISKY, correct);
 });
+
+// ---------------------------------------------------------------------------
+// The answer, written down, after a blind call.
+//
+// A SAFE question ends with the correct option highlighted in green and a tick
+// beside it - the class reads the answer whether they got it or not. A blind
+// call had nothing on screen at all, so until v7.0 the only written form was a
+// sentence in the small feedback line, and only reliably when they got it
+// wrong. This is the missing half.
+// ---------------------------------------------------------------------------
+function revealAnswer(side, q, correct) {
+  if (!q) return;
+  const host = $(side === "boss" ? "boss-choices" : "enc-choices");
+  if (!host) return;
+  host.className = "choices reveal";
+  host.classList.remove("hidden");
+  host.innerHTML =
+    `<div class="answer-reveal ${correct ? "good" : "bad"}">` +
+    `<div class="ar-tag">${correct ? "✓ CORRECT" : "THE ANSWER WAS"}</div>` +
+    `<div class="ar-answer">${escapeHtml(String(q.answer || ""))}</div>` +
+    `</div>`;
+}
 
 // ===================== THE DISTRACTED BUTTON =====================
 //
@@ -1457,6 +1491,22 @@ function applyHit(rawDmg, m, P) {
   // further down; nothing takes the top off here any more.
   let incoming = rawDmg;
   const dmg = incomingDamage(incoming, m);
+  // A HIT THAT DOES NOTHING MUST NOT SPEND A ONE-SHOT DEFENCE.
+  //
+  // damage() checks the Storm Shield potion and the Lucky Charm before it
+  // checks the number, so calling it with 0 quietly burned either of them on a
+  // blow that was never going to hurt - and then announced "strikes for 0!",
+  // which reads like a bug even when it is not. incomingDamage() can no longer
+  // return 0 from a real hit, but a monster attack of 0 can still arrive from
+  // elsewhere, so this stays as the guard rather than as a comment.
+  if (dmg <= 0) {
+    floatText(P.heroStage, "BLOCKED", "block");
+    $(P.feedback).textContent = "Your armour turns the blow aside!";
+    $(P.feedback).className = "enc-feedback good";
+    renderTopHud(P.hud);
+    renderShieldRow(P.shields);
+    return { blocked: true, blockedBy: "Armour", absorbed: 0, dealt: 0, dead: false };
+  }
   const res = damage(dmg);
   // Thorn Etch: the party is paid for taking a blow. Never damages the
   // monster - that would shorten the fight, and a shorter fight is fewer

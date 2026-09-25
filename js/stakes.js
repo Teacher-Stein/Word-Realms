@@ -48,9 +48,12 @@ const STAKE_RISKY = "risky";
 
 // What a stake is worth. Kept as functions so CONFIG stays the single place
 // the numbers live.
+// RISKY and "blind" are the same thing from v7.0, so there is one rate. The
+// two constants are kept apart in config.js because the blind rate is the one
+// that was tuned against a class actually saying answers out loud.
 function stakeShardMult(stake, blind) {
   if (stake !== STAKE_RISKY) return 1;
-  return blind ? CONFIG.STAKE_BLIND_SHARDS : CONFIG.STAKE_RISKY_SHARDS;
+  return CONFIG.STAKE_BLIND_SHARDS;
 }
 
 // How hard a correct answer lands. SAFE deals 1; RISKY deals 2. This is the
@@ -83,16 +86,66 @@ function stakeWrongCost(q, stake) {
   return CONFIG.TIER_DAMAGE[tier] || 1;
 }
 
-// Can this question be answered with nothing on screen? Only `open` questions
-// qualify — "Choose the correct sentence" is unanswerable blind, and offering
-// it that way was the bug Stein caught in v5.1.
+// ---------------------------------------------------------------------------
+// v7.0: RISKY MEANS ONE THING. SAY IT OUT LOUD. ALWAYS.
+//
+// It used to mean two things. On an `open` question it hid the options; on any
+// other question it left them on screen and merely raised the stakes. A class
+// found that in a lesson and called it unfair, correctly: one student pressed
+// RISKY and had to produce the answer from nothing, the next pressed the same
+// button and got a multiple choice. Same button, same reward, two different
+// jobs.
+//
+// So the button now always hides the options — and the protection that used to
+// live in the `open` flag has moved somewhere sturdier. Instead of a hand-set
+// per-question flag (which was wrong on 19 questions out of 47 in v5.1, because
+// a human has to remember it every time), RISKY is simply NOT OFFERED on the
+// two formats where the options ARE the question:
+//
+//   odd one out    "Three of these are instruments. Tap the one that is not."
+//   put in order   the fragments are the content; hide them and nothing is left
+//
+// Those get no stake gate at all, so there is no button to press and no
+// inconsistency to notice. They look different on screen anyway.
+//
+// Everything else — plain questions and spot-the-error — can be said aloud,
+// which after the v7.0 clue rewrites is 93% of the bank. See `blindPrompt`
+// below for how spot-the-error keeps its sentence visible.
+//
+// RULE 2 IS STILL THE POINT. Nothing may hide the correct answer from a student
+// who could have found it. What changed is how that is enforced: by the shape
+// of the question rather than by someone remembering to tick a box.
+// ---------------------------------------------------------------------------
+const BLIND_IMPOSSIBLE_FORMATS = ["odd", "order"];
+
+function stakeCanGoBlind(q) {
+  if (!q) return false;
+  // `noBlind: true` is the escape hatch for a question that uses the plain
+  // three-option format but is really an odd-one-out - "Which of these is NOT
+  // an emergency?" needs the list to choose from, so it can never be said
+  // aloud. It is an EXPLICIT flag rather than a silent exclusion because the
+  // content checker requires one: any clue that points at its options must
+  // either be rewritten to stand alone or declare itself here, and a question
+  // that does neither fails the build.
+  if (q.noBlind === true) return false;
+  return BLIND_IMPOSSIBLE_FORMATS.indexOf(q.format || "choice") === -1;
+}
+
 function stakeIsBlind(q, stake) {
-  // The tier floor MUST be here and not only in the button's label. It lived
-  // in renderStakeGate alone, so on the 25 tier-1 open questions the button
-  // promised "2x shards, options stay" and then took the options away anyway.
-  // One predicate, used by both the promise and the outcome.
-  return stake === STAKE_RISKY && !!q && q.open === true &&
-         (q.tier || 1) >= CONFIG.STAKE_MIN_TIER;
+  return stake === STAKE_RISKY && stakeCanGoBlind(q);
+}
+
+// What the class needs on screen during a blind call.
+//
+// Spot-the-error is the one format that can be said aloud but still needs
+// something visible: the student says which WORD is wrong, so the sentence has
+// to stay. It normally lives inside the choices element, which is exactly what
+// a blind call hides — so the say panel shows a plain, untappable copy.
+function blindPrompt(q) {
+  if (q && (q.format === "error") && q.sentence) {
+    return { title: "Say the word that is wrong.", line: q.sentence };
+  }
+  return { title: "Say the answer out loud.", line: "" };
 }
 
 // Stakes are offered on every question in a fight EXCEPT while Bracing (the
@@ -102,7 +155,9 @@ function stakesAvailable(q, defending) {
   if (!CONFIG.STAKES_ENABLED) return false;
   if (defending) return false;
   if (typeof isFrozen === "function" && isFrozen()) return false;
-  return !!q;
+  // No gate where RISKY could not mean what it says. A button that appears and
+  // then behaves differently is the whole fault this version exists to remove.
+  return stakeCanGoBlind(q);
 }
 
 function currentStake() {
@@ -147,8 +202,7 @@ function payStakeShield(blind) {
 // A short line for the feedback bar, so the class hears why the number moved.
 function stakeNote(stake, blind, correct) {
   if (stake !== STAKE_RISKY) return "";
-  if (correct) return blind ? " Called it blind — double damage!" : " Risk paid off — double damage!";
-  return blind ? " Risked it blind, and it hurt." : " Risk taken, risk lost.";
+  return correct ? " Called it blind — double damage!" : " Risked it blind, and it hurt.";
 }
 
 // How the answer was played, for the run log. "safe" also covers questions

@@ -102,10 +102,32 @@ not yet been checked against a real stopwatch; if that number moves, re-run
 everything. One real cost of v6.7 is visible there and is not hidden: distinct
 items per lesson went from 32 to 30 out of 32.
 
-**RULE 2 — Nothing may hide or remove the CORRECT answer.** Removing a *wrong*
-option is fine and several things do it. The RISKY stake escalates to answering
-blind only on questions tagged `open: true`, where the clue alone tells you what
-to say. Punishing a student who knew the answer is backwards for a review game.
+**RULE 2 — Nothing may hide or remove the CORRECT answer from a student who
+could have found it.** Removing a *wrong* option is fine and several things do
+it. Punishing a student who knew the answer is backwards for a review game.
+
+*Rewritten in v7.0, because how this is enforced changed completely.* RISKY used
+to hide the options only on questions tagged `open: true`, and behave like an
+ordinary multiple choice everywhere else. A class found that in a lesson and
+called it unfair, correctly: one student pressed RISKY and had to produce the
+answer from nothing, the next pressed the same button and got three options.
+
+**RISKY now always hides the options.** The protection moved from a hand-set
+per-question flag — which a human has to remember, and which was wrong on 19
+questions out of 47 in v5.1 — to the *shape* of the question. The stake gate is
+simply never offered where the options ARE the question:
+
+- an **odd-one-out** ("three of these are instruments, tap the one that is not")
+- a **put-it-in-order**
+- anything carrying **`noBlind: true`**, the escape hatch for a question that
+  uses the plain format but is really a pick-from-this-list ("Which of these is
+  NOT an emergency?")
+
+`tools/content-rules.js` enforces it: a clue that points at its options must
+either be rewritten to stand alone or declare `noBlind: true`, and a question
+that does neither fails the content check. That is why v7.0 rewrote 69 clues
+across the three realms — *"Choose the correct sentence:"* became *"Say it
+correctly: '…'"*, which is a better question in both modes.
 
 **RULE 3 — Real failure is wanted.** Runs are meant to be losable — the target
 moved to about **one in two** in v6.7, once Rule 1 stopped forbidding it. Do not
@@ -146,7 +168,7 @@ tell them not to send it.
 | `tools/check-content.html` | Browser content checker. **The teacher's tool** — no install. |
 | `tools/set-pin.html` | Browser passphrase tool. |
 | `tools/content-rules.js` | The content rules, shared by the browser checker and the terminal one. |
-| `tools/tests/` | Nineteen suites. See §7. |
+| `tools/tests/` | Twenty suites. See §7. |
 | `tools/pipeline/` | The art pipeline: chroma key, split, downscale, palette. |
 
 ### Three structural facts that are load-bearing
@@ -285,6 +307,7 @@ node tools/tests/balance_sim.js
 | `test_stale_deploy.py` | a half-updated upload degrades and says so, instead of bricking the game |
 | `shot_realm2.py` | walks a realm in a browser; rendered sprite aspect matches the art |
 | `check_content.js` | the question banks, from a terminal |
+| `test_report.py` | the teaching report's unit filter: an item knows which unit it came from, the per-unit rows add back up to the cumulative total, the report opens on the unit just played, and both exports follow what is on screen |
 | `test_stakes.py` | RISKY deals 2 and SAFE deals 1 in a real fight; the wrong-answer penalty is flat, not a multiple of the tier; the gate charges exactly what it promised; shields still absorb it; the stake is logged |
 | `balance_sim.js` | wipe rates by accuracy, **questions per lesson**, boss growth, damage sources |
 

@@ -108,8 +108,14 @@ def play(page, accuracy, budget, log):
                   const run = STATE.run;
                   if (!run) return null;           // the run can end mid-walk
                   const m = s==='boss' ? run.boss : run.encounter;
-                  return m && m.currentQ ? {open: m.currentQ.open === true,
-                                            tier: m.currentQ.tier || 1} : null;
+                  const q = m && m.currentQ;
+                  if (!q) return null;
+                  // v7.0: what may go blind is decided by the SHAPE of the
+                  // question, not by the old hand-set `open` flag.
+                  const fmt = q.format || 'choice';
+                  return { tier: q.tier || 1,
+                           sayable: q.noBlind !== true &&
+                                    fmt !== 'odd' && fmt !== 'order' };
                 }""", side)
                 take_risk = rng.random() < 0.45
                 if take_risk:
@@ -119,9 +125,20 @@ def play(page, accuracy, budget, log):
                         continue
                     page.wait_for_timeout(280)
                     said = visible(page, f'#{side}-commit-say')
-                    if said and q and not q['open']:
+                    # RULE TWO, v7.0. RISKY always hides the options, so the
+                    # protection is that the GATE never appears on a question
+                    # whose options are the question. Two things are therefore
+                    # wrong: going blind on an odd-one-out or a put-in-order
+                    # (unanswerable), and NOT going blind after pressing RISKY
+                    # (the two-faced button the classes called unfair).
+                    if q and not q['sayable']:
                         blind_on_closed += 1
-                        log.append(f'  !! BLIND offered on a selection-only question')
+                        log.append('  !! the stake gate appeared on a question '
+                                   'whose options ARE the question')
+                    elif not said:
+                        blind_on_closed += 1
+                        log.append('  !! RISKY did not hide the options — the '
+                                   'button did two different jobs again')
                     if said:
                         # adjudicate the spoken answer
                         right = rng.random() < accuracy
@@ -319,7 +336,7 @@ with sync_playwright() as pw:
         print(f'  runs walked             {r["runs"]}')
         print(f'  clock readings checked  {r["clock_checks"]}')
         print(f'  clock readings WRONG    {r["clock_bad"]}')
-        print(f'  blind on closed q       {r["blind_on_closed"]}')
+        print(f'  RISKY contract breaks   {r["blind_on_closed"]}  (must be 0)')
         print(f'  Distracted ate a Q      {r["distracted_ate_question"]}  (must be 0)')
         print(f'  console errors          {len(errors)}')
         for e in errors[:6]:
