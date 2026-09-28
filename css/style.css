@@ -273,6 +273,26 @@ textarea { resize: vertical; line-height: 1.5; }
 .corridor[data-realmsky="storm"]::after  { left: 52%; top: 14%; width: 50%; height: 24%; animation: drift 48s linear infinite reverse; }
 @keyframes drift { 0% { transform: translateX(-30%);} 100% { transform: translateX(120%);} }
 
+/* Realm 3, the buried workshop. No sky down here - the light is furnace light,
+   so the gradient is warm and comes from below rather than cold from above.
+   Realm 2 ships no corridor rule at all and simply falls through to the default
+   panel; this one exists because a map screen lit like a storm would undo the
+   realm's whole point. The two hazes are forge glow, not cloud, so they sit
+   low, move slowly and pulse instead of drifting across. */
+.corridor[data-realmsky="workshop"] {
+  background:
+    radial-gradient(ellipse 60% 44% at 50% 88%, #6b3a18 0%, #33200f 46%, #140d0a 100%),
+    linear-gradient(180deg, #17120f 0%, #241611 100%);
+}
+.corridor[data-realmsky="workshop"]::before,
+.corridor[data-realmsky="workshop"]::after {
+  content: ''; position: absolute; z-index: 0; border-radius: 50%;
+  background: rgba(255,150,60,.09); filter: blur(26px);
+}
+.corridor[data-realmsky="workshop"]::before { left: 8%;  top: 62%; width: 40%; height: 30%; animation: forgeGlow 7s ease-in-out infinite; }
+.corridor[data-realmsky="workshop"]::after  { left: 56%; top: 68%; width: 44%; height: 26%; animation: forgeGlow 9s ease-in-out infinite reverse; }
+@keyframes forgeGlow { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+
 /* full-scene lightning wash */
 .sky-flash {
   position: absolute; inset: 0; opacity: 0;
@@ -909,7 +929,13 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 .popup-card.neutral .popup-banner { background: var(--accent-light); color: #150e26; border-color: #150e26; }
 
 .popup-icon {
-  width: 132px; height: 132px; margin: 20px auto 12px; display: block;
+  /* object-fit matters here from v7.1 on. Every item icon used to be a
+     240x240 square rendered from SVG, so setting width AND height could not
+     distort anything. The pixel icons are cut to their own silhouette and are
+     64px tall by whatever they are wide - the Thunder Pike is 9x64. Without
+     `contain` the browser would stretch a spear into a square and nobody
+     would think to look at the CSS for it. */
+  width: 132px; height: 132px; object-fit: contain; margin: 20px auto 12px; display: block;
   image-rendering: pixelated;
   filter: drop-shadow(0 6px 16px rgba(0,0,0,.6));
   animation: iconFloat 2.6s ease-in-out infinite;
@@ -945,7 +971,7 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
   padding: 14px 12px; text-align: center; position: relative;
   transition: transform .1s ease, border-color .1s ease;
 }
-.item-tile img { width: 76px; height: 76px; image-rendering: pixelated;
+.item-tile img { width: 76px; height: 76px; object-fit: contain; image-rendering: pixelated;
   filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
 /* v6.1: the shop is read from the back of a classroom like everything else.
    Stein's note after four classes: "items in shops need to have larger text". */
@@ -1465,7 +1491,7 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
   display: grid; place-items: center;
   background: rgba(14,8,26,.85); border: 2px solid var(--accent-light);
 }
-.relic-chip img { width: 30px; height: 30px; image-rendering: pixelated; }
+.relic-chip img { width: 30px; height: 30px; object-fit: contain; image-rendering: pixelated; }
 .relic-chip.gear      { border-color: #8fb8ff; }
 .relic-chip.r-uncommon{ border-color: #63b8e6; }
 .relic-chip.r-rare    { border-color: var(--gold); box-shadow: 0 0 10px rgba(255,215,106,.45); }
@@ -1725,7 +1751,7 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 }
 .potion-chip:hover { border-color: var(--gold); background: rgba(52,38,10,.75); }
 .potion-chip img {
-  width: 30px; height: 30px; image-rendering: pixelated; display: block;
+  width: 30px; height: 30px; object-fit: contain; image-rendering: pixelated; display: block;
 }
 .potion-chip b { font-size: .95rem; color: #ffe9b0; }
 

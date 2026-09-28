@@ -172,7 +172,7 @@ const REALM3_ELITE_QUESTIONS = [
 // ---------------------------------------------------------------------------
 registerRealm({
   id: 3,                                   // <- your realm number, 3 to 9
-  name: "The Concert Caverns",             // <- the place, as the class sees it
+  name: "The Iron Orchestra",             // <- the place, as the class sees it
   theme: "Unit 3 — Music",                 // <- your unit
 
   questions:      REALM3_QUESTIONS,

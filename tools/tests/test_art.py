@@ -89,7 +89,20 @@ for f in sorted((ROOT / "js").glob("realm*.js")):
                              f"move the art under {own} or declare the loan")
 
 # --- every sprite path referenced anywhere ------------------------------------
-paths = sorted(set(re.findall(r'sprite:"([^"]+)"', CONTENT)))
+#
+# This read CONTENT alone until 26/09/2026, which meant a realm living in its
+# own file had its sprites checked for the folder-prefix rule above and for
+# NOTHING ELSE - not existence on disk, not stray magenta, not the size band.
+# Realm 3's eighteen sprites passed this suite without one of them being opened.
+#
+# That is the third time the same mistake has been made and the docstring at the
+# top of this file is about the first two. The rule earned in v6.8 is: when a
+# feature changes WHERE content lives, check EVERY tool that reads content. A
+# checker that silently audits a subset is worse than no checker, because it
+# reports PASS.
+REALM_SRC = "\n".join(f.read_text() for f in sorted((ROOT / "js").glob("realm*.js"))
+                      if "registerRealm" in f.read_text())
+paths = sorted(set(re.findall(r'sprite:"([^"]+)"', CONTENT + "\n" + REALM_SRC)))
 for p in paths:
     if not (ROOT / p).exists():
         fails.append(f"sprite path {p} is referenced but not on disk")
@@ -140,7 +153,29 @@ for m in re.finditer(r"const REALM(\d)_(?:MONSTERS|ELITES) = \[(.*?)\n\];",
 # The arena is built for sprites roughly hero-height to boss-height. Something
 # far outside that band is a pipeline mistake, not a style choice: the flat
 # side-on Glass Lizard arrived 217x84 and read as scenery next to the party.
-MIN_H, MAX_H, MAX_W = 70, 156, 215
+#
+# THE BAND IS PER-REALM, and it has to be. Realms 1 and 2 were cut at 88-150
+# true pixels and drawn at 4x; Realm 3 onward is cut at roughly double that and
+# drawn at half the scale - the same size on a classroom TV, four times the
+# detail. A single global band would fail every new sprite while passing a
+# Realm 3 sprite that had accidentally been cut at the old resolution, which is
+# precisely the mistake worth catching.
+#
+# updateStageScale() divides by the height of the sprite ACTUALLY on screen, so
+# the game needs no per-realm scale constant to go with this - the two bands
+# render to the same on-screen size on their own. Only the audit needs to know.
+BANDS = {
+    1: (70, 156, 215),          # original cut, SPRITE_SCALE 4
+    2: (70, 156, 215),
+    3: (150, 312, 430),         # double resolution, effectively drawn at 2
+}
+DEFAULT_BAND = (150, 312, 430)  # realms 4-9 will be cut the new way
+
+def band_for(path):
+    m = re.search(r"sprites/realm(\d+)/", str(path))
+    if m:
+        return BANDS.get(int(m.group(1)), DEFAULT_BAND)
+    return BANDS[1]             # assets/sprites/*.png with no realm folder
 
 for p in paths:
     f = ROOT / p
@@ -152,11 +187,12 @@ for p in paths:
         fails.append(f"{p} is entirely transparent")
         continue
     h, w = a.shape[:2]
-    if not (MIN_H <= h <= MAX_H):
+    min_h, max_h, max_w = band_for(p)
+    if not (min_h <= h <= max_h):
         fails.append(f"{p} is {w}x{h} — height outside the arena band "
-                     f"{MIN_H}-{MAX_H}")
-    if w > MAX_W:
-        fails.append(f"{p} is {w}x{h} — wider than the arena allows ({MAX_W})")
+                     f"{min_h}-{max_h} for its realm")
+    if w > max_w:
+        fails.append(f"{p} is {w}x{h} — wider than the arena allows ({max_w})")
 
     # surviving chroma key: strong magenta inside the silhouette
     r, g, b = (a[..., i].astype(int) for i in range(3))

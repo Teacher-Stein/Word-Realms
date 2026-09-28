@@ -1063,6 +1063,15 @@ const BACKDROPS = {
   2: ["assets/backdrops/realm2_band1.png",
       "assets/backdrops/realm2_band2.png",
       "assets/backdrops/realm2_band3.png"],
+  // Realm 3 ships at 1280x720 rather than 640x360. A classroom TV was
+  // upscaling the old ones threefold, which cost more legibility than any
+  // sprite change ever did. These three needed no dimming: they came out of
+  // the generator at ground luminance 28.7 / 26.7 / 21.1 against heroes at
+  // 84.7, which is Realm 1's relationship and better than Realm 2's even
+  // after Realm 2's was corrected in the pipeline.
+  3: ["assets/backdrops/realm3_band1.png",
+      "assets/backdrops/realm3_band2.png",
+      "assets/backdrops/realm3_band3.png"],
 };
 
 // How far through the map the party is, 0 at the entrance and 1 at the boss.

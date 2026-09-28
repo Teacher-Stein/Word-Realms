@@ -284,6 +284,44 @@ const SFX = (() => {
           noise(0.05, 0.34 * len, 0.12, "bandpass", p * 4, p * 2, 3);
           break;
 
+        // ------------------------------------------------------------------
+        // Realm 3, The Iron Orchestra. Every other voice in this file is a
+        // throat - a growl, a shriek, a wail. A realm of machines needs
+        // machines, or it sounds like Realm 1 wearing a different coat. These
+        // four are built the same way as the rest: oscillators and filtered
+        // noise, no samples, nothing anyone owns.
+        // ------------------------------------------------------------------
+        case "clank":                                    // iron, pistons
+          noise(0,    0.06 * len, 0.42, "bandpass", 2600, 1500, 1.4);
+          tone(p * 1.6, 0,     0.09 * len, "square",   g * 0.8,  p * 0.9);
+          tone(p * 0.7, 0.05,  0.30 * len, "square",   g * 0.65, p * 0.34);
+          noise(0.09, 0.22 * len, 0.20, "lowpass", 1100, 220);
+          thump(0.0,  0.30 * len, p * 0.6, p * 0.24, 0.45 + size * 0.3);
+          break;
+
+        case "steam":                                    // bellows, boilers
+          noise(0,    0.34 * len, 0.30, "highpass", 2200, 5200, 0.8);
+          noise(0.06, 0.30 * len, 0.22, "bandpass", 3400, 1800, 1.1);
+          tone(p * 0.6, 0.02, 0.26 * len, "sine", g * 0.28, p * 0.9);
+          break;
+
+        case "chime":                                    // clockwork, music box
+          // the ratchet first, then the note - a wound spring letting go
+          noise(0,    0.04 * len, 0.26, "bandpass", 3800, 2600, 3);
+          noise(0.05, 0.03 * len, 0.18, "bandpass", 3200, 2200, 3);
+          tone(p * 2,   0.08,  0.40 * len, "sine",     g * 0.7);
+          tone(p * 3.02, 0.09, 0.30 * len, "sine",     g * 0.3);
+          tone(p * 0.5, 0.11,  0.38 * len, "triangle", g * 0.4);
+          break;
+
+        case "horn":                                     // brass, amplifiers
+          tone(p * 0.5,  0,    0.46 * len, "sawtooth", g * 0.85, p * 0.58);
+          tone(p * 0.75, 0.04, 0.42 * len, "sawtooth", g * 0.55, p * 0.8);
+          tone(p * 1.5,  0.09, 0.28 * len, "square",   g * 0.25);
+          noise(0.02, 0.30 * len, 0.12, "bandpass", p * 5, p * 3, 2);
+          thump(0.0,  0.36 * len, p * 0.45, p * 0.2, 0.3 + size * 0.35);
+          break;
+
         case "roar":                                     // bosses
         default:
           tone(p * 0.55, 0,    0.90 * len, "sawtooth", g + 0.1, p * 0.3);

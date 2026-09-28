@@ -25,6 +25,55 @@ If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
 
+## v7.1 — The Iron Orchestra gets its own cast, and twice the resolution
+
+Realm 3 stops borrowing. 18 sprites, 3 backdrops, 34 item icons, its own monster
+roster, its own four machine voices and its own room light — nothing in it is
+Realm 1's any more.
+
+**Twice the resolution, same size on the TV.** Sprites are cut at 176–300 true
+pixels against the old 88–150. No scale constant changed: `updateStageScale()`
+has divided by the height of the sprite actually on screen since v6.3, so the
+two resolutions render identically without any per-realm logic. Backdrops went
+from 640×360 to **1280×720** — a 1080p classroom TV had been upscaling them
+threefold, which cost more legibility than any sprite ever did.
+
+**The cast.** Twelve machines banded by depth — clockwork wind-ups, then brass
+and leather, then heavy industrial — four elite orchestra machines, The Maestro,
+and The Tuner, who is the only living thing down there. Status specials are
+distributed exactly as Realm 1's twelve so that Build 2's difficulty ramp is the
+only variable that moves, but they now follow the fiction: tempo machines chill,
+loud machines expose, machines that seize you up freeze.
+
+**Four new voices** in `audio.js` — clank, steam, chime, horn — built from
+oscillators and filtered noise like the other ten. And Realm 3's score moved off
+the placeholder it had been sitting on, which was aeolian: *the same mode as
+Realm 1*. It is now **minorPent**, the one mode nothing had claimed. Five notes
+and no semitones is the sound of tuned metal, because an instrument with a fixed
+set of tines cannot play the notes in between. The triads written in the pieces
+come out stacked in fourths instead of thirds, which is the open, machine-like
+colour the realm wanted, and it needed no change to a single piece.
+
+**Two faults found on the way, neither one this build's job.**
+
+`test_art.py` was auditing a subset and reporting PASS: it built its sprite list
+from `content.js` alone, so all eighteen of Realm 3's sprites were checked for
+the folder-prefix rule and nothing else — not existence, not stray magenta, not
+size. Third time this exact mistake has been made. It now reads every realm file
+and the count went from 36 paths to 54.
+
+`test_stakes.py` has been failing since v7.0. Confirmed against the pristine
+v7.0 zip — identical failure, so it predates this build. It is the walker, not
+the game: `test_playthrough` exercises the same mechanic and reports zero RISKY
+contract breaks. **It still needs fixing. A safety net that reports FAIL every
+run gets ignored, which is how it survived a whole version.**
+
+**One regression caught before it shipped.** Every item icon used to be a
+240×240 square rendered from SVG, so the CSS setting both width and height could
+not distort anything. The pixel icons are cut to their own silhouette — the
+Thunder Pike is 9×64 — and without `object-fit: contain` the browser would have
+stretched a spear into a square in the shop, the popup and the relic row.
+
 ## v7.0 — RISKY means one thing, and an armour bug that made a hero invincible
 
 Two things came back from real classes, and one of them was a bug that had been
@@ -201,11 +250,11 @@ All twenty suites pass.
 
 ---
 
-## v6.8 — Realm 3, The Concert Caverns
+## v6.8 — Realm 3, The Iron Orchestra
 
 Our World 5 Unit 3 (Music): 192 standard questions and 47 elite questions across
 32 curriculum keys, written from the school syllabus. **Playable now, borrowing
-Realm 1's cast** — the Concert Caverns get their own monsters next.
+Realm 1's cast** — the Iron Orchestra gets its own monsters next.
 
 All 21 syllabus words have a key of their own; none was merged or dropped. The
 two target structures (present perfect with *ever* and *never*, and comparative
@@ -249,8 +298,8 @@ path someone forgot to swap. A realm in its own file slipped past that test too.
 
 A borrow is now **declared** — `artBorrowedFrom: 1` — and reported loudly on
 every run, and an *undeclared* one fails. The realm card in the game says
-"Playable · artwork still to come" for the same reason. When the Concert Caverns
-get their own cast both flags come off and the test starts enforcing
+"Playable · artwork still to come" for the same reason. When the Iron Orchestra
+gets its own cast both flags come off and the test starts enforcing
 `assets/sprites/realm3/` instead of merely reporting the loan.
 
 ### What the content review turned up

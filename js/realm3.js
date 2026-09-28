@@ -1067,6 +1067,120 @@ const REALM3_ELITE_QUESTIONS = [
 // 4. REGISTER IT
 //
 // ART: THIS REALM IS CURRENTLY BORROWING REALM 1'S CAST, AND SAYS SO.
+// ---------------------------------------------------------------------------
+// THE CAST OF THE IRON ORCHESTRA
+//
+// A buried instrument-maker's workshop. The maker is long gone; the machines
+// are still running. Every one of them is a BUILT thing with a single ember
+// lens for an eye - see art-generation-log.md for why the first design, animals
+// that had grown instruments, was thrown away before a pixel was drawn.
+//
+// The cast is banded by depth and the band decides how it fights:
+//
+//   light  - clockwork wind-ups. Small, quick, cheap. hit and flurry.
+//   mid    - brass and leather. Working machines. drain, heavy, charge.
+//   heavy  - industrial. guard, heavy, the slow grinding attacks.
+//
+// The status specials are distributed EXACTLY as Realm 1's twelve are - six
+// with none, two chill, two expose, two freeze - because Build 2 is going to
+// move the difficulty ramp and two changed variables in one lesson cannot be
+// told apart afterwards. What is new here is that the specials now follow the
+// fiction instead of being scattered: tempo machines chill, loud machines
+// expose, machines that seize you up freeze.
+// ---------------------------------------------------------------------------
+const REALM3_MONSTERS = [
+  // --- light: clockwork ----------------------------------------------------
+  { id:"ticker",      name:"The Ticker",        sprite:"assets/sprites/realm3/ticker.png",
+    voice:"chime", pitch:294, size:0.30,
+    taunt:"A Ticker skitters out of the dark, pendulum swinging.",
+    attacks:[{kind:"hit",dmg:1},{kind:"flurry",dmg:1,hits:2}], special:"chill", cadence:3 },
+
+  { id:"jewelbox",    name:"The Jewelbox",      sprite:"assets/sprites/realm3/jewelbox.png",
+    voice:"chime", pitch:349, size:0.32,
+    taunt:"A Jewelbox creaks open. Something inside is still turning.",
+    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:1,shards:6}], special:null, cadence:3 },
+
+  { id:"keywind",     name:"Keywind",           sprite:"assets/sprites/realm3/keywind.png",
+    voice:"chime", pitch:233, size:0.40,
+    taunt:"Keywind walks in on stubby legs, its key winding itself.",
+    attacks:[{kind:"hit",dmg:1},{kind:"flurry",dmg:1,hits:2}], special:null, cadence:3 },
+
+  { id:"whistler",    name:"The Whistler",      sprite:"assets/sprites/realm3/whistler.png",
+    voice:"steam", pitch:392, size:0.34,
+    taunt:"The Whistler stamps forward, venting steam from every pipe.",
+    attacks:[{kind:"flurry",dmg:1,hits:2},{kind:"hit",dmg:1}], special:null, cadence:3 },
+
+  // --- mid: brass and leather ----------------------------------------------
+  { id:"bellows",     name:"The Bellows",       sprite:"assets/sprites/realm3/bellows.png",
+    voice:"steam", pitch:147, size:0.52,
+    taunt:"The Bellows breathes in, and the whole room breathes with it.",
+    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:1,shards:8}], special:null, cadence:3 },
+
+  { id:"drummer",     name:"The Drummer",       sprite:"assets/sprites/realm3/drummer.png",
+    voice:"clank", pitch:110, size:0.56,
+    taunt:"The Drummer beats itself into step. It has not stopped in years.",
+    attacks:[{kind:"hit",dmg:1},{kind:"heavy",dmg:2}], special:null, cadence:3 },
+
+  { id:"stringer",    name:"The Stringer",      sprite:"assets/sprites/realm3/stringer.png",
+    voice:"chime", pitch:196, size:0.50,
+    taunt:"The Stringer draws its wires taut and waits.",
+    attacks:[{kind:"hit",dmg:1},{kind:"charge",dmg:3,turns:2}], special:"freeze", cadence:3 },
+
+  { id:"hornhead",    name:"Hornhead",          sprite:"assets/sprites/realm3/hornhead.png",
+    voice:"horn", pitch:175, size:0.54,
+    taunt:"Hornhead turns its great brass bell towards you.",
+    attacks:[{kind:"hit",dmg:1},{kind:"drain",dmg:0,shards:10}], special:"expose", cadence:3 },
+
+  // --- heavy: industrial ---------------------------------------------------
+  { id:"stack",       name:"The Stack",         sprite:"assets/sprites/realm3/stack.png",
+    voice:"horn", pitch:98, size:0.68,
+    taunt:"The Stack grinds forward, cables dragging behind it.",
+    attacks:[{kind:"heavy",dmg:2},{kind:"guard"}], special:"expose", cadence:3 },
+
+  { id:"boilerdrum",  name:"Boilerdrum",        sprite:"assets/sprites/realm3/boilerdrum.png",
+    voice:"steam", pitch:87, size:0.72,
+    taunt:"Boilerdrum stokes its furnace. The floor is getting warm.",
+    attacks:[{kind:"hit",dmg:1},{kind:"regen"}], special:null, cadence:3 },
+
+  { id:"siren_tower", name:"The Siren Tower",   sprite:"assets/sprites/realm3/siren_tower.png",
+    voice:"horn", pitch:131, size:0.66,
+    taunt:"The Siren Tower rolls in. Every horn on it is pointing somewhere else.",
+    attacks:[{kind:"hit",dmg:1},{kind:"heavy",dmg:2}], special:"freeze", cadence:3 },
+
+  { id:"piston",      name:"The Piston",        sprite:"assets/sprites/realm3/piston.png",
+    voice:"clank", pitch:82, size:0.74,
+    taunt:"The Piston raises both hammers. It does not hurry.",
+    attacks:[{kind:"heavy",dmg:2},{kind:"guard"}], special:"chill", cadence:3 },
+];
+
+// The workshop's finest work, not its labourers. Five-hit fights carrying the
+// hardest questions in the realm.
+const REALM3_ELITES = [
+  { id:"conductor",    name:"The Conductor",    sprite:"assets/sprites/realm3/conductor.png",
+    voice:"chime", pitch:220, size:0.84,
+    taunt:"The Conductor raises four batons. It would like you to follow.",
+    attacks:[{kind:"heavy",dmg:2},{kind:"guard"},{kind:"charge",dmg:3,turns:2}],
+    special:"confuse", cadence:3 },
+
+  { id:"organ_engine", name:"The Organ Engine", sprite:"assets/sprites/realm3/organ_engine.png",
+    voice:"horn", pitch:73, size:0.92,
+    taunt:"The Organ Engine fills its lungs. The pipes on its back begin to sound.",
+    attacks:[{kind:"heavy",dmg:2},{kind:"flurry",dmg:1,hits:3}],
+    special:null, cadence:3 },
+
+  { id:"first_chair",  name:"The First Chair",  sprite:"assets/sprites/realm3/first_chair.png",
+    voice:"chime", pitch:165, size:0.80,
+    taunt:"The First Chair does not stand. The chair walks instead.",
+    attacks:[{kind:"drain",dmg:1,shards:14},{kind:"regen"},{kind:"heavy",dmg:2}],
+    special:"freeze", cadence:3 },
+
+  { id:"feedback",     name:"Feedback",         sprite:"assets/sprites/realm3/feedback.png",
+    voice:"horn", pitch:247, size:0.86,
+    taunt:"Feedback arrives twice at once, blurred at the edges.",
+    attacks:[{kind:"heavy",dmg:2},{kind:"charge",dmg:4,turns:2},{kind:"guard"}],
+    special:"expose", cadence:3 },
+];
+
 //
 // `artBorrowedFrom` is not decoration. Realm 2's art paths once could not be
 // told apart from deliberate stand-ins, and test_art.py exists because of it -
@@ -1075,29 +1189,32 @@ const REALM3_ELITE_QUESTIONS = [
 // be invisible twice over.
 //
 // So the borrow is declared here, test_art.py reads this field, and it prints a
-// loud NOTE for every realm carrying one. When the Concert Caverns get their
+// loud NOTE for every realm carrying one. When the Iron Orchestra gets its
 // own monsters, delete this line and point `monsters`, `elites`, `boss` and
 // `npc` at assets/sprites/realm3/ - at which point the test starts enforcing
 // that folder instead of merely reporting the loan.
 // ---------------------------------------------------------------------------
 registerRealm({
   id: 3,
-  name: "The Concert Caverns",
+  name: "The Iron Orchestra",
   theme: "Music",
 
   questions:      REALM3_QUESTIONS,
   eliteQuestions: REALM3_ELITE_QUESTIONS,
 
-  // `artBorrowedFrom` is read by test_art.py; `artPending` is read by the realm
-  // card in ui.js, which already had a "Playable · artwork still to come" state
-  // waiting for exactly this situation. Both come off together when the
-  // Concert Caverns get their own cast.
-  artBorrowedFrom: 1,
-  artPending: true,
-  monsters: REALM1_MONSTERS,
-  elites:   REALM1_ELITES,
-  boss:     REALMS[1].boss,
-  npc:      REALMS[1].npc,
-  palette:  "storm",
-  sky:      "storm",
+  // The loan is over. `artBorrowedFrom` and `artPending` came off on 26/09
+  // when the Iron Orchestra got its own cast, and test_art.py now ENFORCES
+  // assets/sprites/realm3/ rather than merely reporting a borrow.
+  monsters: REALM3_MONSTERS,
+  elites:   REALM3_ELITES,
+  boss: { id:"maestro", name:"The Maestro",
+          sprite:"assets/sprites/realm3/maestro.png",
+          voice:"horn", pitch:58, size:1.00,
+          taunt:"THE MAESTRO STANDS. THE WHOLE WORKSHOP IS ITS ORCHESTRA.",
+          attacks:[{kind:"heavy",dmg:2},{kind:"flurry",dmg:1,hits:3},
+                   {kind:"charge",dmg:4,turns:2},{kind:"drain",dmg:1,shards:12}],
+          special:"expose", cadence:3 },
+  npc: { name:"The Tuner", sprite:"assets/sprites/realm3/tuner.png" },
+  palette:  "workshop",
+  sky:      "workshop",
 });

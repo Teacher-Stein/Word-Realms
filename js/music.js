@@ -69,7 +69,25 @@ const MUSIC = (() => {
     1: { name: "Stormlands", root: 146.83, mode: "aeolian",  // D3
          bell: 1.15, pluck: 1.0, pad: 1.0, drum: 1.0, air: 1.2 },
     2: { root: 130.81, mode: "dorian",   bell: 0.8, pluck: 1.15, pad: 0.9, drum: 1.1, air: 0.7 },
-    3: { root: 155.56, mode: "aeolian",  bell: 1.0, pluck: 0.9, pad: 1.2, drum: 0.9, air: 1.0 },
+    // Realm 3, The Iron Orchestra. This was a placeholder until 28/09 and it
+    // was the worst one in the table: aeolian, the SAME mode as Realm 1, with
+    // every instrument weight within 0.2 of neutral. A class that had played
+    // the Stormlands would have heard the Stormlands again, a semitone up.
+    //
+    // minorPent is the change that does the work, and it was the one mode
+    // nothing had claimed. Five notes and no semitones anywhere is the sound of
+    // tuned metal - a music box, a glockenspiel, a gamelan - because an
+    // instrument with a fixed set of tines physically cannot play the notes in
+    // between. deg() reads the mode's length rather than assuming seven, so a
+    // pentatonic realm needs no other change; the triads written in the pieces
+    // come out stacked in fourths instead of thirds, which is exactly the open,
+    // machine-like colour this realm wants.
+    //
+    // The weights then place it: bell and pluck forward (chimes, music-box
+    // tines, harp wire), drums forward (pistons and hammers - the workshop has
+    // a pulse), pad well back. Realm 1 is an airy storm; this is a dry room
+    // full of metal, and a wash of pad would soften exactly what should be hard.
+    3: { root: 155.56, mode: "minorPent", bell: 1.35, pluck: 1.25, pad: 0.55, drum: 1.35, air: 0.45 },
     4: { root: 123.47, mode: "phrygian", bell: 0.7, pluck: 1.0, pad: 1.1, drum: 1.2, air: 0.8 },
     5: { root: 164.81, mode: "lydian",   bell: 1.3, pluck: 0.95, pad: 1.0, drum: 0.8, air: 1.1 },
     6: { root: 138.59, mode: "dorian",   bell: 0.9, pluck: 1.1, pad: 1.0, drum: 1.1, air: 0.9 },
