@@ -25,6 +25,50 @@ If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
 
+## v7.2 — the arena gets half the screen back
+
+Stein, playing Realm 3: *"too much clutter on the top of the screen… we also
+need a balance for the arena too."* He was right, and the numbers were worse
+than they looked.
+
+At 1366×768 the chrome above the arena was **456px of 768** and the arena got
+312. Inside that, the stake gate alone was **189px — half the whole panel, to
+show two choices, on about 90% of questions** — while the question itself, the
+thing that has to be readable, had 39px.
+
+**Arena 312px → 475px, from 40.6% of the screen to 62%.** And it compounds:
+`.panel` is `flex: 0 0 auto` so the arena takes whatever is left, and
+`updateStageScale()` sizes the cast from the arena's height, so every pixel
+freed makes the monsters bigger too.
+
+Three changes, all Stein's calls:
+
+- **The stake gate is one row per tile, not three stacked lines.** 189px → 74px.
+  Name and note on the left, cost on the right.
+- **"How much are you putting on this one?" is gone.** It was a caption on a
+  self-describing control: the two buttons say SAFE and RISKY and carry their
+  own costs.
+- **Use an Item, Brace and Team Up moved to the floor of the arena.** They are
+  pressed a handful of times a run and were costing 38px of *every* question to
+  sit permanently in reach. They now overlay the very bottom of the picture,
+  below where the party stands.
+
+**What did not shrink is the cost of being wrong.** A wrong RISKY answer is 3 or
+5 hearts of 11, and v6.7 made it large on purpose so it reads from the back of a
+classroom. `test_announce.py` enforces that and still passes.
+
+### The relic tooltip was never a z-index value problem
+
+Hovering a relic showed its tooltip *behind* the question banner. `.relic-tip`
+correctly asks for `z-index: 40` — but it lives inside `.hud-top`, which is
+positioned with `z-index: 6` and therefore **creates a stacking context**. The
+tooltip's 40 only ever competed with its siblings inside that bar, and the whole
+subtree was worth 6 against `.panel`'s 7.
+
+`.hud-top` is now 8. Proved by A/B in a live encounter: at 6 the browser reports
+the panel painted over the tooltip, at 8 it reports the tooltip on top. Still
+below `#enc-announce` at 9, which has to cover everything.
+
 ## v7.1 — The Iron Orchestra gets its own cast, and twice the resolution
 
 Realm 3 stops borrowing. 18 sprites, 3 backdrops, 34 item icons, its own monster

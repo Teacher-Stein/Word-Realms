@@ -109,7 +109,13 @@ textarea { resize: vertical; line-height: 1.5; }
 .hud-top {
   display: flex; align-items: center; justify-content: space-between;
   padding: 7px 20px; background: linear-gradient(#000000dd, #00000055 70%, transparent);
-  position: relative; z-index: 6; gap: 14px;
+  /* v7.2: 8, not 6. A relic tooltip asks for z-index 40 and was still being
+     painted over by the question banner, because .hud-top is positioned and
+     therefore a STACKING CONTEXT: the tooltip's 40 only ever competed with its
+     siblings inside this bar, and the whole subtree was worth 6 against
+     .panel's 7. Raising the bar lifts every tooltip in it. Stays below
+     #enc-announce (9), which must cover everything. */
+  position: relative; z-index: 8; gap: 14px;
 }
 .hud-mid { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; }
 .hud-mid .realm-name { font-weight: 800; letter-spacing: 1px; color: var(--gold); font-size: .95rem; }
@@ -520,7 +526,7 @@ textarea { resize: vertical; line-height: 1.5; }
 .panel {
   background: linear-gradient(var(--panel-light), var(--panel));
   /* the accent rule now separates the panel from the arena BELOW it */
-  border-bottom: 4px solid var(--accent); padding: 10px 26px 12px; z-index: 7;
+  border-bottom: 4px solid var(--accent); padding: 8px 26px 8px; z-index: 7;
   flex: 0 0 auto;
 }
 .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
@@ -726,7 +732,22 @@ textarea { resize: vertical; line-height: 1.5; }
   .choices.fmt-odd .choice { padding: 10px 8px; }
 }
 
-.panel-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 8px; flex-wrap: wrap; }
+/* v7.2: the action row leaves the panel and sits on the floor of the arena.
+   Stein's call, and a better one than trimming it: these three buttons are
+   pressed a handful of times a run, so they were costing 38px of EVERY
+   question to be permanently in reach. .screen is position:absolute, so this
+   anchors to the screen rather than the panel, and .panel's z-index 7 keeps it
+   above the backdrop. It is a strip across the very bottom, below where the
+   party stands, so it covers floor and nothing else. */
+.panel-foot {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 7;
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px; padding: 6px 20px; flex-wrap: wrap;
+  background: linear-gradient(transparent, rgba(6,4,12,.72) 55%);
+  pointer-events: none;
+}
+.panel-foot > * { pointer-events: auto; }
+.panel-foot .enc-feedback { position: absolute; left: 20px; bottom: 8px; }
 /* v5.6: the narration moved into the arena (see js/announce.js). This node
    still exists and is still written to by all 46 call sites - the announcer
    observes it - but it is no longer what the room reads from. Kept in the
@@ -1583,28 +1604,33 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
    to be read from the back of the room.
    =========================================================================== */
 .stake-gate {
-  margin: 10px 0 4px; padding: 12px 14px; border-radius: 12px;
+  margin: 6px 0 4px; padding: 7px 10px; border-radius: 12px;
   background: rgba(10,6,20,.62); border: 2px solid #4a3a7d;
 }
-.stake-title {
-  font-size: .96rem; font-weight: 900; letter-spacing: .5px;
-  text-transform: uppercase; color: #b9a6ff; margin-bottom: 9px;
-}
-.stake-opts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.stake-opts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+/* v7.2: a ROW, not a stack. Name and note on the left, cost on the right, one
+   line high. This is where the 189px gate became a 70px one. */
 .stake-opts .pixel-btn {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
-  padding: 12px 16px; text-align: left; white-space: normal; line-height: 1.3;
+  display: flex; flex-direction: row; align-items: center;
+  justify-content: space-between; gap: 14px;
+  padding: 7px 14px; text-align: left; white-space: normal; line-height: 1.2;
+}
+.sg-label { display: flex; align-items: baseline; gap: 9px; min-width: 0; }
+.sg-label i {
+  font-style: normal; font-size: .8rem; font-weight: 600; opacity: .8;
+  line-height: 1.15; white-space: nowrap;      /* both tiles stay one line high */
+  overflow: hidden; text-overflow: ellipsis;
 }
 .stake-opts .pixel-btn b { font-size: 1.35rem; letter-spacing: 2px; }
-.stake-opts .pixel-btn span { font-size: .92rem; font-weight: 600; opacity: .92; }
-.stake-opts .pixel-btn span b { font-size: inherit; letter-spacing: 0; color: var(--gold); }
+.stake-opts .pixel-btn .sg-label i b { font-size: inherit; letter-spacing: 0; color: var(--gold); }
 /* The cost of being wrong, on its own line and bigger than the reward above
    it. v6.7 made a wrong RISKY answer worth 4 or 6 hearts of 11, which is a
    run-ending amount - it has to be legible from the back of a classroom to a
    child who is already thinking about the question rather than the button.
    test_announce.py measures this; do not shrink it back. */
 .stake-opts .pixel-btn .stake-cost {
-  margin-top: 3px; font-size: 1.0rem; opacity: 1; color: #ffc9c9;
+  margin-top: 0; font-size: 1.0rem; opacity: 1; color: #ffc9c9;
+  white-space: nowrap; flex: 0 0 auto;
 }
 .stake-opts .pixel-btn .stake-cost b {
   font-size: 1.3rem; color: #ff8080; letter-spacing: 1px;

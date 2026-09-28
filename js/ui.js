@@ -1828,17 +1828,29 @@ function renderStakeGate(prefix, q) {
   const safeDmg = wrongAnswerDamage(q, STAKE_SAFE);
   const riskDmg = wrongAnswerDamage(q, STAKE_RISKY);
   const hearts = n => `${n} heart${n === 1 ? "" : "s"}`;
+  // v7.2: one ROW per tile instead of three stacked lines, and the
+  // "How much are you putting on this one?" heading is gone entirely.
+  //
+  // The gate was 189px of a 369px panel - half of it, to show two choices, on
+  // about 90% of questions - while the question itself had 39px. The arena
+  // takes whatever the panel leaves and updateStageScale() sizes the cast from
+  // the arena's height, so every pixel freed here makes the picture AND the
+  // monsters bigger. The heading was scaffolding: the two buttons say SAFE and
+  // RISKY and carry their own costs, so it was a caption for a self-describing
+  // control.
+  //
+  // What did NOT shrink is the cost. A wrong RISKY answer is 3 or 5 hearts of
+  // 11 and has to be read from the back of a classroom by a child already
+  // thinking about the question - see the note in style.css, which
+  // test_announce.py enforces. Everything around it got smaller; it did not.
   el.innerHTML = `
-    <div class="stake-title">How much are you putting on this one?</div>
     <div class="stake-opts">
       <button class="pixel-btn sg-safe" data-side="${prefix}">
-        <b>SAFE</b>
-        <span>Normal damage and shards</span>
+        <span class="sg-label"><b>SAFE</b><i>normal damage</i></span>
         <span class="stake-cost">Wrong: <b>−${hearts(safeDmg)}</b></span>
       </button>
       <button class="pixel-btn danger sg-risky" data-side="${prefix}">
-        <b>RISKY</b>
-        <span>No options — <b>say it out loud</b> · ${CONFIG.STAKE_BLIND_SHARDS}× shards, double damage</span>
+        <span class="sg-label"><b>RISKY</b><i>say it aloud · ${CONFIG.STAKE_BLIND_SHARDS}× shards · 2× damage</i></span>
         <span class="stake-cost big">Wrong: <b>−${hearts(riskDmg)}</b></span>
       </button>
     </div>`;
