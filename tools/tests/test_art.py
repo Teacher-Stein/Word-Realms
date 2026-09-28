@@ -164,10 +164,14 @@ for m in re.finditer(r"const REALM(\d)_(?:MONSTERS|ELITES) = \[(.*?)\n\];",
 # updateStageScale() divides by the height of the sprite ACTUALLY on screen, so
 # the game needs no per-realm scale constant to go with this - the two bands
 # render to the same on-screen size on their own. Only the audit needs to know.
+# v7.3: Realms 1 and 2 were re-cut at Realm 3's resolution from the same source
+# sheets, so there is now ONE band for the whole game. The per-realm structure
+# stays because realms 4-9 may arrive at a different one again, and because a
+# single global number is what failed here last time.
 BANDS = {
-    1: (70, 156, 215),          # original cut, SPRITE_SCALE 4
-    2: (70, 156, 215),
-    3: (150, 312, 430),         # double resolution, effectively drawn at 2
+    1: (150, 312, 430),
+    2: (150, 312, 430),
+    3: (150, 312, 430),
 }
 DEFAULT_BAND = (150, 312, 430)  # realms 4-9 will be cut the new way
 

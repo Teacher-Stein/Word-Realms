@@ -764,8 +764,22 @@ document.addEventListener("click", ev => {
     // Spot-the-error still needs its sentence: the student says which WORD is
     // wrong, and the tappable copy lives inside the element a blind call hides.
     const prompt = blindPrompt(P.q);
+    // v7.3: the title and subtitle are hidden, not deleted.
+    //
+    // Stein: "we already have instructions on how to answer the question in the
+    // upper banner". He is right - the clue above already says what to do, and
+    // the streak banner says RISKY - NO OPTIONS, SAY IT OUT LOUD. This panel was
+    // repeating both in 1.7rem type and costing the arena about 60px on ~90% of
+    // questions.
+    //
+    // The TEXT is still set on the hidden element rather than dropped, because
+    // it is the accessible name of the panel and because a spot-the-error
+    // sentence must never be the only thing that disappears - that is the
+    // Rule 2 line. The sentence itself (.cs-line) is untouched.
     const t = e.say.querySelector(".cs-title");
-    if (t) t.textContent = prompt.title;
+    if (t) { t.textContent = prompt.title; t.style.display = "none"; }
+    const sub0 = e.say.querySelector(".cs-sub");
+    if (sub0) sub0.style.display = "none";
     let lineEl = e.say.querySelector(".cs-line");
     if (!lineEl) {
       lineEl = document.createElement("div");

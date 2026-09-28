@@ -38,6 +38,28 @@ SRC   = GAME.parent / "art-source" / "realm2"
 DST_S = GAME / "assets" / "sprites" / "realm2"
 DST_B = GAME / "assets" / "backdrops"
 
+# ---------------------------------------------------------------------------
+# WARNING - THESE INDICES ARE KEYED TO THIS FILE'S READING ORDER, WHICH IS WRONG
+#
+# sheet_objects() below orders subjects by `(ys.min() // 200, xs.min())`: bucket
+# the top edge into fixed 200px bands, then left to right within a band. That is
+# only correct when every subject on a row has a similar height. Realm 3's
+# clockwork sheet has a 379px subject beside a 279px one whose top edges land on
+# opposite sides of the y=200 line, so the sort invented a second row and three
+# machines were cut under the wrong names. It shipped and Stein found it in a
+# live run.
+#
+# realm3_art.py carries the corrected rule: subjects share a row if their
+# vertical spans overlap at all. It is NOT applied here, because three of
+# Realm 1 and Realm 2's sheets order differently under it and the indices below
+# were hand-assigned against the old rule and verified by eye at the time.
+# Re-running this file with the corrected rule would silently re-cut shipped art.
+#
+# IF YOU EVER RE-CUT REALM 2 - which is the plan, at the new resolution - take
+# read_order() from realm3_art.py AND re-derive every index below by eye. Do not
+# assume they carry over. The three sheets that change are the Realm 1 elites,
+# the Realm 1 monsters at 50c1c84a, and the Realm 2 sheet at 7f680358.
+# ---------------------------------------------------------------------------
 # sheet -> [(component index, output name, target height, flip?)]
 SHEETS = {
   # index 3 is a duplicate Pebbleshell Crab; index 4 was the flat side-on Glass

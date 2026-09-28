@@ -1513,7 +1513,18 @@ function heroScale() {
   const h = c ? c.clientHeight : 0;
   if (!h) return STAGE_SCALE * HERO_SCALE_BOOST;
   const target = (h * 0.96 - 88) * 0.82;        // a little shorter than the foe
-  const s = Math.floor((target / 88) * 2) / 2;
+  // v7.3: read the hero's OWN height rather than assuming 88.
+  //
+  // This divided by a hard-coded 88 because every hero was 88 true pixels
+  // tall. They are 176 now, and a constant here would have drawn the party at
+  // twice the size in every realm - the exact class of bug that
+  // updateStageScale() avoided for the foe by dividing by the sprite actually
+  // on screen. The 88 in the line above is a different number: the info block
+  // allowance in pixels, which has not changed.
+  const el = document.getElementById("hero-sprite") ||
+             document.getElementById("boss-hero-sprite");
+  const nat = (el && el.naturalHeight) ? el.naturalHeight : 176;
+  const s = Math.floor((target / nat) * 2) / 2;
   return Math.max(1, Math.min(SPRITE_SCALE, s));
 }
 

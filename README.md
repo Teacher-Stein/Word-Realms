@@ -25,6 +25,69 @@ If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
 
+## v7.3 — the whole cast at one resolution, and the party stands on the floor
+
+Stein: *"Our heroes look pretty low quality now compared to the monsters."* They
+were: heroes 88 true pixels, Realms 1–2 at 88–150, Realm 3 at 176–300. The game
+draws everything to about the same height, so **a Realm 3 machine carried 2.0–3.4×
+the pixels of a hero.**
+
+**Realms 1 and 2 and the heroes are re-cut at double resolution** from the same
+source sheets — 40 sprites, no new art. `split_props.py` keys the magenta at
+full resolution and downscales last, so the detail was always in the file.
+
+### The mapping was derived by matching, not by eye
+
+`realm2_art.py` carries a hand-written table of (sheet, index) → name. Hand
+indices are what produced the v7.1 bug where three Realm 3 machines wore each
+other's art, and they were doubly unsafe here because this re-cut uses
+`realm3_art.read_order()`, under which three of these sheets order differently.
+
+So nothing was hand-derived. **Every shipped sprite IS one of these subjects,
+already correctly named and oriented — that makes it ground truth.** Each fresh
+cut is scored against every candidate at the candidate's own size, both ways
+round; the best score names the file and recovers the flip. 38 of 40 matched
+above 0.85 with a clear margin, and the rejects named themselves: the duplicate
+Pebbleshell Crab scored 0.51 against the real one's 0.94, and the rejected
+realistic Tracker 0.60 against the accepted chibi's 0.93.
+
+It also corrected two subjects the assistant had identified **wrongly by eye** a
+week earlier — the Glass Lizard and the Tracker were swapped.
+
+### Two faults caught before shipping
+
+**The re-cut script was not idempotent.** It computed each target by reading the
+file on disk and doubling it, so running it twice — which happened while
+widening a palette — doubled the already-doubled art and put the heroes at 352px
+and the Hurricane Titan at 600. Nothing failed; the game just drew from a
+four-times-too-big source. Caught only because a measurement printed
+`naturalHeight`. The original heights are now hard-coded: a script that reads its
+own output has no fixed point.
+
+**`heroScale()` divided by a hard-coded 88.** Heroes are 176 now, so the party
+would have been drawn at twice the size in every realm. It reads the hero's own
+`naturalHeight` — the same fix `updateStageScale()` already had for the foe.
+
+**One sprite could not be re-cut.** The Patient One's round-three source sheet
+was never sent. It is doubled with NEAREST so it sits in the same band and the
+game treats it uniformly; it gains no detail and looks exactly as it did.
+
+### The party was floating, and the backdrop explains why
+
+`background-position: center top` with `background-size: cover`: the arena is
+about 2.9:1 and a backdrop is 16:9, so **`cover` crops ~38% of the height, and
+anchoring to the top threw away the bottom — the floor.** The cast then stood on
+a notional line at 19% that matched nothing in the picture. Backdrops now anchor
+to `center bottom` and the cast sits at 9%.
+
+### Less panel again
+
+The say-aloud panel was ~200px on about 90% of questions. Its heading and
+subtitle repeated what the question banner and the RISKY streak banner already
+say, so both are hidden — **77px now**. The text is still set on the hidden
+element rather than deleted, because it is the panel's accessible name and
+because the spot-the-error sentence must never be the thing that disappears.
+
 ## v7.2 — the arena gets half the screen back
 
 Stein, playing Realm 3: *"too much clutter on the top of the screen… we also

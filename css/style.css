@@ -366,9 +366,21 @@ textarea { resize: vertical; line-height: 1.5; }
    edge to edge and crops from the bottom - which is the dark, empty foreground
    the question panel sits in front of anyway. Anchoring to the top keeps the
    battlements, the breach and the lightning, which is the whole picture. */
+/* v7.3: anchored to the BOTTOM, not the top.
+   The arena is about 2.9:1 and a backdrop is 16:9, so `cover` crops roughly
+   38% of the image's height. Anchoring to the top threw away the BOTTOM 38% -
+   which is the floor. The party then stood on a notional ground line at 19%
+   that corresponded to nothing in the picture, and Stein saw exactly that:
+   "the monsters and heroes are on the floor of the background, not floating
+   above it".
+   The old comment here argued for the top because Realm 1's battlements and
+   lightning live up there. That was written when the arena was shorter and it
+   was never the right trade: the sky is scenery, the floor is what the cast
+   stands on, and every realm since has put its detail low - benches, furnace
+   and organ pipes in Realm 3, roots and undergrowth in Realm 2. */
 .corridor.has-backdrop {
   background-repeat: no-repeat;
-  background-position: center top;
+  background-position: center bottom;
   background-size: cover;
   image-rendering: pixelated;
 }
@@ -1079,8 +1091,11 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 .badge.streak.hot { border-color: var(--gold); box-shadow: 0 0 14px rgba(255,215,106,.7); }
 
 /* ---- combatants ---- */
+/* 19% put the cast a fifth of the way up a wall. With the backdrop anchored
+   to its own floor they stand ON it instead - 9% clears the action bar along
+   the bottom without lifting anybody off the ground. */
 .combatant {
-  position: absolute; bottom: 19%; z-index: 3;
+  position: absolute; bottom: 9%; z-index: 3;
   display: flex; flex-direction: column; align-items: center; gap: 8px;
 }
 /* The foe needs a bigger gap than the hero. Its info block now sits ABOVE the
@@ -1209,7 +1224,7 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
    the student says which word is wrong, so the words have to stay readable -
    but untappable, because this is the say-it-aloud road. */
 .cs-line {
-  margin: 8px 0 2px; padding: 10px 14px; border-radius: 8px;
+  margin: 3px 0 2px; padding: 7px 12px; border-radius: 8px;
   background: rgba(10,6,20,.55); border: 2px solid #4a3a7d;
   font-size: 1.25rem; font-weight: 700; line-height: 1.35; text-align: center;
 }
@@ -1459,11 +1474,15 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 .shield-stack b { font-size: 1rem; font-weight: 900; color: #bfe4ff; text-shadow: 0 2px 4px #000; }
 
 /* ---- Commit: answer with the options hidden -------------------------- */
+/* v7.3: trimmed like the stake gate. This panel is up for every blind call -
+   about 90% of questions can take one - and at 200px it was costing more of
+   the arena than the gate it replaces. The sentence and the two judge buttons
+   are the whole content; everything else was air. */
 .commit-gate, .commit-say {
-  margin: 0 0 12px; padding: 14px 18px; border-radius: 10px;
+  margin: 0 0 6px; padding: 8px 14px; border-radius: 10px;
   border: 3px solid var(--gold); background: rgba(48,34,8,.55);
   display: flex; align-items: center; justify-content: space-between;
-  gap: 18px; flex-wrap: wrap;
+  gap: 9px; flex-wrap: wrap;
 }
 .cg-text { font-size: 1.05rem; font-weight: 700; }
 .cg-text b { color: var(--gold); }
@@ -1471,7 +1490,7 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
 .cg-go { background: linear-gradient(#8a6a18, #5b4409); border-color: var(--gold); }
 .commit-say { border-color: #b9e6ff; background: rgba(14,34,54,.6); flex-direction: column; }
 .cs-title {
-  font-size: 1.7rem; font-weight: 900; letter-spacing: 1px; color: #eaf8ff;
+  font-size: 1.3rem; font-weight: 900; letter-spacing: 1px; color: #eaf8ff;
   text-shadow: 0 3px 0 #000;
 }
 .cs-sub { font-size: .9rem; opacity: .8; margin-top: -4px; }
