@@ -48,10 +48,19 @@ SRC = pathlib.Path("/root/.claude/uploads/8ad730cb-4d42-52fb-bf74-48740e503753")
 # (sheet, index) -> (output path, flip). Derived by matching, not by eye.
 MAP = {
   # --- heroes: every realm stands them next to its own cast -----------------
-  ("7935d624",0): ("assets/heroes/wordsmith.png", False),
-  ("7935d624",1): ("assets/heroes/knight.png",    False),
-  ("7935d624",2): ("assets/heroes/ranger.png",    False),
-  ("7935d624",3): ("assets/heroes/scholar.png",   False),
+  # REDESIGNED 29/09. The old sheet (7935d624) drew them standing at
+  # attention, because the prompt asked for "standing, neutral, weight even" to
+  # protect the idle bob. That was an over-correction: the bob is a 14px
+  # vertical lift, so the only pose it breaks is one with a foot off the
+  # ground. The new sheet keeps both feet planted and puts everything above the
+  # ankles in motion.
+  #
+  # The Wordsmith is FLIPPED. She came back facing left; the party stands on the
+  # left of the arena, so she was turning away from the fight.
+  ("heroes-v2",0): ("assets/heroes/wordsmith.png", True),
+  ("heroes-v2",1): ("assets/heroes/knight.png",    False),
+  ("heroes-v2",2): ("assets/heroes/ranger.png",    False),
+  ("heroes-v2",3): ("assets/heroes/scholar.png",   False),
   # --- realm 1 --------------------------------------------------------------
   ("50c1c84a",0): ("assets/sprites/shimmer.png",    False),
   ("50c1c84a",1): ("assets/sprites/crow.png",       False),
@@ -208,11 +217,15 @@ if __name__ == "__main__":
     targets = {out: ORIGINAL_H[out] * SCALE for _, (out, _) in MAP.items()}
     targets[FUSED[2]] = ORIGINAL_H[FUSED[2]] * SCALE
 
+    # The redesigned hero sheet is kept in the repo (it is small and it is the
+    # one source we cannot re-request); the realm sheets stay where they landed.
+    HERO_SHEET = pathlib.Path(__file__).resolve().parent / "source" / "heroes-v2.png"
     subjects = {}
     for (stem, idx), (out, flip) in MAP.items():
         subjects.setdefault(stem, None)
     for stem in list(subjects):
-        subjects[stem] = cut(SRC/f"{stem}-image.png")
+        subjects[stem] = cut(HERO_SHEET if stem == "heroes-v2"
+                             else SRC/f"{stem}-image.png")
 
     cut_arrays = {}
     for (stem, idx), (out, flip) in MAP.items():
@@ -227,9 +240,30 @@ if __name__ == "__main__":
     # palettes: the heroes anchor, each realm extends. Built from the NEW cuts,
     # not from the old low-resolution output - that was circular and is what
     # realm3_art.py's note warns about.
+    # PER HERO, then union - not one pool.
+    #
+    # Pooling all four and taking 160 colours gives each hero a share
+    # proportional to its PIXEL COUNT, so the Ranger's greens - a minority in a
+    # party otherwise dressed in blue and steel - were quantised at an error of
+    # 15 while the Knight sat at 9.9. Taking a fixed quota from each hero and
+    # unioning them costs a few dozen colours and treats them equally.
+    hero_keys = [k for k in cut_arrays if "/heroes/" in k]
+    per = []
+    for k in hero_keys:
+        r, a, _ = cut_arrays[k]
+        px = r[a > 0].astype(np.uint8)
+        ex = np.unique(np.array(Image.fromarray(px.reshape(-1, 1, 3), "RGB")
+              .quantize(colors=112, method=Image.MEDIANCUT)
+              .convert("RGB")).reshape(-1, 3), axis=0).astype(float)
+        per.append(ex)
     hero_px = np.concatenate([r[a>0] for k,(r,a,_) in cut_arrays.items()
                               if "/heroes/" in k]).astype(np.uint8)
-    base, n0 = extend(np.zeros((1,3)) + 1e6, hero_px, 64, 0)
+    # 64 was enough for the old flat-shaded heroes. The redesigned ones are
+    # far richer - more rendering on the armour, more colour in the cloth - and
+    # at 64 they quantised with an error of 25, twice the 12 this file treats as
+    # the ceiling. The heroes are the BASE every realm's palette extends from,
+    # so starving this number starves the whole game.
+    base = np.unique(np.vstack(per), axis=0)
     print(f"hero palette: {len(base)} colours")
 
     groups = {"realm1": [k for k in cut_arrays if k.startswith("assets/sprites/") and "/realm2/" not in k],
@@ -240,13 +274,27 @@ if __name__ == "__main__":
         if gname == "heroes":
             P = base
         else:
-            px = np.concatenate([cut_arrays[k][0][cut_arrays[k][1]>0] for k in keys]).astype(np.uint8)
-            # 400 left Realm 1 on 97 colours and a worst error of 15.9 - the
-            # storm cast is all blues and greys, so most of its colours sit
-            # close to the heroes' and were being discarded as redundant at
-            # twice the resolution, where the banding shows. 250 keeps them.
-            P, added = extend(base, px, 128, 250)
-            print(f"{gname} palette: {len(base)} hero + {added} = {len(P)}")
+            # PER SPRITE, for the same reason the heroes are done per hero.
+            # Pooling a realm and taking 128 colours shares them out by PIXEL
+            # COUNT, so the Heatwave Shimmer - the one orange thing in a realm
+            # of blues and greys - quantised at an error of 18 against a
+            # hero-derived base containing no oranges at all. A fixed quota per
+            # sprite guarantees every creature contributes its own colours, at
+            # the cost of a few dozen palette entries.
+            quota = []
+            for k in keys:
+                r, a, _ = cut_arrays[k]
+                px = r[a > 0].astype(np.uint8)
+                if not len(px):
+                    continue
+                quota.append(np.unique(np.array(
+                    Image.fromarray(px.reshape(-1, 1, 3), "RGB")
+                    .quantize(colors=24, method=Image.MEDIANCUT)
+                    .convert("RGB")).reshape(-1, 3), axis=0).astype(float))
+            cand = np.unique(np.vstack(quota), axis=0)
+            keep = [c for c in cand if ((base - c) ** 2).sum(1).min() > 250]
+            P = np.vstack([base, np.array(keep)]) if keep else base
+            print(f"{gname} palette: {len(base)} hero + {len(keep)} = {len(P)}")
         for k in keys:
             rgb, al, flip = cut_arrays[k]
             out, err = quantise(rgb, al, P)

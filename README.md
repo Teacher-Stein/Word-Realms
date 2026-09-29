@@ -25,6 +25,47 @@ If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
 
+## v7.4 — new heroes, and the palette maths that had to change to hold them
+
+The party is redesigned and the whole game is re-cut against it. **The heroes
+anchor the palette every realm extends from**, so this is 99 files, not 4.
+
+**Why v1 of the redesign was bland, and it was the prompt's fault.** It asked
+for *"standing, neutral, weight even"* and warned that *"a dynamic action pose
+fights it"* — written to protect the idle animation and badly over-corrected.
+The animation is a 14px vertical bob; the only pose it breaks is one with a foot
+off the ground. The real rule is **feet planted, everything above the ankles in
+motion**, and v2 of the pack said so.
+
+**The Wordsmith is flipped.** She came back facing left, away from the fight.
+
+### Pooled palette extraction starves whatever is in the minority
+
+Three separate symptoms, one cause, found in sequence:
+
+- the new heroes quantised at **25.2** against a 64-colour base
+- widening it to 160 fixed the party but left **the Ranger at 15.0** while the
+  Knight sat at 9.9 — her greens are a minority in a party of blue and steel
+- with a 447-colour hero base, Realm 1's pooled extraction then kept only 28 new
+  colours and **the Heatwave Shimmer quantised at 18.0** — the one orange thing
+  in a realm of blues, forced onto a base containing no oranges
+- and Realm 3's workshop gained **two** colours, at an error of 13.7
+
+`extend()` takes N colours from a pooled sample, so every subject gets a share
+proportional to its **pixel count**. Now each hero, each sprite and each icon
+contributes a fixed quota which is then unioned and filtered against the base.
+Worst error across the whole game: **12.2**, down from 25.2.
+
+### The party got brighter, which is free legibility
+
+Mean luminance **85.8 → 118.3**. Every backdrop now sits **+60 to +107** below
+the party, against a rule that demands +20 and a previous worst of +26.8.
+
+### Also
+
+`test_perks` failed once in a batch run and passed alone — the documented
+false-failure from running browser suites back to back, not a regression.
+
 ## v7.3 — the whole cast at one resolution, and the party stands on the floor
 
 Stein: *"Our heroes look pretty low quality now compared to the monsters."* They

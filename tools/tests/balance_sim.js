@@ -19,6 +19,52 @@ const D = __dirname + '/../../';
 vm.runInThisContext(fs.readFileSync(D + 'js/config.js', 'utf8'));
 vm.runInThisContext(fs.readFileSync(D + 'js/content.js', 'utf8'));
 
+// ---------------------------------------------------------------------------
+// WHICH REALM.  `node balance_sim.js 3` simulates Realm 3.  Default 1.
+//
+// Until v7.4 this file could only ever simulate Realm 1, and did not say so.
+// It loaded content.js alone - so a realm registered from its own file, which
+// js/realm-template.js tells every teacher to do, was invisible - and it read
+// REALM1_MONSTERS, REALM1_ELITES and REALMS[1].coverKeys by name. It also
+// never touched REALM_RAMP, which is the entire per-realm difficulty curve.
+//
+// The consequence was not a wrong number, it was a measurement of the wrong
+// thing: asked for "Realm 3 with monster HP 5" it would have answered with
+// Realm 1 at monster HP 4, confidently. That is the fourth time a tool here
+// has failed to see a realm living in its own file, and the third time THIS
+// file has measured something other than the game.
+//
+// Realms that register themselves must be loaded the way index.html loads them.
+for (const f of fs.readdirSync(D + 'js').filter(n => /^realm\d+\.js$/.test(n)).sort()) {
+  vm.runInThisContext(fs.readFileSync(D + 'js/' + f, 'utf8'));
+}
+const REALM = Number(process.argv[2] || process.env.REALM || 1);
+if (!REALMS[REALM]) { console.error(`no realm ${REALM}`); process.exit(1); }
+
+// The ramp maths is READ FROM combat.js, not copied. A copy is how this file
+// drifted from the game twice before; realmRamp() reads STATE.run.realmId, so
+// a stub is all it needs.
+// globalThis, not a module-scope var: runInThisContext evaluates in the GLOBAL
+// context, which is where every other file loaded here puts its names.
+globalThis.STATE = { run: { realmId: REALM } };
+vm.runInThisContext(
+  fs.readFileSync(D + 'js/combat.js', 'utf8').match(/function realmRamp\(\)[\s\S]*?\n\}/)[0]);
+const RAMP = realmRamp();
+// Hypotheticals for measuring a proposed ramp WITHOUT editing config.js:
+//   node balance_sim.js 3 --monsterHp=5 --eliteHp=8 --hearts=10
+// The defaults are read from the real config and the real ramp, so an
+// un-flagged run is always the game as it actually ships. Any override is
+// echoed in the banner, so a number can never come from a flag nobody saw.
+const FLAG = {};
+process.argv.slice(3).forEach(a => {
+  const m = /^--(\w+)=(\d+)$/.exec(a);
+  if (m) FLAG[m[1]] = Number(m[2]);
+});
+const MON_HP   = FLAG.monsterHp != null ? FLAG.monsterHp : CONFIG.MONSTER_HP + RAMP.monsterHp;
+const ELITE_HP = FLAG.eliteHp   != null ? FLAG.eliteHp   : CONFIG.ELITE_HP   + RAMP.eliteHp;
+const HEARTS   = FLAG.hearts    != null ? FLAG.hearts
+                                        : Math.max(5, CONFIG.START_HEARTS - RAMP.hearts);
+
 // ONE realm's curriculum keys, not every realm's.
 //
 // This used to regex `cover:"..."` out of the whole of content.js, which
@@ -29,7 +75,24 @@ vm.runInThisContext(fs.readFileSync(D + 'js/content.js', 'utf8'));
 // the boss grows) was invisible in every measurement this file produced.
 //
 // A run happens in one realm. Read one realm's keys.
-const COVER = REALMS[1].coverKeys.slice();
+// Say out loud what is being simulated. This file spent three versions
+// measuring Realm 1 while its reader believed otherwise; a header costs one
+// line and makes that impossible to do silently again.
+console.log(`\nSIMULATING REALM ${REALM} - ${REALMS[REALM].name}`);
+console.log(`  cast          ${REALMS[REALM].monsters.length} monsters, ` +
+            `${REALMS[REALM].elites.length} elites, boss "${REALMS[REALM].boss.name}"`);
+console.log(`  curriculum    ${REALMS[REALM].coverKeys.length} keys`);
+console.log(`  ramp applied  monster HP ${CONFIG.MONSTER_HP}+${RAMP.monsterHp}=${MON_HP}  ` +
+            `elite ${CONFIG.ELITE_HP}+${RAMP.eliteHp}=${ELITE_HP}  ` +
+            `hearts ${CONFIG.START_HEARTS}-${RAMP.hearts}=${HEARTS}` +
+            (RAMP.cadence ? `  cadence ${RAMP.cadence}` : ''));
+if (Object.keys(FLAG).length)
+  console.log(`  OVERRIDDEN    ${JSON.stringify(FLAG)}  <-- hypothetical, not what ships`);
+if (RAMP.monsterHp === 0 && RAMP.eliteHp === 0 && RAMP.hearts === 0 && REALM > 1)
+  console.log(`  NOTE: REALM_RAMP gives realm ${REALM} nothing - it is ` +
+              `mechanically identical to realm 1.`);
+
+const COVER = REALMS[REALM].coverKeys.slice();
 let O = {};
 vm.runInThisContext(fs.readFileSync(D + 'js/mapgen.js', 'utf8'));
 
@@ -212,9 +275,9 @@ function runOne(acc, S) {
     }
     if (nn.type === 'fight' || nn.type === 'elite') {
       const isE = nn.type === 'elite';
-      const pool = isE ? REALM1_ELITES : REALM1_MONSTERS;
+      const pool = isE ? REALMS[REALM].elites : REALMS[REALM].monsters;
       const got = fight(pool[Math.floor(Math.random() * pool.length)],
-                        isE ? CONFIG.ELITE_HP : CONFIG.MONSTER_HP, isE);
+                        isE ? ELITE_HP : MON_HP, isE);
       q += got;
       for (let i = 0; i < got; i++) {
         const f = COVER.filter(k => !covered.has(k));
@@ -269,7 +332,7 @@ function shape(label, opt) {
   // browser reads. Do not hard-code a starting resource again.
   O = Object.assign({ layers: CONFIG.LAYERS_PER_REALM,
                       shields: CONFIG.START_SHIELDS,
-                      hearts: CONFIG.START_HEARTS,
+                      hearts: HEARTS,
                       riskRate: 0.30, riskMisjudge: 0.10, v52: false, moEff: 0.45, blindFrac: 0.90 }, opt);
   const cells = [];
   for (const acc of [0.95, 0.85, 0.75]) {
@@ -328,7 +391,7 @@ const LESSON = 45 * 60, T_Q = 61, T_RESTART = 150;
 
 function lesson(acc, opt) {
   O = Object.assign({ layers: CONFIG.LAYERS_PER_REALM, shields: CONFIG.START_SHIELDS,
-    hearts: CONFIG.START_HEARTS, riskRate: 0.30, riskMisjudge: 0.10,
+    hearts: HEARTS, riskRate: 0.30, riskMisjudge: 0.10,
     v52: false, moEff: 0.45, blindFrac: 0.90 }, opt);
   let totalQ = 0, wipes = 0, runs = 0, distinct = 0; const N = 1200;
   for (let i = 0; i < N; i++) {
@@ -383,7 +446,7 @@ function tune(label, opt) {
   const wipes = []; let acts = 0, bhp = 0;
   for (const rr of [0.08, 0.65]) {
     O = Object.assign({ layers: CONFIG.LAYERS_PER_REALM, shields: CONFIG.START_SHIELDS,
-      hearts: CONFIG.START_HEARTS, riskMisjudge: 0.10,
+      hearts: HEARTS, riskMisjudge: 0.10,
       v52: false, moEff: 0.45, blindFrac: 0.90 }, opt, { riskRate: rr });
     const S = newStats();
     let d = 0; const N = 2500;

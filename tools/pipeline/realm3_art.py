@@ -119,6 +119,87 @@ BACKDROPS = {"sheet06-workfloor": "realm3_band1",
 BD_W, BD_H = 1280, 720      # was 640x360; a 1080p TV was upscaling 3x
 
 
+# ---------------------------------------------------------------------------
+# READING ORDER - and the bug that made this function necessary.
+#
+# realm2_art.sheet_objects() orders subjects with `(ys.min() // 200, xs.min())`:
+# bucket the TOP EDGE into fixed 200-pixel bands, then sort left to right within
+# a band. On a sheet of four subjects that are all roughly the same height that
+# is correct, and it was correct for every Realm 2 sheet.
+#
+# Realm 3's clockwork sheet has a 379px Ticker beside a 279px Jewelbox. Their
+# top edges are at y=174 and y=256 - three quarters of the way down the SAME
+# row, but on opposite sides of the y=200 boundary. The sort therefore decided
+# the sheet had two rows, read the far-right Whistler second, and handed three
+# of the four machines the wrong name. The game shipped with a monster called
+# Keywind wearing the Jewelbox's art, and Stein found it in a live run.
+#
+# The fix is to stop guessing where the rows are from a magic constant. Two
+# subjects are on the same row if their vertical spans OVERLAP AT ALL, which is
+# what "same row" actually means. Rows then read top to bottom and each row
+# reads left to right. It needs no threshold, so there is no number to get
+# wrong on the next realm.
+#
+# NOT applied to realm2_art.py on purpose. Three of Realm 1 and Realm 2's
+# sheets order differently under this rule, and their SHEETS indices were
+# hand-assigned against the old one and verified by eye at the time. Changing
+# the shared function would silently re-cut shipped art. See the warning there.
+def read_order(boxes):
+    """boxes: list of (x0, y0, x1, y1). Returns indices in true reading order."""
+    order, row, bottom = [], [], None
+    for i in sorted(range(len(boxes)), key=lambda i: boxes[i][1]):
+        y0, y1 = boxes[i][1], boxes[i][3]
+        if row and y0 > bottom:               # starts below everything so far
+            order += sorted(row, key=lambda j: boxes[j][0])
+            row, bottom = [], None
+        row.append(i)
+        bottom = y1 if bottom is None else max(bottom, y1)
+    if row:
+        order += sorted(row, key=lambda j: boxes[j][0])
+    return order
+
+
+def sheet_objects(stem):
+    """realm2_art.sheet_objects with the reading order corrected.
+
+    Everything else - the magenta key, the defringe, and the nearest-island
+    assignment that keeps a shed leaf with its fox - is reused unchanged from
+    realm2_art.py. Only the sort is different.
+    """
+    from scipy import ndimage
+    path = prepared(stem)
+    rgb, alpha, bg = ra.sp.key_magenta(str(path))
+    rgb = ra.sp.defringe(rgb, alpha, bg)
+    full = np.dstack([rgb, alpha])
+    m = alpha > 0
+
+    lab, n = ndimage.label(ndimage.binary_dilation(m, np.ones((5, 5), bool)))
+    cores = [(lab == i) & m for i in range(1, n + 1)]
+    cores = [c for c in cores if c.sum() >= 700]
+
+    boxes = []
+    for c in cores:
+        ys, xs = np.where(c)
+        boxes.append((int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())))
+    cores = [cores[i] for i in read_order(boxes)]
+
+    dist = np.stack([ndimage.distance_transform_edt(~c) for c in cores])
+    lab_all, n_all = ndimage.label(m, np.ones((3, 3), bool))
+    owner = np.full(m.shape, -1, dtype=np.int16)
+    for j in range(1, n_all + 1):
+        island = lab_all == j
+        owner[island] = int(np.argmin([d[island].min() for d in dist]))
+
+    objs = []
+    for i in range(len(cores)):
+        sel = m & (owner == i)
+        ys, xs = np.where(sel)
+        q = full.copy()
+        q[..., 3] = np.where(sel, alpha, 0)
+        objs.append(q[ys.min():ys.max() + 1, xs.min():xs.max() + 1])
+    return objs
+
+
 def prepared(stem):
     """The sheet as the splitter should see it: cropped if it needs cropping."""
     f = SRC / f"{stem}.png"
@@ -133,8 +214,7 @@ def prepared(stem):
 
 
 def objects(stem):
-    ra.SRC = prepared(stem).parent
-    return ra.sheet_objects(prepared(stem).stem)
+    return sheet_objects(stem)
 
 
 def hero_palette():
@@ -196,9 +276,28 @@ if __name__ == "__main__":
         shrunk[name] = (rgb, al)
 
     base = hero_palette()
-    cast_px = np.concatenate([r[a > 0] for r, a in shrunk.values()]).astype(np.uint8)
-    pal, added = extend(base, cast_px, 96, 400)
-    print(f"realm-3 cast palette: {len(base)} hero + {added} workshop = {len(pal)}")
+
+    # PER SPRITE, not one pool. When the heroes were redesigned the hero base
+    # went from 65 colours to 447, and a pooled extraction then found almost
+    # nothing new worth keeping - the workshop gained TWO colours and the cast
+    # quantised at 13.7. Sharing a quota by pixel count starves whatever is in
+    # the minority; here that was every warm brass tone in the realm.
+    def quota(arrs, n=24):
+        out = []
+        for rgb, al in arrs:
+            px = rgb[al > 0].astype(np.uint8)
+            if not len(px):
+                continue
+            out.append(np.unique(np.array(
+                Image.fromarray(px.reshape(-1, 1, 3), "RGB")
+                .quantize(colors=n, method=Image.MEDIANCUT)
+                .convert("RGB")).reshape(-1, 3), axis=0).astype(float))
+        return np.unique(np.vstack(out), axis=0)
+
+    cand = quota(list(shrunk.values()))
+    keep = [c for c in cand if ((base - c) ** 2).sum(1).min() > 250]
+    pal = np.vstack([base, np.array(keep)]) if keep else base
+    print(f"realm-3 cast palette: {len(base)} hero + {len(keep)} workshop = {len(pal)}")
 
     worst = 0.0
     for name, (rgb, al) in shrunk.items():
@@ -221,9 +320,10 @@ if __name__ == "__main__":
             o, _ = ra.strip_sparkle(o)
             icons[n] = ra.shrink(o, ICON_H)
 
-    ipx = np.concatenate([r[a > 0] for r, a in icons.values()]).astype(np.uint8)
-    ipal, iadded = extend(base, ipx, 96, 400)
-    print(f"\nitem icon palette: {len(base)} + {iadded} = {len(ipal)}")
+    icand = quota(list(icons.values()), 16)
+    ikeep = [c for c in icand if ((base - c) ** 2).sum(1).min() > 250]
+    ipal = np.vstack([base, np.array(ikeep)]) if ikeep else base
+    print(f"\nitem icon palette: {len(base)} + {len(ikeep)} = {len(ipal)}")
     for n, (rgb, al) in icons.items():
         out, err = quantise(rgb, al, ipal)
         Image.fromarray(out, "RGBA").save(DST_I / f"{n}.png")
