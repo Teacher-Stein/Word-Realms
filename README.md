@@ -25,6 +25,37 @@ If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
 
+## v7.4.1 — the party stops towering over the boss, and stops resizing mid-fight
+
+Two faults, both introduced by v7.3's resolution change, both only on the BOSS
+screen, and both found by Stein in a live run.
+
+**`heroScale()` was measuring the wrong arena.** It read
+
+```js
+document.getElementById("corridor") || document.getElementById("boss-corridor")
+```
+
+which reads as "the arena, whichever exists" and is not that: **both always
+exist.** The inactive one is merely inside a hidden screen. So on the boss
+screen it measured the encounter screen's corridor, got `clientHeight` 0, and
+took an emergency fallback that returned `STAGE_SCALE * HERO_SCALE_BOOST` — a
+raw scale. The party therefore **rode `STAGE_SCALE`**, which is the one thing
+the comment beside it says must never happen, and changed size between answers
+as the screen re-measured. It now asks which screen is active.
+
+**Flooring a scale to 0.5 costs screen pixels in proportion to sprite height.**
+At the old 88-150px art a half step was 44-75 screen pixels. At 176-300px it is
+88-150: The Maestro wanted 1.476 and got 1.0, losing **a third of its height**,
+while the hero wanted 2.06 and got 2.0, losing 3%. That is the whole reason the
+party ended up taller than the boss. Both now round in **quarter** steps, which
+restores the granularity the half step had before the art doubled.
+
+**`test_resolution.py` now seeds the boss screen** and asserts the party is the
+smaller of the two and that `heroScale()` does not move when `STAGE_SCALE` does.
+Verified to FAIL on the old code — a test that cannot fail proves nothing. Both
+existing suites walked the encounter screen, which is why neither saw any of it.
+
 ## v7.4 — new heroes, and the palette maths that had to change to hold them
 
 The party is redesigned and the whole game is re-cut against it. **The heroes

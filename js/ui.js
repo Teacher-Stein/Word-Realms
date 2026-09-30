@@ -1442,8 +1442,20 @@ function updateStageScale(corridorId) {
   // CONSISTENT height, which the old code did not: sprite size used to drift
   // with how long the question text was, because a taller question panel left
   // a shorter arena.
+  // QUARTER steps, not half steps, since v7.4.
+  //
+  // Rounding a SCALE down to the nearest 0.5 costs a number of SCREEN pixels
+  // that depends on how tall the sprite is. At 88-150px art a half step was
+  // 44-75 screen pixels and nobody noticed. At 176-300px it is 88-150, and The
+  // Maestro - 300 true pixels - wanted 1.476 and got 1.0: a THIRD of its height
+  // thrown away. The hero, wanting 2.06 and getting 2.0, lost 3%. That is why
+  // the party ended up taller than the boss it was fighting.
+  //
+  // Quarter steps restore the granularity the half step had before the art
+  // doubled. Keep this in step with heroScale() below - they must round the
+  // same way or the two will drift apart again.
   const nat = _foeNaturalHeight() || TALLEST_SPRITE;
-  let s = Math.floor((usable / nat) * 2) / 2;   // half-step scales
+  let s = Math.floor((usable / nat) * 4) / 4;
   STAGE_SCALE = Math.max(1, Math.min(SPRITE_SCALE, s));
   return STAGE_SCALE;
 }
@@ -1508,23 +1520,33 @@ function sizeSprite(el, scale) {
 // looks like a bug even though it isn't. Heroes are all 88 true pixels tall, so
 // they get their own scale aimed at a stable share of the arena instead.
 function heroScale() {
-  const c = document.getElementById("corridor") ||
-            document.getElementById("boss-corridor");
-  const h = c ? c.clientHeight : 0;
-  if (!h) return STAGE_SCALE * HERO_SCALE_BOOST;
-  const target = (h * 0.96 - 88) * 0.82;        // a little shorter than the foe
-  // v7.3: read the hero's OWN height rather than assuming 88.
+  // v7.4: ASK WHICH SCREEN IS ACTIVE. This used to be
+  //   getElementById("corridor") || getElementById("boss-corridor")
+  // which reads as "the arena, whichever one exists" and is not that at all:
+  // BOTH exist, always. The encounter screen's corridor is merely inside a
+  // hidden screen, so the || never fell through and the boss screen always
+  // measured the wrong element - got clientHeight 0 - and took the emergency
+  // fallback below on every single boss fight.
   //
-  // This divided by a hard-coded 88 because every hero was 88 true pixels
-  // tall. They are 176 now, and a constant here would have drawn the party at
-  // twice the size in every realm - the exact class of bug that
-  // updateStageScale() avoided for the foe by dividing by the sprite actually
-  // on screen. The 88 in the line above is a different number: the info block
-  // allowance in pixels, which has not changed.
-  const el = document.getElementById("hero-sprite") ||
-             document.getElementById("boss-hero-sprite");
+  // That was survivable while the fallback happened to be about right. It
+  // stopped being survivable in v7.3: the fallback returned a raw SCALE tuned
+  // for 88px heroes, so doubling the art doubled the party on the boss screen
+  // and nowhere else. Stein found the Storm Scholar towering over The Maestro.
+  const onBoss = !!(document.getElementById("screen-boss") || {}).classList
+                 && document.getElementById("screen-boss").classList.contains("active");
+  const c  = document.getElementById(onBoss ? "boss-corridor" : "corridor");
+  const el = document.getElementById(onBoss ? "boss-hero-sprite" : "hero-sprite");
+
+  // Read the hero's OWN height rather than assuming 88 - the same fix
+  // updateStageScale() already had for the foe.
   const nat = (el && el.naturalHeight) ? el.naturalHeight : 176;
-  const s = Math.floor((target / nat) * 2) / 2;
+
+  const h = c ? c.clientHeight : 0;
+  // The fallback is now expressed in the hero's own pixels too, so it cannot
+  // drift again the next time the art resolution moves.
+  if (!h) return Math.max(1, Math.min(SPRITE_SCALE, (176 / nat) * HERO_SCALE_BOOST));
+  const target = (h * 0.96 - 88) * 0.82;        // a little shorter than the foe
+  const s = Math.floor((target / nat) * 4) / 4;   // quarter steps - see above
   return Math.max(1, Math.min(SPRITE_SCALE, s));
 }
 

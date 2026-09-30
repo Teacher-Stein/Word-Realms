@@ -208,6 +208,64 @@ with sync_playwright() as pw:
         if errs:
             fails.append(f'{W}x{H}: {len(errs)} page errors')
         p.close()
+
+    # ------------------------------------------------------------------
+    # THE BOSS SCREEN, seeded directly.
+    #
+    # Two faults shipped in v7.3-7.4 and neither of the checks above could see
+    # them, because both suites walk the ENCOUNTER screen and the boss screen
+    # has its own corridor and its own hero image.
+    #
+    #   1. heroScale() looked up "corridor" and fell back to "boss-corridor"
+    #      only if it was missing. Both always exist - the inactive one is just
+    #      on a hidden screen - so the boss screen measured height 0 and took
+    #      an emergency fallback that RODE StAGE_SCALE. The party then changed
+    #      size between answers, which is the one thing the hero scale exists
+    #      to prevent.
+    #   2. Scale was floored to the nearest 0.5. That costs a number of SCREEN
+    #      pixels proportional to the sprite's height, so at 176-300px art The
+    #      Maestro lost a third of its height while the hero lost 3% - and the
+    #      party ended up TALLER than the boss.
+    #
+    # Seeded rather than walked: reaching a boss takes a whole run, and a suite
+    # that can fail for unrelated reasons is worse than no suite.
+    pg = b.new_page(viewport={'width': 1366, 'height': 768})
+    pg.goto(URL, wait_until='load'); pg.wait_for_timeout(700)
+    for foe in ('assets/sprites/realm3/maestro.png', 'assets/sprites/titan.png'):
+        r = pg.evaluate("""async (foeSrc) => {
+          document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+          document.getElementById('screen-boss').classList.add('active');
+          const hero=document.getElementById('boss-hero-sprite');
+          const foe =document.getElementById('boss-sprite');
+          hero.src='assets/heroes/scholar.png'; foe.src=foeSrc;
+          await new Promise(r=>{let n=0;const d=()=>{if(++n===2)r();};
+            (hero.complete&&hero.naturalHeight)?d():hero.onload=d;
+            (foe.complete&&foe.naturalHeight)?d():foe.onload=d;});
+          await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+          const seen=new Set(); const keep=STAGE_SCALE;
+          for (const v of [1,1.5,2,3,4]) { STAGE_SCALE=v; seen.add(heroScale()); }
+          STAGE_SCALE=keep;
+          updateStageScale('boss-corridor'); fixSpriteWidths();
+          await new Promise(r=>requestAnimationFrame(r));
+          return { rode: seen.size,
+                   heroH: Math.round(hero.getBoundingClientRect().height),
+                   foeH:  Math.round(foe.getBoundingClientRect().height) };
+        }""", foe)
+        name = foe.split('/')[-1][:-4]
+        if r['rode'] != 1:
+            fails.append(f"boss screen: heroScale() changes with STAGE_SCALE "
+                         f"({r['rode']} different values) — the party will "
+                         f"resize between answers")
+        if r['heroH'] >= r['foeH']:
+            fails.append(f"boss screen vs {name}: hero renders {r['heroH']}px "
+                         f"against a boss of {r['foeH']}px — the party must be "
+                         f"the smaller of the two")
+        if r['heroH'] < min_hero:
+            fails.append(f"boss screen vs {name}: hero renders {r['heroH']}px, "
+                         f"under the {min_hero}px a class can read")
+        notes_boss = f"  boss vs {name}: hero {r['heroH']}px, boss {r['foeH']}px"
+        print(notes_boss)
+    pg.close()
     b.close()
 
 print(f"\nProblems: {len(fails)}")
