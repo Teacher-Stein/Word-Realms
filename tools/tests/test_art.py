@@ -257,6 +257,48 @@ else:
             else:
                 notes.append(f"  {p}  ground {blum:5.1f}  hero +{hlum - blum:4.1f}")
 
+# --- every hero must say where its face is -------------------------------
+#
+# v7.4.2. The HUD portrait is a 72px window onto a 176px full-body sprite and
+# it is aimed by three numbers per hero. Get them wrong, or forget them on new
+# art, and the portrait quietly shows a shoulder, a weapon, or nothing - which
+# is exactly what v7.4 shipped. Nothing here can tell a face from an elbow, but
+# it can insist the numbers exist, sit inside the sprite, and point at pixels
+# that are actually drawn.
+hsrc = (ROOT / "js" / "heroes.js").read_text()
+_hero_ids = re.findall(r'id:\s*"([a-z_]+)"', hsrc)
+_heads = re.findall(
+    r'id:\s*"([a-z_]+)",(?:(?!\bid:).)*?sprite:\s*"([^"]+)",'
+    r'(?:(?!\bid:).)*?head:\s*\{\s*x:\s*(\d+),\s*y:\s*(\d+),\s*h:\s*(\d+)\s*\}',
+    hsrc, re.S)
+if len(_heads) != len(_hero_ids):
+    named = {h[0] for h in _heads}
+    for hid in _hero_ids:
+        if hid not in named:
+            fails.append(f"hero '{hid}' has no head box - its HUD portrait "
+                         f"will point at row 0 of the sprite, not at a face")
+for hid, spr, hx, hy, hh in _heads:
+    hx, hy, hh = int(hx), int(hy), int(hh)
+    f = ROOT / spr
+    if not f.exists():
+        fails.append(f"hero '{hid}' sprite missing: {spr}")
+        continue
+    alpha = np.array(Image.open(f).convert("RGBA"))[..., 3] > 8
+    H, W = alpha.shape
+    y0, y1 = hy - hh // 2, hy + hh // 2
+    if not (0 <= hx < W and 0 <= hy < H and hh >= 8):
+        fails.append(f"hero '{hid}' head box ({hx},{hy},{hh}) falls outside "
+                     f"its {W}x{H} sprite")
+        continue
+    band = alpha[max(0, y0):min(H, y1), max(0, hx - hh // 2):min(W, hx + hh // 2)]
+    filled = band.mean() if band.size else 0.0
+    if filled < 0.55:
+        fails.append(f"hero '{hid}' head box is only {filled:.0%} drawn pixels "
+                     f"- a face is near-solid, so this is aimed at empty space")
+    else:
+        notes.append(f"  head {hid:<10} ({hx},{hy}) h{hh}  {filled:.0%} solid")
+
+
 print(f"realms ready: {sorted(READY)}")
 print(f"sprite paths checked: {len(paths)}")
 for n in notes:

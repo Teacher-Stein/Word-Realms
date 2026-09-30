@@ -25,6 +25,38 @@ If a browser still shows the old version, press `Ctrl+F5` to force a refresh.
 
 ---
 
+## v7.4.2 — the new heroes fit their frames
+
+Two more things v7.4's art broke, both of the same kind: a frame that only ever
+worked because the old art happened to fit it.
+
+**The hero-select cards.** Each card sized its picture with
+`width = naturalWidth * 2` — it scaled by the one dimension the card does not
+constrain. The old party stood narrow, so doubling their width landed inside
+the 200px art box by luck. The new party braces wide and carries a shield: the
+Grammar Knight came out 300px across and 352 tall in a 200px box and overflowed
+upwards through the CHOOSE YOUR CHAMPION title. The box now does the fitting in
+CSS, so no pose and no resolution can burst it again.
+
+**The HUD portrait.** The 72px portrait is a window onto a 176px full-body
+sprite, and nothing in the game said where to point it. The CSS pinned the
+sprite's *top edge* to the top of the window and zoomed a flat 2.1x, which
+framed a face only because the old heroes stood upright with their heads in the
+top sixth of the cut. The v7.4 party raise swords, bows and open hands
+overhead, so the same window showed a crossguard, a bowstring, or empty air.
+Stein's screenshot of the Grammar Knight's portrait was a piece of his sword.
+
+Each hero now states where its face is, in the sprite's own pixels
+(`head: { x, y, h }` in `js/heroes.js`), and `framePortrait()` aims the window.
+Nothing in that path assumes a sprite size, a pose or a resolution.
+
+**Why it is written that way.** Three numbers read straight off a PNG is a job
+anyone can do without reading any code — which matters, because the plan is for
+other teachers to bring their own art one day. It is the only thing new hero
+art has to supply by hand.
+
+---
+
 ## v7.4.1 — the party stops towering over the boss, and stops resizing mid-fight
 
 Two faults, both introduced by v7.3's resolution change, both only on the BOSS

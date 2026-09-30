@@ -1067,9 +1067,11 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
   border: 3px solid var(--gold); border-radius: 10px;
   background: radial-gradient(circle at 50% 30%, #3b2c68, #160e28);
 }
+/* The frame is set by framePortrait() in ui.js from each hero's own head box.
+   Do not put left/top/scale back here - a fixed frame cannot follow a pose. */
 .portrait img {
-  position: absolute; left: 50%; top: 3px;
-  transform: translateX(-50%) scale(2.1); transform-origin: top center;
+  position: absolute; left: 0; top: 0;
+  transform-origin: top left;
   image-rendering: pixelated;
 }
 .hud-ident { display: flex; flex-direction: column; gap: 2px; }
@@ -1406,7 +1408,13 @@ table.board td.rank { font-weight: 900; color: var(--gold); width: 46px; }
   height: 200px; display: flex; align-items: flex-end; justify-content: center;
   margin-bottom: 10px;
 }
-.hero-card .hero-art img { image-rendering: pixelated; animation: heroIdle 2.6s ease-in-out infinite; }
+/* Fit to the box, never to the sprite's own pixel count: the heroes differ in
+   width by 60% and any of them may be replaced with wider art later. */
+.hero-card .hero-art img {
+  max-height: 100%; max-width: 100%; width: auto; height: auto;
+  object-fit: contain;
+  image-rendering: pixelated; animation: heroIdle 2.6s ease-in-out infinite;
+}
 @keyframes heroIdle { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 .hero-card .h-name    { font-weight: 900; color: var(--gold); font-size: 1.12rem; }
 .hero-card .h-tagline { font-size: .82rem; opacity: .75; font-style: italic; margin-top: 3px; min-height: 2.4em; }

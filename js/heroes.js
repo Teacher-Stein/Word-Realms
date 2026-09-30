@@ -1,6 +1,13 @@
 // ---------------------------------------------------------------------------
 // Playable heroes. One is chosen per run on the hero-select screen.
 // `grant` is applied once, right after the run is created.
+//
+// `head` is the box the hero's FACE occupies, measured in the sprite file's
+// own pixels: x and y are the centre of the head, h is how tall the head is.
+// The 72px HUD portrait is a window onto a 176px full-body sprite, and this is
+// the only thing that tells it where to point. Read the three numbers straight
+// off the PNG in any image editor - that is the whole job, and it is the one
+// thing new hero art has to supply by hand.
 // ---------------------------------------------------------------------------
 
 const HEROES = [
@@ -8,6 +15,7 @@ const HEROES = [
     id: "wordsmith",
     name: "The Wordsmith",
     sprite: "assets/heroes/wordsmith.png",
+    head: { x: 55, y: 62, h: 18 },
     tagline: "Ink, letters and a blade of light.",
     perk: "Begins the run with a free relic.",
     blurb: "A storm-scribe duellist. Words are sharper than steel in the " +
@@ -22,6 +30,7 @@ const HEROES = [
     id: "knight",
     name: "The Grammar Knight",
     sprite: "assets/heroes/knight.png",
+    head: { x: 91, y: 16, h: 20 },
     tagline: "Storm-forged plate and an unbreakable rule.",
     perk: "Begins armoured with 3 shield points.",
     blurb: "Nothing gets past a knight who knows exactly where the full " +
@@ -35,6 +44,7 @@ const HEROES = [
     id: "ranger",
     name: "The Phonics Ranger",
     sprite: "assets/heroes/ranger.png",
+    head: { x: 38, y: 52, h: 20 },
     tagline: "A bowstring of pure lightning.",
     // v6.3: this used to be "+50% Knowledge Shards from every source", for the
     // whole run. Two problems, and they compounded.
@@ -61,6 +71,7 @@ const HEROES = [
     id: "scholar",
     name: "The Storm Scholar",
     sprite: "assets/heroes/scholar.png",
+    head: { x: 44, y: 53, h: 17 },
     tagline: "The storm answers when she reads aloud.",
     perk: "Begins with two potions and a piece of gear.",
     blurb: "She has read every book in the Stormlands. Twice.",

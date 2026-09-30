@@ -840,6 +840,46 @@ function renderPotionRow(prefix) {
   });
 }
 
+// How much of the portrait window the head should fill, top to bottom.
+const HERO_PORTRAIT_FILL = 0.52;
+
+// Point the 72px portrait window at the hero's face.
+//
+// The bug this fixes: until v7.4.2 the CSS pinned the sprite's TOP EDGE to the
+// top of the window and zoomed a flat 2.1x. That framed a face only by luck -
+// the old party stood upright with their heads in the top sixth of the cut, so
+// the top sixth was a face. The v7.4 party raise swords, bows and open hands
+// overhead, so the very same window now shows a crossguard, a bowstring, or
+// nothing at all. It was never pointing at a head; it was pointing at row 0.
+//
+// Now each hero states where its face is (see js/heroes.js) and the window is
+// aimed. Nothing here assumes a sprite size, a pose, or a resolution, so this
+// survives whatever art a future realm - or a future teacher - brings.
+function framePortrait(img, hero, box) {
+  const head = hero.head;
+  if (!head || !head.h) { img.style.transform = ""; return; }
+  // A sprite that has not decoded yet reports no dimensions, so the clamp
+  // below would have nothing to clamp against. Frame it again when it lands.
+  img.onload = () => framePortrait(img, hero, box);
+
+  const size = box.clientHeight || 66;
+  const s = (size * HERO_PORTRAIT_FILL) / head.h;
+  let x = size / 2 - head.x * s;
+  let y = size / 2 - head.y * s;
+
+  // Centring on the head alone can pull the sprite's own edge into the window
+  // - the Knight's helmet sits six pixels from the top of his cut, so a
+  // perfectly centred head leaves a band of empty box above it. Slide back
+  // just far enough to keep the window full. The head moves a few pixels off
+  // centre; an empty portrait would be worse.
+  const rw = img.naturalWidth * s, rh = img.naturalHeight * s;
+  if (rw) x = rw >= size ? Math.min(0, Math.max(size - rw, x)) : (size - rw) / 2;
+  if (rh) y = rh >= size ? Math.min(0, Math.max(size - rh, y)) : (size - rh) / 2;
+
+  img.style.transform =
+    `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scale(${s.toFixed(3)})`;
+}
+
 function renderTopHud(prefix) {
   const run = STATE.run, realm = currentRealm();
   if (!run) return;
@@ -850,6 +890,7 @@ function renderTopHud(prefix) {
   if (port && hero) {
     const img = port.querySelector("img");
     if (img && img.getAttribute("src") !== hero.sprite) img.src = hero.sprite;
+    if (img) framePortrait(img, hero, port);
   }
   const hn = document.getElementById(`${prefix}-hero-name`);
   if (hn && hero) hn.textContent = hero.name.toUpperCase();
@@ -1969,10 +2010,13 @@ function renderHeroSelect(chosenId) {
       <div class="h-name">${escapeHtml(h.name)}</div>
       <div class="h-tagline">${escapeHtml(h.tagline)}</div>
       <div class="h-perk">${escapeHtml(h.perk)}</div>`;
-    const img = card.querySelector("img");
-    img.addEventListener("load", () => {
-      img.style.width = (img.naturalWidth * 2) + "px";
-    });
+    // v7.4.2: this used to be `img.style.width = naturalWidth * 2`, which
+    // sizes a card by the one dimension the card does NOT constrain. The old
+    // heroes stood narrow, so doubling their width happened to land inside the
+    // 200px art box. The new ones brace wide and carry shields, so the Knight
+    // came out 300px across and 352 tall in a 200px box - he overflowed
+    // upwards through the title. The art box now does the fitting in CSS, so
+    // no pose and no resolution can burst it again.
     card.addEventListener("click", () => window.pickHero(h.id));
     grid.appendChild(card);
   });

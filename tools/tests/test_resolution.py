@@ -265,6 +265,39 @@ with sync_playwright() as pw:
                          f"under the {min_hero}px a class can read")
         notes_boss = f"  boss vs {name}: hero {r['heroH']}px, boss {r['foeH']}px"
         print(notes_boss)
+
+    # --- hero-select cards must contain their heroes ---------------------
+    #
+    # v7.4.2. The card used to size its picture from the sprite's own width,
+    # which the card does not constrain; the v7.4 Knight came out 300px across
+    # in a 200px-tall box and overflowed upward through the screen title. What
+    # matters is not the scale but whether the picture stays inside its box, so
+    # that is what this measures - at both resolutions, for every hero, and for
+    # whatever art replaces them later.
+    pg.goto(URL); pg.wait_for_timeout(700)
+    pg.evaluate("()=>{ renderHeroSelect(null); showScreen('screen-hero'); }")
+    pg.wait_for_timeout(400)
+    cards = pg.evaluate("""()=>Array.from(document.querySelectorAll('.hero-card')).map(c=>{
+      const i=c.querySelector('img').getBoundingClientRect();
+      const a=c.querySelector('.hero-art').getBoundingClientRect();
+      const b=c.getBoundingClientRect();
+      return {name:c.querySelector('.h-name').textContent,
+              over:{top:Math.round(a.top-i.top), bottom:Math.round(i.bottom-a.bottom),
+                    left:Math.round(b.left-i.left), right:Math.round(i.right-b.right)},
+              h:Math.round(i.height)};})""")
+    for c in cards:
+        worst = max(c['over'].values())
+        if worst > 1:
+            side = max(c['over'], key=c['over'].get)
+            fails.append(f"{W}x{H} hero select: {c['name']} overflows its card "
+                         f"by {worst}px on the {side} — it will cover the "
+                         f"screen title or the next card")
+        elif c['h'] < 90:
+            fails.append(f"{W}x{H} hero select: {c['name']} renders only "
+                         f"{c['h']}px tall — too small to choose from")
+    print(f"  hero select: {len(cards)} cards, "
+          f"worst overflow {max(max(c['over'].values()) for c in cards)}px")
+
     pg.close()
     b.close()
 
