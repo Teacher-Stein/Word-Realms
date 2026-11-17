@@ -60,6 +60,27 @@ process.argv.slice(3).forEach(a => {
   const m = /^--(\w+)=(\d+)$/.exec(a);
   if (m) FLAG[m[1]] = Number(m[2]);
 });
+// --- v7.5 investigation flags -------------------------------------------
+// MONSTER_CADENCE and ENRAGE_AFTER_TURNS are read live out of CONFIG by the
+// fight loop, so overriding them here reaches every scenario below. Both are
+// echoed in the banner for the same reason every other override is: a number
+// must never come from a flag nobody saw.
+if (FLAG.cadence != null) CONFIG.MONSTER_CADENCE    = FLAG.cadence;
+if (FLAG.enrage  != null) CONFIG.ENRAGE_AFTER_TURNS = FLAG.enrage;
+
+// Scale the damage of a MONSTER ACTION (not the wrong-answer penalty).
+// Damage is an integer, so a scale of 0.5 on a 1-damage hit has to resolve
+// somewhere: rounding down makes it free, rounding up makes it unchanged.
+// Carry the fraction as a probability instead, so a half-strength 1-damage
+// hit lands half the time and the EXPECTED damage is honest.
+const DMG_SCALE = (FLAG.dmgpct != null ? FLAG.dmgpct : 100) / 100;
+function scaleDmg(d) {
+  if (DMG_SCALE === 1 || !d) return d;
+  const x = d * DMG_SCALE, lo = Math.floor(x);
+  return lo + (Math.random() < (x - lo) ? 1 : 0);
+}
+
+globalThis.__FIGHTS=0;
 const MON_HP   = FLAG.monsterHp != null ? FLAG.monsterHp : CONFIG.MONSTER_HP + RAMP.monsterHp;
 const ELITE_HP = FLAG.eliteHp   != null ? FLAG.eliteHp   : CONFIG.ELITE_HP   + RAMP.eliteHp;
 const HEARTS   = FLAG.hearts    != null ? FLAG.hearts
@@ -86,6 +107,8 @@ console.log(`  ramp applied  monster HP ${CONFIG.MONSTER_HP}+${RAMP.monsterHp}=$
             `elite ${CONFIG.ELITE_HP}+${RAMP.eliteHp}=${ELITE_HP}  ` +
             `hearts ${CONFIG.START_HEARTS}-${RAMP.hearts}=${HEARTS}` +
             (RAMP.cadence ? `  cadence ${RAMP.cadence}` : ''));
+if (FLAG.cadence != null || FLAG.enrage != null || FLAG.dmgpct != null)
+  console.log(`  OVERRIDES     cadence ${CONFIG.MONSTER_CADENCE}  enrage-after ${CONFIG.ENRAGE_AFTER_TURNS}  monster dmg ${Math.round(DMG_SCALE*100)}%`);
 if (Object.keys(FLAG).length)
   console.log(`  OVERRIDDEN    ${JSON.stringify(FLAG)}  <-- hypothetical, not what ships`);
 if (RAMP.monsterHp === 0 && RAMP.eliteHp === 0 && RAMP.hearts === 0 && REALM > 1)
@@ -109,6 +132,7 @@ function runOne(acc, S) {
   const p = { hearts: O.hearts, maxHearts: O.hearts, shields: O.shields, ls: true };
 
   const fight = (mon, hp, isE) => {
+    globalThis.__FIGHTS = (globalThis.__FIGHTS||0) + 1;
     // O.cadenceBonus models a hero perk or relic that lengthens the monster's
     // countdown (the Phonics Ranger's eye, the Oracle's Eye relic). It never
     // shortens a fight - the monster's HP is unchanged, so the same number of
@@ -131,6 +155,13 @@ function runOne(acc, S) {
         bonus = O.cadenceBonus || 0,
         until = cad + bonus;
     let t = 0, en = false, n = 0;
+    // mTurns is the MONSTER's turn count, which is what combat.js enrages on
+    // (`m.turnsTaken`, incremented once per monster action). This file used to
+    // test `t` - the QUESTION counter - so it modelled a monster that enraged
+    // after 4 questions instead of after 4 of its own swings. At cadence 2
+    // that is a different mechanic: 4 questions is ~2 monster turns. Third
+    // time this file has measured something other than the game; see header.
+    let mTurns = 0;
     let shieldPaid = 0;                     // RISKY shields are capped per fight
     const h0 = p.hearts;
     let aimed = 0, wrongDmg = 0, clockDmg = 0;
@@ -170,14 +201,16 @@ function runOne(acc, S) {
         }
         if (monHp <= 0) break;
         if (--until <= 0) {
-          if (t >= CONFIG.ENRAGE_AFTER_TURNS) en = true;
+          mTurns++;
           const a = mon.attacks[Math.floor(Math.random() * mon.attacks.length)];
           let d = atk(a, en);
           if (a.kind === 'charge' && Math.random() < 0.5) d = a.dmg + (en ? 1 : 0);
+          if (!en && mTurns >= CONFIG.ENRAGE_AFTER_TURNS) en = true;
           if (d >= 2 && (p.mo || 0) >= 3 && Math.random() < O.moEff) { p.mo -= 3; d = Math.max(0, d - 2); }
+          d = scaleDmg(d);
           aimed += d; clockDmg += d;
           const ab = Math.min(p.shields, d); p.shields -= ab; p.hearts -= (d - ab);
-          S.acts++; until = cad + (O.cadenceFirstOnly ? 0 : bonus);
+          S.acts++; globalThis.__ACTS=(globalThis.__ACTS||0)+1; until = cad + (O.cadenceFirstOnly ? 0 : bonus);
         }
         if (p.hearts <= 0 && p.ls) { p.ls = false; if (Math.random() < acc) p.hearts = 1; }
         continue;
@@ -225,10 +258,14 @@ function runOne(acc, S) {
       if (monHp <= 0) break;
 
       if (--until <= 0) {
-        if (t >= CONFIG.ENRAGE_AFTER_TURNS) en = true;
+        mTurns++;
         const a = mon.attacks[Math.floor(Math.random() * mon.attacks.length)];
         let d = atk(a, en);
         if (a.kind === 'charge' && Math.random() < 0.5) d = a.dmg + (en ? 1 : 0);
+        d = scaleDmg(d);
+        // combat.js resolves the blow FIRST and enrages after, so the turn that
+        // reaches the threshold is not itself enraged - the next one is.
+        if (!en && mTurns >= CONFIG.ENRAGE_AFTER_TURNS) { globalThis.__ENR = (globalThis.__ENR||0)+1; en = true; }
         aimed += d; clockDmg += d;
         const ab = Math.min(p.shields, d); p.shields -= ab; p.hearts -= (d - ab);
         S.acts++; until = cad + (O.cadenceFirstOnly ? 0 : bonus);
@@ -536,3 +573,12 @@ shape('  Chorus as shipped', { riskRate: 0.30 });
 CONFIG.CHORUS_REWARD = { good:{shards:3,shields:3}, half:{shards:2,shields:3}, poor:{shards:1,shields:3} };
 shape('  Chorus paying 3 shields', { riskRate: 0.30 });
 CONFIG.CHORUS_REWARD = _pay;
+
+// ENRAGE_PROBE=1 reports how often a fight actually lasts long enough for the
+// monster to enrage. Worth having permanently: the enrage bug below was found
+// because this number looked implausible, and a mechanic nobody can see is
+// exactly the failure this project keeps repeating.
+if (process.env.ENRAGE_PROBE) {
+  const f = globalThis.__FIGHTS || 0, e = globalThis.__ENR || 0;
+  console.log(`ENRAGE PROBE  fights ${f}  reached enrage ${e}  = ${(100 * e / Math.max(1, f)).toFixed(1)}% of fights`);
+}
